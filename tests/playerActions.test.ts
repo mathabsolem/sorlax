@@ -1,0 +1,308 @@
+import { describe, expect, it } from 'vitest';
+import {
+  attackAction,
+  interactAction,
+  moveAction,
+  pickupAt,
+  switchWeaponAction,
+  useItemAction,
+} from '../src/core/playerActions';
+import { setup } from './fixtures/world';
+
+const EAST_SPAWN = { pos: { x: 1, y: 1 }, facing: 1 } as const;
+
+describe('moveAction', () => {
+  it('bewegt den Spieler und merkt die Kachel als erkundet', () => {
+    const { state, content } = setup({ spawn: EAST_SPAWN });
+    const result = moveAction(state, content, 'forward');
+    expect(result.ok).toBe(true);
+    expect(state.player.pos).toEqual({ x: 2, y: 1 });
+    expect(state.maps['test']?.explored).toContain('2,1');
+  });
+
+  it('lehnt Waende ab, ohne den Zustand zu aendern', () => {
+    const { state, content } = setup();
+    const result = moveAction(state, content, 'forward');
+    expect(result).toEqual({ ok: false, reason: 'blocked by wall' });
+    expect(state.player.pos).toEqual({ x: 1, y: 1 });
+  });
+
+  it('lehnt geschlossene Tueren und besetzte Kacheln ab', () => {
+    const withDoor = setup({ spawn: EAST_SPAWN, entities: [{ kind: 'door', defId: 'door', pos: { x: 2, y: 1 } }] });
+    expect(moveAction(withDoor.state, withDoor.content, 'forward')).toEqual({
+      ok: false,
+      reason: 'door is closed',
+    });
+
+    const withEnemy = setup({
+      spawn: EAST_SPAWN,
+      entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 2, y: 1 } }],
+    });
+    expect(moveAction(withEnemy.state, withEnemy.content, 'forward')).toEqual({
+      ok: false,
+      reason: 'tile occupied',
+    });
+  });
+
+  it('sammelt ein Item auf der Zielkachel ein', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [{ kind: 'item', defId: 'bullets', pos: { x: 2, y: 1 } }],
+    });
+    const result = moveAction(state, content, 'forward');
+    expect(result.ok && result.events[1]).toEqual({ type: 'pickup', defId: 'bullets', amount: 10 });
+    expect(state.player.ammo['bullets']).toBe(10);
+  });
+});
+
+describe('pickupAt', () => {
+  it('legt Items in das passende Fach und vermerkt sie', () => {
+    const { state, content } = setup({
+      entities: [
+        { kind: 'item', defId: 'redkey', pos: { x: 2, y: 1 } },
+        { kind: 'item', defId: 'medkit', pos: { x: 3, y: 1 } },
+      ],
+    });
+    pickupAt(state, content, { x: 2, y: 1 });
+    pickupAt(state, content, { x: 3, y: 1 });
+    expect(state.player.keys).toEqual(['redkey']);
+    expect(state.player.items['medkit']).toBe(20);
+    expect(state.maps['test']?.takenItems).toEqual(['2,1', '3,1']);
+    expect(state.maps['test']?.entities).toHaveLength(0);
+  });
+
+  it('tut auf leeren Kacheln nichts', () => {
+    const { state, content } = setup();
+    expect(pickupAt(state, content, { x: 2, y: 1 })).toEqual([]);
+  });
+});
+
+describe('attackAction', () => {
+  it('lehnt einen Angriff ohne Munition ab', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } }],
+    });
+    state.player.weapons.push('pistol');
+    state.player.equippedWeaponId = 'pistol';
+    expect(attackAction(state, content)).toEqual({ ok: false, reason: 'out of ammo' });
+  });
+
+  it('verbraucht Munition und trifft eine Entscheidung', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } }],
+    });
+    state.player.weapons.push('pistol');
+    state.player.equippedWeaponId = 'pistol';
+    state.player.ammo['bullets'] = 2;
+    const result = attackAction(state, content);
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.events[0]?.type).toBe('attack');
+    expect(state.player.ammo['bullets']).toBe(1);
+  });
+
+  it('lehnt Ziele ausser Reichweite und ohne Sichtlinie ab', () => {
+    const outOfRange = setup({
+      entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } }],
+    });
+    expect(attackAction(outOfRange.state, outOfRange.content, 1)).toEqual({
+      ok: false,
+      reason: 'target out of range',
+    });
+
+    const blocked = setup({
+      entities: [
+        { kind: 'door', defId: 'door', pos: { x: 3, y: 1 } },
+        { kind: 'enemy', defId: 'tank', pos: { x: 4, y: 1 } },
+      ],
+    });
+    blocked.state.player.weapons.push('pistol');
+    blocked.state.player.equippedWeaponId = 'pistol';
+    blocked.state.player.ammo['bullets'] = 5;
+    expect(attackAction(blocked.state, blocked.content, 2)).toEqual({
+      ok: false,
+      reason: 'no line of sight',
+    });
+  });
+
+  it('waehlt ohne targetId den naechsten Gegner', () => {
+    const { state, content } = setup({
+      entities: [
+        { kind: 'enemy', defId: 'tank', pos: { x: 4, y: 1 } },
+        { kind: 'enemy', defId: 'tank', pos: { x: 1, y: 4 } },
+        { kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } },
+      ],
+    });
+    state.player.weapons.push('pistol');
+    state.player.equippedWeaponId = 'pistol';
+    state.player.ammo['bullets'] = 5;
+    const result = attackAction(state, content);
+    // (3,1) liegt auf Distanz 2 und damit naeher als (4,1) und (1,4).
+    expect(result.ok && result.events[0]).toMatchObject({ type: 'attack', target: 3 });
+  });
+
+  it('nimmt bei gleicher Distanz die kleinere Entity-Id', () => {
+    const { state, content } = setup({
+      entities: [
+        { kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } },
+        { kind: 'enemy', defId: 'tank', pos: { x: 1, y: 3 } },
+      ],
+    });
+    state.player.weapons.push('pistol');
+    state.player.equippedWeaponId = 'pistol';
+    state.player.ammo['bullets'] = 5;
+    const result = attackAction(state, content);
+    expect(result.ok && result.events[0]).toMatchObject({ type: 'attack', target: 1 });
+  });
+
+  it('lehnt ab, wenn kein Ziel sichtbar ist', () => {
+    const { state, content } = setup();
+    expect(attackAction(state, content)).toEqual({ ok: false, reason: 'no target' });
+  });
+
+  it('vergibt XP und raeumt den toten Gegner ab', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 2, y: 1 } }],
+    });
+    let killed = false;
+    for (let i = 0; i < 20 && !killed; i++) {
+      const enemy = state.maps['test']?.entities[0];
+      if (!enemy?.stats) break;
+      enemy.stats.health = 1;
+      const result = attackAction(state, content);
+      killed = result.ok && result.events.some((event) => event.type === 'died');
+    }
+    expect(killed).toBe(true);
+    expect(state.maps['test']?.entities).toHaveLength(0);
+    expect(state.player.xp).toBe(10);
+    expect(state.player.level).toBe(2);
+  });
+});
+
+describe('interactAction', () => {
+  it('oeffnet eine geschlossene Tuer vor dem Spieler', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [{ kind: 'door', defId: 'door', pos: { x: 2, y: 1 } }],
+    });
+    const result = interactAction(state, content);
+    expect(result.ok && result.events[0]).toEqual({
+      type: 'doorChanged',
+      pos: { x: 2, y: 1 },
+      state: 'open',
+    });
+    expect(state.maps['test']?.entities[0]?.state).toBe('open');
+    expect(state.maps['test']?.openedDoors).toEqual(['2,1']);
+  });
+
+  it('meldet blocked bei verriegelter Tuer ohne passenden Schluessel', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [{ kind: 'door', defId: 'door', pos: { x: 2, y: 1 }, locked: 'redkey' }],
+    });
+    const result = interactAction(state, content);
+    expect(result.ok && result.events[0]).toEqual({
+      type: 'doorChanged',
+      pos: { x: 2, y: 1 },
+      state: 'blocked',
+    });
+    expect(state.maps['test']?.entities[0]?.state).toBe('locked');
+  });
+
+  it('oeffnet die verriegelte Tuer mit passendem Schluessel', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [{ kind: 'door', defId: 'door', pos: { x: 2, y: 1 }, locked: 'redkey' }],
+    });
+    state.player.keys.push('redkey');
+    const result = interactAction(state, content);
+    expect(result.ok && result.events[0]).toMatchObject({ type: 'doorChanged', state: 'open' });
+  });
+
+  it('loest use-Trigger vor dem Spieler aus', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      triggers: [
+        {
+          id: 'lever',
+          pos: { x: 2, y: 1 },
+          on: 'use',
+          once: false,
+          actions: [{ type: 'message', text: 'clack' }],
+        },
+      ],
+    });
+    const result = interactAction(state, content);
+    expect(result.ok && result.events).toEqual([{ type: 'message', text: 'clack' }]);
+  });
+
+  it('lehnt ab, wenn vorne nichts ist', () => {
+    const { state, content } = setup({ spawn: EAST_SPAWN });
+    expect(interactAction(state, content)).toEqual({
+      ok: false,
+      reason: 'nothing to interact with',
+    });
+  });
+});
+
+describe('useItemAction', () => {
+  it('heilt bis maximal maxHealth und verbraucht das Item', () => {
+    const { state, content } = setup();
+    state.player.items['medkit'] = 1;
+    state.player.stats.health = 40;
+    const result = useItemAction(state, content, 'medkit');
+    expect(result.ok).toBe(true);
+    expect(state.player.stats.health).toBe(50);
+    expect(state.player.items['medkit']).toBe(0);
+  });
+
+  it('erhoeht die Ruestung', () => {
+    const { state, content } = setup();
+    state.player.items['shield'] = 1;
+    useItemAction(state, content, 'shield');
+    expect(state.player.stats.armor).toBe(4);
+  });
+
+  it('legt Effekte von Powerups an', () => {
+    const { state, content } = setup();
+    state.player.items['stim'] = 1;
+    useItemAction(state, content, 'stim');
+    expect(state.player.effects).toEqual([{ id: 'haste', remainingTurns: 3, magnitude: 1 }]);
+  });
+
+  it('lehnt fehlende, unbekannte und Questgegenstaende ab', () => {
+    const { state, content } = setup();
+    expect(useItemAction(state, content, 'medkit')).toEqual({
+      ok: false,
+      reason: 'item not in inventory',
+    });
+    state.player.items['ghost'] = 1;
+    expect(useItemAction(state, content, 'ghost')).toEqual({ ok: false, reason: 'unknown item' });
+    state.player.items['relic'] = 1;
+    expect(useItemAction(state, content, 'relic')).toEqual({
+      ok: false,
+      reason: 'quest item cannot be used',
+    });
+  });
+});
+
+describe('switchWeaponAction', () => {
+  it('wechselt auf eine besessene Waffe', () => {
+    const { state, content } = setup();
+    state.player.weapons.push('pistol');
+    const result = switchWeaponAction(state, content, 'pistol');
+    expect(result.ok).toBe(true);
+    expect(state.player.equippedWeaponId).toBe('pistol');
+  });
+
+  it('lehnt fremde und bereits gefuehrte Waffen ab', () => {
+    const { state, content } = setup();
+    expect(switchWeaponAction(state, content, 'pistol')).toEqual({
+      ok: false,
+      reason: 'weapon not owned',
+    });
+    expect(switchWeaponAction(state, content, 'fists')).toEqual({
+      ok: false,
+      reason: 'weapon already equipped',
+    });
+  });
+});

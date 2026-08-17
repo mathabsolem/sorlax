@@ -1,0 +1,199 @@
+/**
+ * Die sieben Integrationstests aus docs/PHASE_2.md.
+ */
+import { describe, expect, it } from 'vitest';
+import { applyCommand } from '../src/core/commands';
+import { deserialize, serialize } from '../src/core/state';
+import { setup } from './fixtures/world';
+import type { Command } from '../src/core/types';
+
+const EAST_SPAWN = { pos: { x: 1, y: 1 }, facing: 1 } as const;
+
+const SCRIPT: Command[] = [
+  { type: 'move', dir: 'forward' },
+  { type: 'turn', dir: 'cw' },
+  { type: 'move', dir: 'forward' },
+  { type: 'attack' },
+  { type: 'wait' },
+  { type: 'move', dir: 'back' },
+  { type: 'attack' },
+  { type: 'wait' },
+];
+
+describe('1. Determinismus', () => {
+  it('gleicher Seed und gleiche Kommandofolge ergeben dieselbe Serialisierung', () => {
+    const run = () => {
+      const { state, content } = setup({
+        seed: 99,
+        spawn: EAST_SPAWN,
+        entities: [
+          { kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } },
+          { kind: 'enemy', defId: 'sniper', pos: { x: 6, y: 3 } },
+        ],
+      });
+      for (const cmd of SCRIPT) applyCommand(state, cmd, content);
+      return serialize(state);
+    };
+    expect(run()).toBe(run());
+  });
+
+  it('unterschiedliche Seeds ergeben unterschiedliche Verlaeufe', () => {
+    const run = (seed: number) => {
+      const { state, content } = setup({
+        seed,
+        spawn: EAST_SPAWN,
+        entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } }],
+      });
+      for (const cmd of SCRIPT) applyCommand(state, cmd, content);
+      return serialize(state);
+    };
+    expect(run(1)).not.toBe(run(2));
+  });
+});
+
+describe('2. Rundreise durch die Serialisierung', () => {
+  it('serialize gefolgt von deserialize liefert denselben Zustand', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [
+        { kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } },
+        { kind: 'door', defId: 'door', pos: { x: 6, y: 3 }, locked: 'redkey' },
+        { kind: 'item', defId: 'medkit', pos: { x: 2, y: 1 } },
+      ],
+    });
+    for (const cmd of SCRIPT) applyCommand(state, cmd, content);
+
+    const restored = deserialize(serialize(state));
+    expect(restored).toEqual(state);
+    expect(serialize(restored)).toBe(serialize(state));
+  });
+
+  it('setzt das Spiel aus dem geladenen Zustand identisch fort', () => {
+    const build = () => {
+      const world = setup({
+        seed: 7,
+        spawn: EAST_SPAWN,
+        entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 5, y: 1 } }],
+      });
+      applyCommand(world.state, { type: 'move', dir: 'forward' }, world.content);
+      return world;
+    };
+
+    const direct = build();
+    const loaded = build();
+    loaded.state = deserialize(serialize(loaded.state));
+
+    for (const cmd of SCRIPT) {
+      applyCommand(direct.state, cmd, direct.content);
+      applyCommand(loaded.state, cmd, loaded.content);
+    }
+    expect(serialize(loaded.state)).toBe(serialize(direct.state));
+  });
+});
+
+describe('3. Zeitkosten', () => {
+  it('Drehen kostet keine Runde, ein Schritt genau eine', () => {
+    const { state, content } = setup({ spawn: EAST_SPAWN });
+    applyCommand(state, { type: 'turn', dir: 'cw' }, content);
+    applyCommand(state, { type: 'turn', dir: 'ccw' }, content);
+    expect(state.turnCount).toBe(0);
+
+    applyCommand(state, { type: 'move', dir: 'forward' }, content);
+    expect(state.turnCount).toBe(1);
+    applyCommand(state, { type: 'move', dir: 'forward' }, content);
+    expect(state.turnCount).toBe(2);
+  });
+});
+
+describe('4. Aktionspunkte', () => {
+  it('speed 2.0 handelt zweimal pro Runde', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'runner', pos: { x: 6, y: 1 } }],
+    });
+    applyCommand(state, { type: 'wait' }, content);
+    expect(state.maps['test']?.entities[0]?.pos).toEqual({ x: 4, y: 1 });
+  });
+
+  it('speed 0.5 handelt in jeder zweiten Runde', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'crawler', pos: { x: 6, y: 1 } }],
+    });
+    const enemy = state.maps['test']?.entities[0];
+
+    applyCommand(state, { type: 'wait' }, content);
+    expect(enemy?.pos).toEqual({ x: 6, y: 1 });
+
+    applyCommand(state, { type: 'wait' }, content);
+    expect(enemy?.pos).toEqual({ x: 5, y: 1 });
+
+    applyCommand(state, { type: 'wait' }, content);
+    expect(enemy?.pos).toEqual({ x: 5, y: 1 });
+
+    applyCommand(state, { type: 'wait' }, content);
+    expect(enemy?.pos).toEqual({ x: 4, y: 1 });
+  });
+});
+
+describe('5. Schritt gegen eine Wand', () => {
+  it('liefert invalid und aendert den Zustand nicht', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 5, y: 1 } }],
+    });
+    const before = serialize(state);
+    const events = applyCommand(state, { type: 'move', dir: 'forward' }, content);
+
+    expect(events).toEqual([{ type: 'invalid', reason: 'blocked by wall' }]);
+    expect(serialize(state)).toBe(before);
+    expect(state.turnCount).toBe(0);
+  });
+});
+
+describe('6. Verriegelte Tuer', () => {
+  it('meldet ohne Schluessel blocked und bleibt verriegelt', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [{ kind: 'door', defId: 'door', pos: { x: 2, y: 1 }, locked: 'redkey' }],
+    });
+    const events = applyCommand(state, { type: 'interact' }, content);
+    expect(events[0]).toEqual({ type: 'doorChanged', pos: { x: 2, y: 1 }, state: 'blocked' });
+    expect(state.maps['test']?.entities[0]?.state).toBe('locked');
+    expect(applyCommand(state, { type: 'move', dir: 'forward' }, content)).toEqual([
+      { type: 'invalid', reason: 'door is closed' },
+    ]);
+  });
+
+  it('oeffnet mit passendem Schluessel und laesst den Spieler durch', () => {
+    const { state, content } = setup({
+      spawn: EAST_SPAWN,
+      entities: [
+        { kind: 'item', defId: 'redkey', pos: { x: 1, y: 2 } },
+        { kind: 'door', defId: 'door', pos: { x: 2, y: 1 }, locked: 'redkey' },
+      ],
+    });
+    state.player.keys.push('redkey');
+
+    const events = applyCommand(state, { type: 'interact' }, content);
+    expect(events[0]).toEqual({ type: 'doorChanged', pos: { x: 2, y: 1 }, state: 'open' });
+    expect(state.maps['test']?.openedDoors).toEqual(['2,1']);
+
+    applyCommand(state, { type: 'move', dir: 'forward' }, content);
+    expect(state.player.pos).toEqual({ x: 2, y: 1 });
+  });
+});
+
+describe('7. Gegner ausserhalb der aggroRange', () => {
+  it('bleibt inaktiv und verbraucht keine Aktionspunkte', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'sleeper', pos: { x: 6, y: 1 } }],
+    });
+    const enemy = state.maps['test']?.entities[0];
+    const startPos = { ...(enemy?.pos ?? { x: 0, y: 0 }) };
+
+    for (let i = 0; i < 5; i++) applyCommand(state, { type: 'wait' }, content);
+
+    expect(enemy?.active).toBe(false);
+    expect(enemy?.actionPoints).toBe(0);
+    expect(enemy?.pos).toEqual(startPos);
+    expect(state.player.stats.health).toBe(50);
+  });
+});
