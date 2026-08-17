@@ -1,0 +1,14 @@
+/* Basis-Layout. Das eigentliche Spiel-Styling kommt spaeter aus src/ui. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  color: #ccc;
+  font-family: system-ui, sans-serif;
+}
+
+#app {
+  height: 100%;
+}
