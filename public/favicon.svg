@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Scepter of Sorlax">
+  <rect width="32" height="32" rx="6" fill="#15151b"/>
+  <rect x="14.5" y="13" width="3" height="15" rx="1.2" fill="#a8703a"/>
+  <rect x="11.5" y="16" width="9" height="2" rx="1" fill="#7d5228"/>
+  <path d="M16 3 L21.5 9.5 L16 16 L10.5 9.5 Z" fill="#e8c766"/>
+  <path d="M16 3 L21.5 9.5 L16 16 Z" fill="#c9a03f"/>
+</svg>
