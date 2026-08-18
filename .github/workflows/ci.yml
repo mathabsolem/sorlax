@@ -1,0 +1,88 @@
+name: CI
+
+# Jeder Push wird geprueft und gebaut. Der Stand des Default-Branch wird
+# zusaetzlich auf GitHub Pages veroeffentlicht, damit er auf dem Handy
+# ueber eine normale Adresse erreichbar ist.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Laeuft ein neuer Push auf demselben Branch, wird der vorige Lauf abgebrochen.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Typecheck, Tests, Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Abhaengigkeiten installieren
+        run: npm ci
+
+      - name: Typen pruefen
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Bauen
+        run: npm run build
+
+      # Fallback zum Herunterladen, funktioniert auch ohne Pages.
+      - name: Build als Artefakt ablegen
+        uses: actions/upload-artifact@v4
+        with:
+          name: sorlax-dist-${{ github.sha }}
+          path: dist
+          retention-days: 14
+
+      # Wird vom Deploy-Job weiterverwendet.
+      - name: Seite fuer die Veroeffentlichung ablegen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Auf GitHub Pages veroeffentlichen
+    needs: build
+    # Nur der Default-Branch geht live, ausserdem manuelle Ausloesung.
+    if: github.ref_name == github.event.repository.default_branch || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Pages einrichten
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Veroeffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Adresse in die Zusammenfassung schreiben
+        run: |
+          {
+            echo "## Auf dem Handy oeffnen"
+            echo
+            echo "<${{ steps.deployment.outputs.page_url }}>"
+            echo
+            echo "Stand: \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
