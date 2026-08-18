@@ -1,7 +1,11 @@
-# Scepter of Sorlax — INTERFACES v1.0
+# Scepter of Sorlax — INTERFACES v1.1
 
-Status: eingefroren. Dies ist der Vertrag zwischen den Modulen.
-Kein Sub-Task darf hier etwas aendern. Aenderungsbedarf wird gemeldet, nicht umgesetzt.
+Status: eingefroren. Ersetzt v1.0 vollständig.
+Änderungen gegenüber v1.0: `AssetBundle` liefert Pixeldaten statt `ImageBitmap`, `MapDef`
+hat Boden, Decke und Licht pro Kachel, `MapRuntimeState` unverändert.
+
+Dies ist der Vertrag zwischen den Modulen. Kein Sub-Task ändert hier etwas.
+Änderungsbedarf wird gemeldet, nicht umgesetzt.
 
 ---
 
@@ -10,22 +14,25 @@ Kein Sub-Task darf hier etwas aendern. Aenderungsbedarf wird gemeldet, nicht umg
 ```
 src/
   core/      reine Logik, kein DOM, kein Canvas, kein fetch, kein Math.random
-  render/    Canvas, Raycaster, Sprites, liest core, schreibt nie
-  ui/        DOM-Overlay, HUD, Menues, sendet Kommandos an core
-  input/     Touch und Tastatur, uebersetzt zu Command
+  render/    Software-Renderer, liest core, schreibt nie
+  ui/        DOM-Overlay, HUD, Menüs, sendet Kommandos an core
+  input/     Touch und Tastatur, übersetzt zu Command
   data/      JSON-Inhalte plus Loader plus Laufzeitvalidierung
   net/       Auth und Save-Sync gegen die PHP-API
   app/       Bootstrap, verdrahtet alles, einziger Ort mit Seiteneffekten
 ```
 
-Abhaengigkeitsrichtung ist strikt: `app` darf alles, `render` `ui` `input` `net` duerfen `core`
-und `data` lesen, `core` darf nur `data`-Typen kennen, sonst nichts.
+Abhängigkeitsrichtung ist strikt: `app` darf alles, `render` `ui` `input` `net` dürfen
+`core` und `data` lesen, `core` kennt nur sich selbst.
+
+Alle hier definierten Typen leben in `src/core/types.ts`. Andere Module importieren von
+dort und definieren sie nicht erneut.
 
 ## 2. Basistypen
 
 ```ts
 export type TileCoord = { x: number; y: number };
-export type Facing = 0 | 1 | 2 | 3; // Nord, Ost, Sued, West
+export type Facing = 0 | 1 | 2 | 3; // Nord, Ost, Süd, West
 export type EntityId = number;
 
 export type Stats = {
@@ -49,7 +56,7 @@ export type GameState = {
   currentMapId: string;
   maps: Record<string, MapRuntimeState>;
   flags: Record<string, boolean | number>;
-  log: LogEntry[]; // maximal 100 Eintraege, aeltere werden verworfen
+  log: LogEntry[]; // maximal 100 Einträge, ältere werden vorne verworfen
 };
 
 export type PlayerState = {
@@ -70,11 +77,11 @@ export type PlayerState = {
 export type MapRuntimeState = {
   entities: Entity[];
   nextEntityId: EntityId;
-  openedDoors: string[];   // Schluessel "x,y"
-  takenItems: string[];    // Schluessel "x,y"
+  openedDoors: string[];   // Schlüssel "x,y"
+  takenItems: string[];    // Schlüssel "x,y"
   firedTriggers: string[]; // Trigger-Id
   visited: boolean;
-  explored: string[];      // fuer die Automap, Schluessel "x,y"
+  explored: string[];      // für die Automap, Schlüssel "x,y"
 };
 
 export type Entity = {
@@ -105,9 +112,8 @@ export type LogEntry = {
 
 ## 4. Kommandos und Ereignisse
 
-Der einzige Weg, den Zustand zu aendern, ist `applyCommand`. Rueckgabe ist eine Liste von
-Ereignissen, die Renderer und UI konsumieren. Der Zustand wird in place mutiert, die Funktion
-gibt keinen neuen Zustand zurueck.
+Einziger Mutationspunkt ist `applyCommand`. Der Zustand wird in place verändert, die
+Funktion gibt keinen neuen Zustand zurück, sondern eine Liste von Ereignissen.
 
 ```ts
 export type Command =
@@ -134,8 +140,7 @@ export type GameEvent =
 export function applyCommand(state: GameState, cmd: Command, content: ContentDb): GameEvent[];
 ```
 
-Regel: Ein `invalid`-Ereignis bedeutet, dass keine Runde vergangen ist und der Zustand
-unveraendert bleibt.
+Ein `invalid`-Ereignis bedeutet: keine Runde vergangen, Zustand unverändert.
 
 ## 5. Inhalte
 
@@ -158,7 +163,7 @@ export type EnemyDef = {
   preferredRange: number;
   weaponId: string;
   xpReward: number;
-  sprite: string;          // Basisname in assets/sprites
+  spriteWidth: number;     // Weltbreite in Kacheln, meist 0.8
   frames: { idle: string[]; attack: string[]; pain: string[]; death: string[] };
   drops?: { defId: string; amount: number; chance: number }[];
 };
@@ -174,7 +179,7 @@ export type WeaponDef = {
   ammoType: string | null;
   ammoPerShot: number;
   splash?: { radius: number; baseDamage: number };
-  sprite: string;          // Waffe in der Hand, HUD-Ansicht
+  sprite: string;          // Basisname der Waffenansicht
   sound: string;
 };
 
@@ -196,14 +201,22 @@ export type MapDef = {
   name: string;
   width: number;
   height: number;
-  walls: number[];               // width * height, 0 = Boden, sonst Textur-Id
-  floorTexture: number;
-  ceilingTexture: number;
+  walls: number[];      // width * height, 0 = begehbar, sonst kodierter Wandwert
+  floors: number[];     // width * height, kodierter Bodenwert
+  ceilings: number[];   // width * height, kodierter Deckenwert
+  light: number[];      // width * height, 0 bis 255
   spawn: { pos: TileCoord; facing: Facing };
+  lamps: LampDef[];
   entities: MapEntityDef[];
   triggers: TriggerDef[];
   exits: { pos: TileCoord; targetMapId: string; targetSpawnId?: string }[];
-  ambientLight: number;          // 0 bis 1
+  ambientLight: number; // 0 bis 1, globaler Multiplikator
+};
+
+export type LampDef = {
+  pos: TileCoord;
+  radius: number;
+  intensity: number;    // 0 bis 255
 };
 
 export type MapEntityDef = {
@@ -211,7 +224,7 @@ export type MapEntityDef = {
   defId: string;
   pos: TileCoord;
   facing?: Facing;
-  locked?: string;               // Schluesselfarbe fuer Tueren
+  locked?: string;      // Schlüsselfarbe für Türen
   secret?: boolean;
 };
 
@@ -231,9 +244,63 @@ export type TriggerAction =
   | { type: 'damage'; amount: number };
 ```
 
-`walls` ist row major, Index = `y * width + x`.
+Alle Raster sind row major, Index = `y * width + x`.
 
-## 7. Renderer
+`lamps` ist Quellmaterial für `generateLightMap`. Das Ergebnis steht in `light` und hat
+Vorrang. Wird `light` weggelassen oder ist es leer, erzeugt der Loader es aus `lamps`.
+
+### Kachelkodierung
+
+```ts
+export const TEXTURE_ID_MASK = 0x0fff;
+export const ROTATION_SHIFT = 12;
+export const ROTATION_MASK = 0x3;
+
+export function textureIdOf(value: number): number;
+export function rotationOf(value: number): 0 | 1 | 2 | 3;
+export function encodeTile(textureId: number, rotation: 0 | 1 | 2 | 3): number;
+```
+
+## 7. Assets
+
+Der Renderer arbeitet auf rohen Pixeldaten, nicht auf `ImageBitmap`.
+
+```ts
+export type PixelSurface = {
+  width: number;
+  height: number;
+  pixels: Uint32Array;  // Länge width * height
+};
+
+export type AssetBundle = {
+  textures: Record<number, PixelSurface>;       // Wände, Boden, Decke, je 64 x 64
+  sprites: Record<string, PixelSurface>;        // Gegner und Items, 64 x 64
+  weaponSprites: Record<string, PixelSurface>;  // 160 x 100
+  ui: Record<string, ImageBitmap>;              // nur DOM-Overlay, kein Pixelzugriff
+  sounds: Record<string, AudioBuffer>;
+};
+```
+
+Pixelformat: Byte-Reihenfolge identisch zu `ImageData.data`, also R, G, B, A.
+Auf Little-Endian-Systemen entspricht ein `Uint32` damit `0xAABBGGRR`. Alle Zielplattformen
+sind Little Endian, eine Byte-Order-Prüfung findet nicht statt.
+
+Ein Alphawert von 0 bedeutet vollständig transparent und wird beim Zeichnen übersprungen.
+Zwischenwerte werden nicht unterstützt, es gibt kein Alpha-Blending im Renderer.
+Sprites müssen mit harter Kante freigestellt sein.
+
+Dateikonvention:
+```
+public/assets/textures/<id>.png        64 x 64
+public/assets/sprites/<name>.png       64 x 64
+public/assets/weapons/<name>.png       160 x 100
+public/assets/ui/<name>.png            beliebig
+```
+
+Framenamen in `EnemyDef.frames` sind Dateinamen ohne Endung, zum Beispiel
+`grubling_idle_0`. Der Loader ergänzt Pfad und Endung.
+
+## 8. Renderer
 
 ```ts
 export interface Renderer {
@@ -246,7 +313,7 @@ export interface Renderer {
 }
 ```
 
-## 8. Netz
+## 9. Netz
 
 ```ts
 export interface ApiClient {
@@ -267,24 +334,9 @@ export type SaveMeta = {
   mapId: string;
   playTimeMs: number;
   updatedAt: string;
-  checksum: string;   // SHA-256 ueber den serialisierten Zustand
+  checksum: string;   // SHA-256 über den serialisierten Zustand
 };
 ```
 
-Fehlerbehandlung: Jeder Aufruf wirft bei HTTP-Status ungleich 200 ein `ApiError` mit `code`
-und `message`. Netzfehler duerfen das Spiel nie blockieren, lokales Speichern hat Vorrang.
-
-## 9. Assets
-
-```ts
-export type AssetBundle = {
-  textures: Record<number, ImageBitmap>;     // Wandtexturen, 64 x 64
-  sprites: Record<string, ImageBitmap>;      // Gegner und Items, 64 x 64
-  weaponSprites: Record<string, ImageBitmap>; // 160 x 100
-  ui: Record<string, ImageBitmap>;
-  sounds: Record<string, AudioBuffer>;
-};
-```
-
-Dateikonvention: `assets/textures/<id>.png`, `assets/sprites/<name>_<frame>.png`,
-`assets/weapons/<name>_<frame>.png`. Alles PNG mit Alphakanal, Palette maximal 64 Farben.
+Jeder Aufruf wirft bei HTTP-Status ungleich 200 einen `ApiError` mit `code` und `message`.
+Netzfehler dürfen das Spiel nie blockieren, lokales Speichern hat Vorrang.
