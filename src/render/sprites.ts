@@ -40,6 +40,8 @@ export function drawSprites(
   const invDet = 1 / (camera.planeX * camera.dirY - camera.dirX * camera.planeY);
   const halfWidth = screenWidth / 2;
   const halfHeight = screenHeight / 2;
+  // Pixel je Welteinheit Breite in Distanz 1, aus der Laenge des Bildebenenvektors.
+  const horizontalScale = screenWidth / (2 * Math.hypot(camera.planeX, camera.planeY));
   const rects: SpriteRect[] = [];
 
   const ordered = billboards
@@ -58,12 +60,16 @@ export function drawSprites(
   for (const entry of ordered) {
     const { billboard, depth } = entry;
     const surface = billboard.surface;
-    const scale = screenHeight / depth;
-    const spriteHeight = Math.abs(scale);
-    const spriteWidth = Math.abs(scale * billboard.widthTiles);
+    // Waagerecht und senkrecht haben unterschiedliche Massstaebe: die Breite haengt
+    // am Sichtfeld, die Hoehe an screenHeight. Wird beides gleichgesetzt, erscheint
+    // ein quadratisches Sprite verzerrt. Deshalb die Hoehe aus der Breite und dem
+    // Seitenverhaeltnis der Quelle ableiten.
+    const spriteWidth = Math.abs((billboard.widthTiles * horizontalScale) / depth);
+    const spriteHeight = (spriteWidth * surface.height) / surface.width;
     const screenX = halfWidth * (1 + entry.transformX / depth);
 
-    const floorY = halfHeight + scale / 2;
+    // Die Bodenlinie folgt der Projektion des Floorcasts und bleibt an screenHeight.
+    const floorY = halfHeight + screenHeight / depth / 2;
     const topY = floorY - spriteHeight;
     const leftX = screenX - spriteWidth / 2;
 

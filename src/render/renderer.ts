@@ -12,6 +12,7 @@ import type {
   GameState,
   Renderer,
 } from '../core/types';
+import type { DebugView } from './debug';
 import { Framebuffer } from './framebuffer';
 import { SceneRenderer } from './sceneRenderer';
 
@@ -46,6 +47,15 @@ export class SoftwareRenderer implements Renderer {
 
   setState(state: GameState, content: ContentDb): void {
     this.scene?.setScene(state, content);
+  }
+
+  /** Debugansicht durchreichen. Nicht Teil des Renderer-Vertrags. */
+  setDebugView(view: DebugView): void {
+    this.scene?.setDebugView(view);
+  }
+
+  debugView(): DebugView {
+    return this.scene?.debugView() ?? 'off';
   }
 
   consumeEvents(events: GameEvent[]): void {

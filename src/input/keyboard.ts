@@ -13,6 +13,8 @@ export type KeyboardHandlers = {
   onMenu?: () => void;
   /** Liefert die Waffen-Id fuer die Zifferntasten 1 bis 9, sonst null. */
   resolveWeapon?: (slot: number) => string | null;
+  /** F7 schaltet die Helligkeitsansicht, F8 die Kacheldrehung. */
+  onToggleDebug?: (view: 'light' | 'rotation') => void;
 };
 
 function commandFor(key: string, handlers: KeyboardHandlers): Command | null {
@@ -64,6 +66,11 @@ export function attachKeyboard(target: EventTarget, handlers: KeyboardHandlers):
     if (event.key === 'Escape') {
       event.preventDefault();
       handlers.onMenu?.();
+      return;
+    }
+    if (event.key === 'F7' || event.key === 'F8') {
+      event.preventDefault();
+      handlers.onToggleDebug?.(event.key === 'F7' ? 'light' : 'rotation');
       return;
     }
 

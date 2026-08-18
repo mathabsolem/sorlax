@@ -89,7 +89,7 @@ describe('SceneRenderer, kopflos', () => {
     const state = createNewGame(DEV_SEED, content, DEV_MAP_ID);
     const framebuffer = renderOnce(state, content, devAssets());
 
-    expect(fnv1a(framebuffer.pixels)).toBe(0x400945a3);
+    expect(fnv1a(framebuffer.pixels)).toBe(0xf97d0943);
   });
 
   it('zeichnet dasselbe Bild bei jedem Lauf', () => {

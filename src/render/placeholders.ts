@@ -11,6 +11,8 @@ import type { AssetBundle, PixelSurface } from '../core/types';
 export const USE_PLACEHOLDERS = true;
 
 export const TEXTURE_SIZE = 64;
+export const WEAPON_WIDTH = 160;
+export const WEAPON_HEIGHT = 100;
 
 /** Textur-Ids der Platzhalter. Karten verweisen ueber encodeTile auf sie. */
 export const TEX_WALL_RUST = 1;
@@ -114,13 +116,16 @@ const FONT: Record<string, string> = {
 };
 
 function drawGlyph(out: PixelSurface, glyph: string, originX: number, originY: number, scale: number, color: number): void {
+  // Ganzzahlig halten: ein gebrochener Index in ein Uint32Array schreibt nichts.
+  const baseX = Math.round(originX);
+  const baseY = Math.round(originY);
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 3; col++) {
       if (glyph[row * 3 + col] !== '1') continue;
       for (let dy = 0; dy < scale; dy++) {
         for (let dx = 0; dx < scale; dx++) {
-          const x = originX + col * scale + dx;
-          const y = originY + row * scale + dy;
+          const x = baseX + col * scale + dx;
+          const y = baseY + row * scale + dy;
           if (x < 0 || y < 0 || x >= out.width || y >= out.height) continue;
           out.pixels[y * out.width + x] = color;
         }
@@ -139,36 +144,74 @@ function colorFor(name: string): number {
   return rgb(r, g, b);
 }
 
+/** Farbe des Kuerzels auf den Platzhaltern. */
+export const LABEL_COLOR = ((0xff << 24) | (14 << 16) | (14 << 8) | 16) >>> 0;
+
+/**
+ * Zweistelliges Kuerzel aus dem Namen. Framenamen wie `grubling_idle_0` tragen
+ * den defId als Praefix, daraus werden die ersten beiden Zeichen genommen.
+ */
+export function spriteLabel(name: string): string {
+  const clean = name.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return clean.slice(0, 2).padEnd(2, 'X');
+}
+
 /** Farbiges Rechteck mit zweistelligem Kuerzel, transparent umrandet. */
 export function makeSpritePlaceholder(name: string): PixelSurface {
   const out = surface(TEXTURE_SIZE, TEXTURE_SIZE);
   const body = colorFor(name);
-  for (let y = 10; y < TEXTURE_SIZE - 2; y++) {
-    for (let x = 14; x < TEXTURE_SIZE - 14; x++) {
-      const edge = y === 10 || y === TEXTURE_SIZE - 3 || x === 14 || x === TEXTURE_SIZE - 15;
+  // Quadratische Flaeche, damit am Bild ablesbar bleibt, ob ein 64 x 64 Sprite
+  // auch quadratisch projiziert wird.
+  const inset = 8;
+  const last = TEXTURE_SIZE - inset - 1;
+  for (let y = inset; y <= last; y++) {
+    for (let x = inset; x <= last; x++) {
+      const edge = y === inset || y === last || x === inset || x === last;
       out.pixels[y * TEXTURE_SIZE + x] = edge ? rgb(20, 20, 24) : body;
     }
   }
-  const label = name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 2).padEnd(2, ' ');
+  const label = spriteLabel(name);
   const scale = 5;
-  let cursor = 32 - (2 * 3 * scale + scale) / 2;
+  const glyphWidth = 3 * scale;
+  const totalWidth = label.length * glyphWidth + (label.length - 1) * scale;
+  let cursor = Math.round((TEXTURE_SIZE - totalWidth) / 2);
   for (const char of label) {
     const glyph = FONT[char];
-    if (glyph !== undefined) drawGlyph(out, glyph, cursor, 24, scale, rgb(16, 14, 14));
-    cursor += 3 * scale + scale;
+    if (glyph !== undefined) drawGlyph(out, glyph, cursor, 24, scale, LABEL_COLOR);
+    cursor += glyphWidth + scale;
   }
   return out;
 }
 
-/** Sehr einfache Waffenansicht: ein Block unten in der Mitte. */
+/**
+ * Waffenansicht im Format 160 x 100 aus INTERFACES Abschnitt 7.
+ * Liegende Silhouette: breiter Koerper mit Lauf nach rechts, damit die
+ * Flaeche im Bild als Querformat erkennbar bleibt.
+ */
 export function makeWeaponPlaceholder(name: string): PixelSurface {
-  const out = surface(160, 100);
+  const out = surface(WEAPON_WIDTH, WEAPON_HEIGHT);
   const body = colorFor(name);
-  for (let y = 30; y < 100; y++) {
-    for (let x = 60; x < 100; x++) {
-      const edge = y === 30 || x === 60 || x === 99;
-      out.pixels[y * 160 + x] = edge ? rgb(18, 18, 22) : body;
+  const outline = rgb(18, 18, 22);
+
+  const box = (x0: number, y0: number, x1: number, y1: number, fill: number): void => {
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const edge = y === y0 || y === y1 - 1 || x === x0 || x === x1 - 1;
+        out.pixels[y * WEAPON_WIDTH + x] = edge ? outline : fill;
+      }
     }
+  };
+
+  box(24, 52, 120, 100, body); // Koerper
+  box(112, 62, 156, 80, body); // Lauf
+  box(48, 78, 74, 100, outline); // Griff
+
+  const label = spriteLabel(name);
+  let cursor = 30;
+  for (const char of label) {
+    const glyph = FONT[char];
+    if (glyph !== undefined) drawGlyph(out, glyph, cursor, 60, 4, LABEL_COLOR);
+    cursor += 16;
   }
   return out;
 }

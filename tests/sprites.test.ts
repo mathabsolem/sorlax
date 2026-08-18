@@ -10,9 +10,9 @@ const HEIGHT = 200;
 const lut = buildShadeLut();
 const map = makeRenderMap(16, 16, () => false);
 
-/** Vollflaechig deckendes Sprite. */
-function solidSurface(): { width: number; height: number; pixels: Uint32Array } {
-  return { width: 8, height: 8, pixels: new Uint32Array(64).fill(0xff40c0ff) };
+/** Vollflaechig deckendes Sprite, quadratisch wie die echten 64 x 64 Sprites. */
+function solidSurface(size = 64): { width: number; height: number; pixels: Uint32Array } {
+  return { width: size, height: size, pixels: new Uint32Array(size * size).fill(0xff40c0ff) };
 }
 
 function billboard(x: number, y: number, id: number | null = 1): Billboard {
@@ -34,29 +34,101 @@ describe('drawSprites', () => {
     expect(target.some((pixel) => pixel !== 0)).toBe(true);
   });
 
-  it('trifft die erwartete Bildgeometrie: mittig, Hoehe eine Kachel, Breite nach spriteWidth', () => {
+  it('zeichnet ein quadratisches Quellsprite in Distanz 2 quadratisch', () => {
     const target = new Uint32Array(WIDTH * HEIGHT);
     const camera = makeCamera(8.5, 8.5, 0);
-    const depth = 3; // Sprite genau 3 Kacheln voraus
-    const board = billboard(8.5 + depth, 8.5);
-
-    const rects = drawSprites(target, WIDTH, HEIGHT, camera, map, [board], lut, openZBuffer());
+    const rects = drawSprites(
+      target,
+      WIDTH,
+      HEIGHT,
+      camera,
+      map,
+      [billboard(8.5 + 2, 8.5)],
+      lut,
+      openZBuffer()
+    );
     const rect = rects[0];
     expect(rect).toBeDefined();
     if (!rect) return;
 
-    const scale = HEIGHT / depth;
-    // Das Rechteck wird auf ganze Pixel aufgerundet, deshalb zwei Pixel Toleranz.
-    const near = (actual: number, expected: number): void => {
-      expect(Math.abs(actual - expected)).toBeLessThanOrEqual(2);
-    };
+    const rectWidth = rect.x1 - rect.x0;
+    const rectHeight = rect.y1 - rect.y0;
+    const deviation = Math.abs(rectWidth - rectHeight) / Math.max(rectWidth, rectHeight);
+    expect(deviation).toBeLessThan(0.02);
+  });
 
-    // Hoehe entspricht einer Kachel, senkrecht um den Horizont zentriert.
-    near(rect.y1 - rect.y0, scale);
-    near((rect.y0 + rect.y1) / 2, HEIGHT / 2);
-    // Breite folgt spriteWidth, waagerecht um die Bildmitte zentriert.
-    near(rect.x1 - rect.x0, scale * DEFAULT_SPRITE_WIDTH);
-    near((rect.x0 + rect.x1) / 2, WIDTH / 2);
+  // Bei kleinen Sprites schlaegt das Runden der Rechteckgrenzen durch, deshalb hier
+  // ein Pixelbudget statt einer Prozentschranke. Die Geometrie selbst ist exakt.
+  it('bleibt ueber alle Distanzen quadratisch, bis auf das Runden auf ganze Pixel', () => {
+    const camera = makeCamera(8.5, 8.5, 0);
+    for (const depth of [1, 1.5, 2, 3, 5, 7]) {
+      const target = new Uint32Array(WIDTH * HEIGHT);
+      const rects = drawSprites(
+        target,
+        WIDTH,
+        HEIGHT,
+        camera,
+        map,
+        [billboard(8.5 + depth, 8.5)],
+        lut,
+        openZBuffer()
+      );
+      const rect = rects[0];
+      expect(rect).toBeDefined();
+      if (!rect) continue;
+      expect(Math.abs((rect.x1 - rect.x0) - (rect.y1 - rect.y0))).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('behaelt das Seitenverhaeltnis einer nicht quadratischen Quelle bei', () => {
+    const target = new Uint32Array(WIDTH * HEIGHT);
+    const camera = makeCamera(8.5, 8.5, 0);
+    const wide = billboard(8.5 + 3, 8.5);
+    wide.surface = { width: 160, height: 100, pixels: new Uint32Array(16000).fill(0xff40c0ff) };
+
+    const rects = drawSprites(target, WIDTH, HEIGHT, camera, map, [wide], lut, openZBuffer());
+    const rect = rects[0];
+    expect(rect).toBeDefined();
+    if (!rect) return;
+
+    const ratio = (rect.y1 - rect.y0) / (rect.x1 - rect.x0);
+    expect(Math.abs(ratio - 100 / 160)).toBeLessThan(0.03);
+  });
+
+  it('skaliert die Breite mit spriteWidth und mittig zur Blickachse', () => {
+    const target = new Uint32Array(WIDTH * HEIGHT);
+    const camera = makeCamera(8.5, 8.5, 0);
+    const narrow = billboard(8.5 + 3, 8.5);
+    narrow.widthTiles = DEFAULT_SPRITE_WIDTH / 2;
+
+    const wideRects = drawSprites(
+      target,
+      WIDTH,
+      HEIGHT,
+      camera,
+      map,
+      [billboard(8.5 + 3, 8.5)],
+      lut,
+      openZBuffer()
+    );
+    const narrowRects = drawSprites(
+      new Uint32Array(WIDTH * HEIGHT),
+      WIDTH,
+      HEIGHT,
+      camera,
+      map,
+      [narrow],
+      lut,
+      openZBuffer()
+    );
+
+    const wide = wideRects[0];
+    const thin = narrowRects[0];
+    expect(wide).toBeDefined();
+    expect(thin).toBeDefined();
+    if (!wide || !thin) return;
+    expect((wide.x1 - wide.x0) / (thin.x1 - thin.x0)).toBeCloseTo(2, 0);
+    expect(Math.abs((wide.x0 + wide.x1) / 2 - WIDTH / 2)).toBeLessThanOrEqual(2);
   });
 
   it('setzt ein Sprite links vom Blick auch links ins Bild', () => {

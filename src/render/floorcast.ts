@@ -7,6 +7,8 @@
 import { rotationOf, textureIdOf } from '../core/tiles';
 import type { PixelSurface } from '../core/types';
 import type { Camera } from './camera';
+import { greyPixel, rotationColor } from './debug';
+import type { DebugView } from './debug';
 import { brightnessToLevel, computeBrightness, shadePixel } from './shading';
 import { sampleTexture } from './texture';
 import type { RenderMap } from './renderMap';
@@ -45,7 +47,8 @@ export function drawFloorAndCeiling(
   camera: Camera,
   map: RenderMap,
   textures: Record<number, PixelSurface>,
-  lut: Uint8Array
+  lut: Uint8Array,
+  debug: DebugView = 'off'
 ): void {
   const leftX = camera.dirX - camera.planeX;
   const leftY = camera.dirY - camera.planeY;
@@ -74,12 +77,27 @@ export function drawFloorAndCeiling(
       if (cellX < 0 || cellY < 0 || cellX >= map.width || cellY >= map.height) continue;
 
       const index = cellY * map.width + cellX;
-      const level = brightnessToLevel(
-        computeBrightness(map.light[index] ?? 0, distance, map.ambientLight)
-      );
+      const brightness = computeBrightness(map.light[index] ?? 0, distance, map.ambientLight);
+      const level = brightnessToLevel(brightness);
+      const floorValue = map.floors[index] ?? 0;
+      const ceilingValue = map.ceilings[index] ?? 0;
 
-      blit(target, floorRow + x, map.floors[index] ?? 0, textures, fracX, fracY, lut, level);
-      blit(target, ceilingRow + x, map.ceilings[index] ?? 0, textures, fracX, fracY, lut, level);
+      if (debug === 'light') {
+        const grey = greyPixel(brightness);
+        target[floorRow + x] = grey;
+        target[ceilingRow + x] = grey;
+        continue;
+      }
+
+      if (debug === 'rotation') {
+        // Nur der Boden wird eingefaerbt, die Decke bleibt zur Orientierung texturiert.
+        target[floorRow + x] = rotationColor(rotationOf(floorValue));
+        blit(target, ceilingRow + x, ceilingValue, textures, fracX, fracY, lut, level);
+        continue;
+      }
+
+      blit(target, floorRow + x, floorValue, textures, fracX, fracY, lut, level);
+      blit(target, ceilingRow + x, ceilingValue, textures, fracX, fracY, lut, level);
     }
   }
 }

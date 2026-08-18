@@ -14,6 +14,7 @@ import type {
 } from '../core/types';
 import { AnimationState } from './animation';
 import { makeCamera } from './camera';
+import type { DebugView } from './debug';
 import { drawFloorAndCeiling } from './floorcast';
 import type { Framebuffer } from './framebuffer';
 import { DOOR_TILE_VALUE } from './placeholders';
@@ -37,6 +38,7 @@ export class SceneRenderer {
   private renderMap: RenderMap | null = null;
   private lastMapId: string | null = null;
   private rects: SpriteRect[] = [];
+  private debug: DebugView = 'off';
 
   constructor(
     private readonly framebuffer: Framebuffer,
@@ -68,6 +70,15 @@ export class SceneRenderer {
     this.animation.consumeEvents(events);
   }
 
+  /** Debugansicht umschalten. Der Bootstrap ruft das nur im Entwicklungsbetrieb. */
+  setDebugView(view: DebugView): void {
+    this.debug = view;
+  }
+
+  debugView(): DebugView {
+    return this.debug;
+  }
+
   isAnimating(): boolean {
     return this.animation.isAnimating();
   }
@@ -94,8 +105,27 @@ export class SceneRenderer {
     const camera = makeCamera(position.x, position.y, this.animation.angleOf());
 
     this.framebuffer.clear();
-    drawFloorAndCeiling(pixels, width, height, camera, map, this.assets.textures, this.lut);
-    drawWalls(pixels, width, height, camera, map, this.assets.textures, this.lut, this.zBuffer);
+    drawFloorAndCeiling(
+      pixels,
+      width,
+      height,
+      camera,
+      map,
+      this.assets.textures,
+      this.lut,
+      this.debug
+    );
+    drawWalls(
+      pixels,
+      width,
+      height,
+      camera,
+      map,
+      this.assets.textures,
+      this.lut,
+      this.zBuffer,
+      this.debug
+    );
     this.rects = drawSprites(
       pixels,
       width,

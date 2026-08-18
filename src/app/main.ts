@@ -58,6 +58,14 @@ export async function start(host: HTMLElement): Promise<void> {
   attachKeyboard(host.ownerDocument, {
     onCommand: (cmd) => gate.submit(cmd),
     resolveWeapon: (slot) => state.player.weapons[slot - 1] ?? null,
+    // Debugansichten gibt es nur im Entwicklungsbetrieb, im Build fallen sie weg.
+    ...(import.meta.env.DEV
+      ? {
+          onToggleDebug: (view: 'light' | 'rotation') => {
+            renderer.setDebugView(renderer.debugView() === view ? 'off' : view);
+          },
+        }
+      : {}),
   });
   attachTouch(host, {
     onCommand: (cmd) => gate.submit(cmd),

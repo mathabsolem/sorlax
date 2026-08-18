@@ -6,6 +6,8 @@ import { rotationOf, textureIdOf } from '../core/tiles';
 import type { PixelSurface } from '../core/types';
 import { rayDirection } from './camera';
 import type { Camera } from './camera';
+import { greyPixel } from './debug';
+import type { DebugView } from './debug';
 import { NORTH_SOUTH_FACTOR, brightnessToLevel, computeBrightness, shadePixel } from './shading';
 import { sampleTexture } from './texture';
 import type { RenderMap } from './renderMap';
@@ -98,7 +100,8 @@ export function drawWalls(
   map: RenderMap,
   textures: Record<number, PixelSurface>,
   lut: Uint8Array,
-  zBuffer: Float32Array
+  zBuffer: Float32Array,
+  debug: DebugView = 'off'
 ): void {
   const halfHeight = screenHeight / 2;
 
@@ -109,17 +112,11 @@ export function drawWalls(
     if (!hit.hit) continue;
 
     const texture = textures[textureIdOf(hit.wallValue)];
-    if (texture === undefined) continue;
-    const rotation = rotationOf(hit.wallValue);
-    const texSize = texture.width;
+    if (texture === undefined && debug !== 'light') continue;
 
     const lineHeight = screenHeight / hit.perpDist;
     const drawStart = Math.max(0, Math.floor(halfHeight - lineHeight / 2));
     const drawEnd = Math.min(screenHeight, Math.ceil(halfHeight + lineHeight / 2));
-
-    let texX = Math.floor(hit.wallX * texSize);
-    if (hit.side === SIDE_NORTH_SOUTH && ray.x > 0) texX = texSize - texX - 1;
-    if (hit.side === SIDE_EAST_WEST && ray.y < 0) texX = texSize - texX - 1;
 
     let brightness = computeBrightness(
       map.light[hit.lightIndex] ?? 0,
@@ -127,7 +124,21 @@ export function drawWalls(
       map.ambientLight
     );
     if (hit.side === SIDE_NORTH_SOUTH) brightness *= NORTH_SOUTH_FACTOR;
+
+    if (debug === 'light') {
+      const grey = greyPixel(brightness);
+      for (let y = drawStart; y < drawEnd; y++) target[y * screenWidth + column] = grey;
+      continue;
+    }
+    if (texture === undefined) continue;
+
+    const rotation = rotationOf(hit.wallValue);
+    const texSize = texture.width;
     const level = brightnessToLevel(brightness);
+
+    let texX = Math.floor(hit.wallX * texSize);
+    if (hit.side === SIDE_NORTH_SOUTH && ray.x > 0) texX = texSize - texX - 1;
+    if (hit.side === SIDE_EAST_WEST && ray.y < 0) texX = texSize - texX - 1;
 
     const texStep = texSize / lineHeight;
     let texPos = (drawStart - halfHeight + lineHeight / 2) * texStep;
