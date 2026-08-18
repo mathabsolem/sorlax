@@ -1,6 +1,9 @@
 /**
- * Typen aus docs/INTERFACES.md Abschnitt 2 bis 6, woertlich uebernommen.
+ * Typen aus docs/INTERFACES.md v1.1, Abschnitt 2 bis 9, woertlich uebernommen.
  * Dies ist die einzige Quelle fuer diese Typen. Keine Logik in dieser Datei.
+ *
+ * Die Verweise auf ImageBitmap, AudioBuffer und HTMLCanvasElement sind reine
+ * Typangaben. Zur Laufzeit fasst src/core nichts davon an.
  */
 
 // --- Abschnitt 2: Basistypen -------------------------------------------------
@@ -28,7 +31,7 @@ export type GameState = {
   currentMapId: string;
   maps: Record<string, MapRuntimeState>;
   flags: Record<string, boolean | number>;
-  log: LogEntry[]; // maximal 100 Eintraege, aeltere werden verworfen
+  log: LogEntry[]; // maximal 100 Eintraege, aeltere werden vorne verworfen
 };
 
 export type PlayerState = {
@@ -131,7 +134,7 @@ export type EnemyDef = {
   preferredRange: number;
   weaponId: string;
   xpReward: number;
-  sprite: string; // Basisname in assets/sprites
+  spriteWidth: number; // Weltbreite in Kacheln, meist 0.8
   frames: { idle: string[]; attack: string[]; pain: string[]; death: string[] };
   drops?: { defId: string; amount: number; chance: number }[];
 };
@@ -147,7 +150,7 @@ export type WeaponDef = {
   ammoType: string | null;
   ammoPerShot: number;
   splash?: { radius: number; baseDamage: number };
-  sprite: string; // Waffe in der Hand, HUD-Ansicht
+  sprite: string; // Basisname der Waffenansicht
   sound: string;
 };
 
@@ -167,14 +170,22 @@ export type MapDef = {
   name: string;
   width: number;
   height: number;
-  walls: number[]; // width * height, 0 = Boden, sonst Textur-Id
-  floorTexture: number;
-  ceilingTexture: number;
+  walls: number[]; // width * height, 0 = begehbar, sonst kodierter Wandwert
+  floors: number[]; // width * height, kodierter Bodenwert
+  ceilings: number[]; // width * height, kodierter Deckenwert
+  light: number[]; // width * height, 0 bis 255
   spawn: { pos: TileCoord; facing: Facing };
+  lamps: LampDef[];
   entities: MapEntityDef[];
   triggers: TriggerDef[];
   exits: { pos: TileCoord; targetMapId: string; targetSpawnId?: string }[];
-  ambientLight: number; // 0 bis 1
+  ambientLight: number; // 0 bis 1, globaler Multiplikator
+};
+
+export type LampDef = {
+  pos: TileCoord;
+  radius: number;
+  intensity: number; // 0 bis 255
 };
 
 export type MapEntityDef = {
@@ -200,3 +211,53 @@ export type TriggerAction =
   | { type: 'message'; text: string }
   | { type: 'setFlag'; key: string; value: boolean | number }
   | { type: 'damage'; amount: number };
+
+// --- Abschnitt 7: Assets -----------------------------------------------------
+
+export type PixelSurface = {
+  width: number;
+  height: number;
+  pixels: Uint32Array; // Laenge width * height
+};
+
+export type AssetBundle = {
+  textures: Record<number, PixelSurface>; // Waende, Boden, Decke, je 64 x 64
+  sprites: Record<string, PixelSurface>; // Gegner und Items, 64 x 64
+  weaponSprites: Record<string, PixelSurface>; // 160 x 100
+  ui: Record<string, ImageBitmap>; // nur DOM-Overlay, kein Pixelzugriff
+  sounds: Record<string, AudioBuffer>;
+};
+
+// --- Abschnitt 8: Renderer ---------------------------------------------------
+
+export interface Renderer {
+  init(canvas: HTMLCanvasElement, assets: AssetBundle): Promise<void>;
+  setState(state: GameState, content: ContentDb): void;
+  consumeEvents(events: GameEvent[]): void; // startet Animationen
+  frame(dtMs: number): void; // zeichnet, mutiert den Zustand nicht
+  isAnimating(): boolean; // solange true nimmt Input keine Kommandos an
+  pickEntityAt(screenX: number, screenY: number): EntityId | null;
+}
+
+// --- Abschnitt 9: Netz -------------------------------------------------------
+
+export interface ApiClient {
+  register(email: string, password: string): Promise<AuthResult>;
+  login(email: string, password: string): Promise<AuthResult>;
+  logout(): Promise<void>;
+  listSaves(): Promise<SaveMeta[]>;
+  pullSave(slot: number): Promise<{ meta: SaveMeta; state: GameState }>;
+  pushSave(slot: number, state: GameState): Promise<SaveMeta>;
+}
+
+export type AuthResult = { userId: number; token: string; expiresAt: string };
+
+export type SaveMeta = {
+  slot: number;
+  turnCount: number;
+  level: number;
+  mapId: string;
+  playTimeMs: number;
+  updatedAt: string;
+  checksum: string; // SHA-256 ueber den serialisierten Zustand
+};

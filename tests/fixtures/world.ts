@@ -3,12 +3,14 @@
  * Nur fuer Tests, gehoert bewusst nicht nach content/.
  */
 import { createNewGame } from '../../src/core/state';
+import { encodeTile } from '../../src/core/tiles';
 import type {
   ContentDb,
   EnemyDef,
   Facing,
   GameState,
   ItemDef,
+  LampDef,
   MapDef,
   MapEntityDef,
   TileCoord,
@@ -99,7 +101,7 @@ function enemy(overrides: Partial<EnemyDef> & { id: string }): EnemyDef {
     preferredRange: 1,
     weaponId: 'fists',
     xpReward: 10,
-    sprite: overrides.id,
+    spriteWidth: 0.8,
     frames: frames(),
     ...overrides,
   };
@@ -151,6 +153,8 @@ export const ITEMS: Record<string, ItemDef> = {
 
 export type MapOptions = {
   id?: string;
+  lamps?: LampDef[];
+  light?: number[];
   entities?: MapEntityDef[];
   triggers?: TriggerDef[];
   exits?: MapDef['exits'];
@@ -165,8 +169,10 @@ export function makeMap(options: MapOptions = {}): MapDef {
     width: 8,
     height: 8,
     walls: [...WALLS],
-    floorTexture: 1,
-    ceilingTexture: 2,
+    floors: WALLS.map(() => encodeTile(10, 0)),
+    ceilings: WALLS.map(() => encodeTile(20, 0)),
+    light: options.light ?? WALLS.map(() => 255),
+    lamps: options.lamps ?? [],
     spawn: options.spawn ?? { pos: { x: 1, y: 1 }, facing: 0 },
     entities: options.entities ?? [],
     triggers: options.triggers ?? [],
