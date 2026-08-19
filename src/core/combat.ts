@@ -1,34 +1,40 @@
 /**
- * Kampfformeln nach SPEC Abschnitt 4. Die Formeln sind verbindlich,
- * hier steht keine eigene Variante.
+ * Kampfformeln nach SPEC v1.2 Abschnitt 4. Die Reihenfolge in Abschnitt 4.2 ist
+ * verbindlich: Wurf, Typbonus, Kritischer Treffer, Resistenz, Ruestung.
+ * Erst Resistenz, dann Ruestung. Nicht umsortieren.
  */
-import { chebyshev } from './grid';
-import { isAlive } from './entities';
 import type { Rng } from './rng';
 import type {
+  DamageType,
+  DerivedStats,
   EntityId,
   GameEvent,
-  MapRuntimeState,
-  PlayerState,
-  Stats,
   TileCoord,
   WeaponDef,
 } from './types';
 
-/** Referenz auf einen Kampfteilnehmer, so wie GameEvent sie fuehrt. */
 export type ActorRef = EntityId | 'player';
 
-/** Angreifer oder Verteidiger mit den Stats, die veraendert werden duerfen. */
-export type CombatSide = { ref: ActorRef; stats: Stats };
+/** Traeger des aktuellen Lebenswerts. Schaden wird hier hineingeschrieben. */
+export type Vitals = { health: number };
+
+export type CombatSide = {
+  ref: ActorRef;
+  stats: DerivedStats;
+  vitals: Vitals;
+};
+
+/** Ziel einer Explosion, siehe applySplash. */
+export type SplashTarget = CombatSide & { pos: TileCoord };
 
 function clamp(min: number, max: number, value: number): number {
-  return Math.min(max, Math.max(min, value));
+  return value < min ? min : value > max ? max : value;
 }
 
 /** SPEC 4.1. Distanz ist die Chebyshev-Distanz in Kacheln. */
 export function hitChance(
-  attacker: Stats,
-  defender: Stats,
+  attacker: DerivedStats,
+  defender: DerivedStats,
   weapon: WeaponDef,
   distance: number
 ): number {
@@ -37,33 +43,76 @@ export function hitChance(
 }
 
 /**
- * SPEC 4.2, erster Teil. Die Reihenfolge der beiden Ziehungen ist Teil des
- * Determinismus und darf nicht getauscht werden.
+ * SPEC 4.2, zweiter Schritt. Nahkampf zaehlt nur bei physischem Schaden und
+ * optimalRange kleiner gleich 1, alles Nichtphysische nimmt den Elementarbonus.
  */
-export function rollDamage(rng: Rng, weapon: WeaponDef): { raw: number; crit: boolean } {
+export function typeBonus(attacker: DerivedStats, weapon: WeaponDef): number {
+  if (weapon.damageType === 'physical') {
+    return weapon.optimalRange <= 1 ? attacker.meleeBonus : 0;
+  }
+  return attacker.elemBonus;
+}
+
+/**
+ * SPEC 4.2, Schritte 1 bis 4. Die Reihenfolge der beiden Ziehungen ist Teil des
+ * Determinismus: erst der Schadenswurf, dann der Kritwurf.
+ */
+export function rollDamage(
+  rng: Rng,
+  weapon: WeaponDef,
+  attacker: DerivedStats
+): { raw: number; crit: boolean } {
   const roll = rng.randInt(weapon.dmgMin, weapon.dmgMax);
-  const crit = rng.next() < weapon.critChance;
-  return { raw: crit ? roll * 2 : roll, crit };
+  const withBonus = Math.round(roll * (1 + typeBonus(attacker, weapon)));
+  const crit = rng.next() < weapon.critChance + attacker.critBonus;
+  return { raw: crit ? withBonus * 2 : withBonus, crit };
 }
 
-/** SPEC 4.2, zweiter Teil. Mindestens 1 Schaden. */
-export function applyArmor(raw: number, armor: number): number {
-  return Math.max(1, raw - Math.floor(armor * 0.5));
+/** SPEC 4.2, Resistenzschritt. Mindestens 1 Schaden. */
+export function applyResistance(raw: number, resist: number): number {
+  return Math.max(1, Math.floor(raw * (1 - resist / 100)));
 }
 
-/** SPEC 4.3. Linearer Abfall bis zum Radius. */
+/** SPEC 4.2, Ruestungsschritt. Mindestens 1 Schaden. */
+export function applyArmor(afterResist: number, armor: number): number {
+  return Math.max(1, afterResist - Math.floor(armor * 0.5));
+}
+
+/** SPEC 4.3. Linearer Abfall, danach Resistenz, danach Ruestung. */
 export function splashDamage(
   baseDamage: number,
   radius: number,
   distance: number,
+  resist: number,
   armor: number
 ): number {
-  return Math.max(1, Math.floor(baseDamage * (1 - distance / radius)) - Math.floor(armor * 0.5));
+  const scaled = Math.floor(baseDamage * (1 - distance / radius) * (1 - resist / 100));
+  return Math.max(1, scaled - Math.floor(armor * 0.5));
+}
+
+function damageEvent(
+  attacker: ActorRef,
+  target: ActorRef,
+  hit: boolean,
+  damage: number,
+  crit: boolean,
+  damageType: DamageType
+): GameEvent {
+  return { type: 'attack', attacker, target, hit, damage, crit, damageType };
+}
+
+/** Zieht Schaden ab und meldet den Tod, wenn der Lebenswert auf 0 faellt. */
+function dealDamage(defender: CombatSide, damage: number, events: GameEvent[]): void {
+  defender.vitals.health -= damage;
+  if (defender.vitals.health <= 0) {
+    defender.vitals.health = 0;
+    events.push({ type: 'died', who: defender.ref });
+  }
 }
 
 /**
- * Wuerfelt Treffer und Schaden, zieht Leben ab und liefert das `attack`-Event,
- * bei toedlichem Ausgang zusaetzlich ein `died`-Event.
+ * Wuerfelt Treffer und Schaden, zieht Leben ab und liefert das `attack`-Ereignis
+ * mit der Schadensart, bei toedlichem Ausgang zusaetzlich ein `died`-Ereignis.
  */
 export function resolveAttack(
   rng: Rng,
@@ -74,62 +123,56 @@ export function resolveAttack(
 ): GameEvent[] {
   const chance = hitChance(attacker.stats, defender.stats, weapon, distance);
   if (rng.next() >= chance) {
-    return [
-      { type: 'attack', attacker: attacker.ref, target: defender.ref, hit: false, damage: 0, crit: false },
-    ];
+    return [damageEvent(attacker.ref, defender.ref, false, 0, false, weapon.damageType)];
   }
 
-  const { raw, crit } = rollDamage(rng, weapon);
-  const damage = applyArmor(raw, defender.stats.armor);
-  defender.stats.health -= damage;
+  const { raw, crit } = rollDamage(rng, weapon, attacker.stats);
+  const resist = defender.stats.resistances[weapon.damageType];
+  const damage = applyArmor(applyResistance(raw, resist), defender.stats.armor);
 
   const events: GameEvent[] = [
-    { type: 'attack', attacker: attacker.ref, target: defender.ref, hit: true, damage, crit },
+    damageEvent(attacker.ref, defender.ref, true, damage, crit, weapon.damageType),
   ];
-  if (defender.stats.health <= 0) {
-    defender.stats.health = 0;
-    events.push({ type: 'died', who: defender.ref });
-  }
+  dealDamage(defender, damage, events);
   return events;
 }
 
 /**
- * SPEC 4.3 auf die Karte angewendet: alle Akteure im Radius nehmen Schaden.
- * Eigene Explosionen treffen den Spieler nur zu 50 Prozent.
+ * SPEC 4.3 auf eine Zielliste angewendet. Der Aufrufer stellt die Ziele samt
+ * abgeleiteter Werte zusammen, damit combat.ts weder Zustand noch Inhalte kennt.
+ * Eigene Explosionen treffen den Spieler nur zur Haelfte.
  */
 export function applySplash(
-  player: PlayerState,
-  mapState: MapRuntimeState,
+  targets: readonly SplashTarget[],
   center: TileCoord,
   splash: { radius: number; baseDamage: number },
+  damageType: DamageType,
   attacker: ActorRef
 ): GameEvent[] {
   const events: GameEvent[] = [];
 
-  for (const entity of [...mapState.entities]) {
-    if (entity.kind !== 'enemy' || !isAlive(entity)) continue;
-    const stats = entity.stats;
-    if (stats === undefined) continue;
-    if (entity.id === attacker) continue;
-    const distance = chebyshev(center, entity.pos);
+  for (const target of targets) {
+    // Der Ausloeser trifft sich nicht selbst. Einzige Ausnahme ist der Spieler,
+    // der aus eigenen Explosionen halben Schaden nimmt (SPEC 4.3).
+    if (target.ref === attacker && attacker !== 'player') continue;
+    const distance = Math.max(
+      Math.abs(center.x - target.pos.x),
+      Math.abs(center.y - target.pos.y)
+    );
     if (distance > splash.radius) continue;
-    const damage = splashDamage(splash.baseDamage, splash.radius, distance, stats.armor);
-    stats.health -= damage;
-    entity.active = true;
-    events.push({ type: 'attack', attacker, target: entity.id, hit: true, damage, crit: false });
-    if (stats.health <= 0) {
-      stats.health = 0;
-      events.push({ type: 'died', who: entity.id });
-    }
-  }
 
-  const playerDistance = chebyshev(center, player.pos);
-  if (playerDistance <= splash.radius) {
-    const full = splashDamage(splash.baseDamage, splash.radius, playerDistance, player.stats.armor);
-    const damage = attacker === 'player' ? Math.max(1, Math.floor(full * 0.5)) : full;
-    player.stats.health -= damage;
-    events.push({ type: 'attack', attacker, target: 'player', hit: true, damage, crit: false });
-    if (player.stats.health <= 0) player.stats.health = 0;
+    const full = splashDamage(
+      splash.baseDamage,
+      splash.radius,
+      distance,
+      target.stats.resistances[damageType],
+      target.stats.armor
+    );
+    const damage =
+      attacker === 'player' && target.ref === 'player' ? Math.max(1, Math.floor(full * 0.5)) : full;
+
+    events.push(damageEvent(attacker, target.ref, true, damage, false, damageType));
+    dealDamage(target, damage, events);
   }
 
   return events;
