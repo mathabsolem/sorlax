@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { attackAction } from '../src/core/attack';
+import { currentScene } from '../src/core/actionResult';
 import {
-  attackAction,
   interactAction,
+  spendAttributeAction,
   moveAction,
   pickupAt,
   switchWeaponAction,
-  useItemAction,
+  useConsumableAction,
 } from '../src/core/playerActions';
+import { playerDerived } from '../src/core/turn';
 import { setup } from './fixtures/world';
 
 const EAST_SPAWN = { pos: { x: 1, y: 1 }, facing: 1 } as const;
@@ -66,7 +69,7 @@ describe('pickupAt', () => {
     pickupAt(state, content, { x: 2, y: 1 });
     pickupAt(state, content, { x: 3, y: 1 });
     expect(state.player.keys).toEqual(['redkey']);
-    expect(state.player.items['medkit']).toBe(20);
+    expect(state.player.consumables['medkit']).toBe(20);
     expect(state.maps['test']?.takenItems).toEqual(['2,1', '3,1']);
     expect(state.maps['test']?.entities).toHaveLength(0);
   });
@@ -166,14 +169,15 @@ describe('attackAction', () => {
     let killed = false;
     for (let i = 0; i < 20 && !killed; i++) {
       const enemy = state.maps['test']?.entities[0];
-      if (!enemy?.stats) break;
-      enemy.stats.health = 1;
+      if (enemy === undefined) break;
+      enemy.health = 1;
       const result = attackAction(state, content);
       killed = result.ok && result.events.some((event) => event.type === 'died');
     }
     expect(killed).toBe(true);
     expect(state.maps['test']?.entities).toHaveLength(0);
-    expect(state.player.xp).toBe(10);
+    // baseXp 10, monsterLevel 2 auf Sohle 1 -> round(10 * 1.1) = 11
+    expect(state.player.xp).toBe(11);
     expect(state.player.level).toBe(2);
   });
 });
@@ -244,41 +248,46 @@ describe('interactAction', () => {
   });
 });
 
-describe('useItemAction', () => {
+describe('useConsumableAction', () => {
   it('heilt bis maximal maxHealth und verbraucht das Item', () => {
     const { state, content } = setup();
-    state.player.items['medkit'] = 1;
-    state.player.stats.health = 40;
-    const result = useItemAction(state, content, 'medkit');
+    state.player.consumables['medkit'] = 1;
+    state.player.health = 40;
+    const result = useConsumableAction(state, content, 'medkit');
     expect(result.ok).toBe(true);
-    expect(state.player.stats.health).toBe(50);
-    expect(state.player.items['medkit']).toBe(0);
+    expect(state.player.health).toBe(50);
+    expect(state.player.consumables['medkit']).toBe(0);
   });
 
-  it('erhoeht die Ruestung', () => {
+  it('verbraucht ein Ruestungsteil, ohne schon zu wirken', () => {
+    // Ruestung kommt ab Phase 3.6 ueber Ausruestungsinstanzen, nicht ueber
+    // Verbrauchsgueter. Hier zaehlt nur, dass der Bestand sinkt.
     const { state, content } = setup();
-    state.player.items['shield'] = 1;
-    useItemAction(state, content, 'shield');
-    expect(state.player.stats.armor).toBe(4);
+    state.player.consumables['shield'] = 1;
+    const result = useConsumableAction(state, content, 'shield');
+    expect(result.ok).toBe(true);
+    expect(state.player.consumables['shield']).toBe(0);
   });
 
   it('legt Effekte von Powerups an', () => {
     const { state, content } = setup();
-    state.player.items['stim'] = 1;
-    useItemAction(state, content, 'stim');
-    expect(state.player.effects).toEqual([{ id: 'haste', remainingTurns: 3, magnitude: 1 }]);
+    state.player.consumables['stim'] = 1;
+    useConsumableAction(state, content, 'stim');
+    expect(state.player.effects).toEqual([
+      { id: 'burn', remainingTurns: 3, magnitude: 4, sourceType: 'fire' },
+    ]);
   });
 
   it('lehnt fehlende, unbekannte und Questgegenstaende ab', () => {
     const { state, content } = setup();
-    expect(useItemAction(state, content, 'medkit')).toEqual({
+    expect(useConsumableAction(state, content, 'medkit')).toEqual({
       ok: false,
       reason: 'item not in inventory',
     });
-    state.player.items['ghost'] = 1;
-    expect(useItemAction(state, content, 'ghost')).toEqual({ ok: false, reason: 'unknown item' });
-    state.player.items['relic'] = 1;
-    expect(useItemAction(state, content, 'relic')).toEqual({
+    state.player.consumables['ghost'] = 1;
+    expect(useConsumableAction(state, content, 'ghost')).toEqual({ ok: false, reason: 'unknown item' });
+    state.player.consumables['relic'] = 1;
+    expect(useConsumableAction(state, content, 'relic')).toEqual({
       ok: false,
       reason: 'quest item cannot be used',
     });
@@ -304,5 +313,42 @@ describe('switchWeaponAction', () => {
       ok: false,
       reason: 'weapon already equipped',
     });
+  });
+});
+
+describe('spendAttributeAction', () => {
+  it('verteilt einen Punkt und verwirft den Rundencache', () => {
+    const { state, content } = setup();
+    state.player.unspentAttributePoints = 1;
+
+    const before = playerDerived(state, content).maxHealth;
+    const result = spendAttributeAction(state, 'vitality');
+
+    expect(result.ok).toBe(true);
+    expect(state.player.attributes.vitality).toBe(11);
+    expect(playerDerived(state, content).maxHealth).toBe(before + 3);
+  });
+
+  it('lehnt ohne offene Punkte ab', () => {
+    const { state } = setup();
+    expect(spendAttributeAction(state, 'strength')).toEqual({
+      ok: false,
+      reason: 'no attribute point available',
+    });
+  });
+});
+
+describe('currentScene', () => {
+  it('liefert Karte und Laufzeitzustand der aktuellen Sohle', () => {
+    const { state, content } = setup();
+    const here = currentScene(state, content);
+    expect(here?.map.id).toBe('test');
+    expect(here?.mapState).toBe(state.maps['test']);
+  });
+
+  it('liefert null bei unbekannter Karte', () => {
+    const { state, content } = setup();
+    state.currentMapId = 'weg';
+    expect(currentScene(state, content)).toBeNull();
   });
 });

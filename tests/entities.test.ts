@@ -9,6 +9,7 @@ import {
   isDoorBlocking,
   itemAt,
   removeEntity,
+  vitalsOf,
 } from '../src/core/entities';
 import { setup } from './fixtures/world';
 import type { MapRuntimeState } from '../src/core/types';
@@ -50,12 +51,12 @@ describe('entities', () => {
   it('enemyAt ignoriert tote Gegner', () => {
     const mapState = world();
     const grunt = findEntity(mapState, 1);
-    if (!grunt || !grunt.stats) throw new Error('missing grunt');
-    grunt.stats.health = 0;
+    if (!grunt) throw new Error('missing grunt');
+    grunt.health = 0;
     expect(enemyAt(mapState, 3, 1)).toBeUndefined();
   });
 
-  it('isAlive gilt fuer Entitaeten ohne Stats immer', () => {
+  it('isAlive gilt fuer Entitaeten ohne Lebenswert immer', () => {
     const mapState = world();
     const door = doorAt(mapState, 4, 1);
     if (!door) throw new Error('missing door');
@@ -78,13 +79,22 @@ describe('entities', () => {
     expect(findEntity(mapState, 1)).toBeUndefined();
   });
 
-  it('createEnemyEntity kopiert die Stats', () => {
-    const stats = { health: 10, maxHealth: 10, armor: 1, accuracy: 2, evasion: 3 };
-    const entity = createEnemyEntity(7, 'grunt', { x: 2, y: 2 }, 1, stats);
+  it('createEnemyEntity schreibt Leben und Gegnerlevel fest', () => {
+    const entity = createEnemyEntity(7, 'grunt', { x: 2, y: 2 }, 1, 10, 4);
     expect(entity.id).toBe(7);
     expect(entity.kind).toBe('enemy');
     expect(entity.active).toBe(false);
-    stats.health = 1;
-    expect(entity.stats?.health).toBe(10);
+    expect(entity.health).toBe(10);
+    expect(entity.monsterLevel).toBe(4);
+    expect(entity.rank).toBe('common');
+    expect(entity.effects).toEqual([]);
+  });
+
+  it('vitalsOf schreibt in die Entitaet zurueck', () => {
+    const entity = createEnemyEntity(8, 'grunt', { x: 1, y: 1 }, 0, 12, 1);
+    const vitals = vitalsOf(entity);
+    expect(vitals.health).toBe(12);
+    vitals.health = 5;
+    expect(entity.health).toBe(5);
   });
 });

@@ -52,7 +52,7 @@ describe('createRenderMap', () => {
 
   it('erzeugt fehlendes Licht aus den Lampen', () => {
     const map = makeMap({ lamps: [{ pos: { x: 1, y: 1 }, radius: 4, intensity: 200 }], light: [] });
-    const mapState = createMapRuntime(map, makeContent([map]));
+    const mapState = createMapRuntime(map, makeContent([map]), 1, 'normal');
 
     const view = createRenderMap(map, mapState, DOOR_VALUE);
     expect(view.light[1 * 8 + 1]).toBe(200);

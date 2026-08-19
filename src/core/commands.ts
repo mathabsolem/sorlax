@@ -8,18 +8,18 @@
  * ebenfalls kostenfrei gefuehrt.
  */
 import { rotate, tileKey } from './grid';
+import { attackAction } from './attack';
+import type { ActionResult } from './actionResult';
 import {
-  attackAction,
   interactAction,
   moveAction,
   spendAttributeAction,
   switchWeaponAction,
   useConsumableAction,
 } from './playerActions';
-import type { ActionResult } from './playerActions';
 import { createMapRuntime, pushLog } from './state';
 import { fireTriggers } from './triggers';
-import { advanceRound } from './turn';
+import { advanceRound, hasDeath } from './turn';
 import type { Command, ContentDb, GameEvent, GameState } from './types';
 
 /** Kommandos, die erst mit Ausruestung und Fertigkeiten in Phase 3.6 kommen. */
@@ -76,7 +76,7 @@ function logEvents(state: GameState, events: GameEvent[]): void {
 function finishTurn(state: GameState, content: ContentDb, events: GameEvent[]): GameEvent[] {
   if (state.player.health <= 0) {
     state.player.health = 0;
-    events.push({ type: 'died', who: 'player' });
+    if (!hasDeath(events, 'player')) events.push({ type: 'died', who: 'player' });
     return events;
   }
   const round = advanceRound(state, content);

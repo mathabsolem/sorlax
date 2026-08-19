@@ -47,7 +47,7 @@ describe('applyCommand', () => {
     });
     const events = applyCommand(state, { type: 'move', dir: 'forward' }, content);
     expect(events.some((event) => event.type === 'pickup')).toBe(true);
-    expect(state.player.items['medkit']).toBe(20);
+    expect(state.player.consumables['medkit']).toBe(20);
   });
 
   it('feuert enter-Trigger nach der Bewegung und vor der Gegnerrunde', () => {
@@ -110,10 +110,10 @@ describe('applyCommand', () => {
 
   it('useItem heilt und kostet eine Runde', () => {
     const { state, content } = setup();
-    state.player.items['medkit'] = 1;
-    state.player.stats.health = 10;
-    applyCommand(state, { type: 'useItem', itemId: 'medkit' }, content);
-    expect(state.player.stats.health).toBe(30);
+    state.player.consumables['medkit'] = 1;
+    state.player.health = 10;
+    applyCommand(state, { type: 'useConsumable', itemId: 'medkit' }, content);
+    expect(state.player.health).toBe(30);
     expect(state.turnCount).toBe(1);
   });
 
@@ -132,13 +132,13 @@ describe('applyCommand', () => {
     });
     const events = applyCommand(state, { type: 'move', dir: 'forward' }, content);
     expect(events[events.length - 1]).toEqual({ type: 'died', who: 'player' });
-    expect(state.player.stats.health).toBe(0);
+    expect(state.player.health).toBe(0);
     expect(state.turnCount).toBe(0);
   });
 
   it('nimmt nach dem Tod keine Kommandos mehr an', () => {
     const { state, content } = setup();
-    state.player.stats.health = 0;
+    state.player.health = 0;
     expect(applyCommand(state, { type: 'wait' }, content)).toEqual([
       { type: 'invalid', reason: 'player is dead' },
     ]);

@@ -194,6 +194,52 @@ describe('7. Gegner ausserhalb der aggroRange', () => {
     expect(enemy?.active).toBe(false);
     expect(enemy?.actionPoints).toBe(0);
     expect(enemy?.pos).toEqual(startPos);
-    expect(state.player.stats.health).toBe(50);
+    expect(state.player.health).toBe(50);
+  });
+});
+
+describe('8. Kommandos aus INTERFACES v1.2', () => {
+  it('verteilt Attributpunkte ohne Rundenkosten', () => {
+    const { state, content } = setup();
+    state.player.unspentAttributePoints = 1;
+
+    const events = applyCommand(state, { type: 'spendAttribute', attr: 'vitality' }, content);
+    expect(events.some((event) => event.type === 'invalid')).toBe(false);
+    expect(state.player.attributes.vitality).toBe(11);
+    expect(state.turnCount).toBe(0);
+  });
+
+  it('lehnt das Verteilen ohne offene Punkte ab', () => {
+    const { state, content } = setup();
+    expect(applyCommand(state, { type: 'spendAttribute', attr: 'focus' }, content)).toEqual([
+      { type: 'invalid', reason: 'no attribute point available' },
+    ]);
+  });
+
+  it('meldet die noch nicht umgesetzten Kommandos ausdruecklich', () => {
+    const { state, content } = setup();
+    const pending: Command[] = [
+      { type: 'equip', uid: 1 },
+      { type: 'unequip', slot: 'weapon' },
+      { type: 'dropItem', uid: 1 },
+      { type: 'useSkill', skillId: 'breach' },
+      { type: 'spendSkillPoint', skillId: 'breach' },
+    ];
+    for (const cmd of pending) {
+      expect(applyCommand(state, cmd, content)).toEqual([
+        { type: 'invalid', reason: 'not implemented' },
+      ]);
+    }
+    expect(state.turnCount).toBe(0);
+  });
+
+  it('benutzt ein Verbrauchsgut und kostet dafuer eine Runde', () => {
+    const { state, content } = setup();
+    state.player.consumables['medkit'] = 1;
+    state.player.health = 10;
+
+    applyCommand(state, { type: 'useConsumable', itemId: 'medkit' }, content);
+    expect(state.player.health).toBe(30);
+    expect(state.turnCount).toBe(1);
   });
 });

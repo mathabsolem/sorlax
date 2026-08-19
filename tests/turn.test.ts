@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { advanceRound, reapDead, tickEffects } from '../src/core/turn';
+import {
+  advanceRound,
+  hasDeath,
+  invalidatePlayerDerived,
+  playerDerived,
+  reapDead,
+  rollFreeAction,
+  tickCooldowns,
+} from '../src/core/turn';
+import { tickEffects } from '../src/core/effects';
 import { setup } from './fixtures/world';
 
 describe('reapDead', () => {
@@ -14,8 +23,8 @@ describe('reapDead', () => {
     const mapState = state.maps['test'];
     if (!mapState) throw new Error('missing map state');
     const first = mapState.entities[0];
-    if (!first?.stats) throw new Error('missing enemy');
-    first.stats.health = 0;
+    if (first === undefined) throw new Error('missing enemy');
+    first.health = 0;
 
     expect(reapDead(mapState)).toEqual([1]);
     expect(mapState.entities.map((entity) => entity.id)).toEqual([2, 3]);
@@ -24,14 +33,23 @@ describe('reapDead', () => {
 
 describe('tickEffects', () => {
   it('zaehlt herunter und entfernt abgelaufene Effekte', () => {
-    const { state } = setup();
+    const { state, content } = setup();
     state.player.effects = [
-      { id: 'haste', remainingTurns: 2, magnitude: 1 },
-      { id: 'shieldUp', remainingTurns: 1, magnitude: 2 },
+      { id: 'toxin', remainingTurns: 2, magnitude: 2, sourceType: 'poison' },
+      { id: 'jolt', remainingTurns: 1, magnitude: 8, sourceType: 'shock' },
     ];
-    const events = tickEffects(state);
-    expect(state.player.effects).toEqual([{ id: 'haste', remainingTurns: 1, magnitude: 1 }]);
-    expect(events).toEqual([{ type: 'message', text: 'shieldUp expired' }]);
+    const events = tickEffects(state, content);
+
+    expect(state.player.effects).toEqual([
+      { id: 'toxin', remainingTurns: 1, magnitude: 2, sourceType: 'poison' },
+    ]);
+    expect(events).toContainEqual({ type: 'effectExpired', who: 'player', effectId: 'jolt' });
+    expect(events).toContainEqual({
+      type: 'effectTick',
+      who: 'player',
+      effectId: 'toxin',
+      damage: 2,
+    });
   });
 });
 
@@ -83,7 +101,7 @@ describe('advanceRound', () => {
         { kind: 'enemy', defId: 'grunt', pos: { x: 5, y: 1 } },
       ],
     });
-    const events = advanceRound(state, content);
+    const events = advanceRound(state, content) ?? [];
     const movers = events.filter((event) => event.type === 'moved').map((event) => event.who);
     expect(movers).toEqual([1, 2]);
   });
@@ -92,10 +110,89 @@ describe('advanceRound', () => {
     const { state, content } = setup({
       entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 2, y: 1 } }],
     });
-    state.player.stats.health = 1;
-    state.player.stats.evasion = -100;
-    const events = advanceRound(state, content);
-    expect(state.player.stats.health).toBe(0);
-    expect(events[events.length - 1]).toEqual({ type: 'died', who: 'player' });
+    state.player.health = 1;
+    state.player.attributes.agility = 0;
+    // Die Trefferchance ist auf 0.95 gedeckelt, ein einzelner Angriff kann also
+    // danebengehen. Deshalb wird gerundet, bis der Spieler faellt.
+    let fatal: ReturnType<typeof advanceRound> = null;
+    for (let round = 0; round < 20 && state.player.health > 0; round++) {
+      fatal = advanceRound(state, content);
+    }
+
+    expect(state.player.health).toBe(0);
+    expect(fatal).not.toBeNull();
+    expect(fatal?.[fatal.length - 1]).toEqual({ type: 'died', who: 'player' });
+    expect(fatal?.filter((event) => event.type === 'died')).toHaveLength(1);
+  });
+});
+
+describe('tickCooldowns', () => {
+  it('senkt jede Abklingzeit um 1 und entfernt abgelaufene', () => {
+    const { state } = setup();
+    state.player.cooldowns = { breach: 3, sweep: 1 };
+    tickCooldowns(state);
+    expect(state.player.cooldowns).toEqual({ breach: 2 });
+  });
+});
+
+describe('Rundencache der abgeleiteten Werte', () => {
+  it('liefert innerhalb einer Runde dasselbe Objekt', () => {
+    const { state, content } = setup();
+    const first = playerDerived(state, content);
+    expect(playerDerived(state, content)).toBe(first);
+  });
+
+  it('rechnet nach dem Verwerfen neu', () => {
+    const { state, content } = setup();
+    const first = playerDerived(state, content);
+    state.player.attributes.vitality = 20;
+    // Ohne Verwerfen bleibt der alte Wert stehen, das ist der Sinn des Caches.
+    expect(playerDerived(state, content)).toBe(first);
+
+    invalidatePlayerDerived(state);
+    expect(playerDerived(state, content).maxHealth).toBe(80);
+  });
+
+  it('rechnet in der naechsten Runde neu', () => {
+    const { state, content } = setup();
+    playerDerived(state, content);
+    state.player.attributes.vitality = 20;
+    advanceRound(state, content);
+    expect(playerDerived(state, content).maxHealth).toBe(80);
+  });
+});
+
+describe('rollFreeAction', () => {
+  it('ist ohne Chance immer falsch und verbraucht keinen Wurf', () => {
+    const { state, content } = setup();
+    const before = [...state.rngState];
+    expect(rollFreeAction(state, content)).toBe(false);
+    expect([...state.rngState]).toEqual(before);
+  });
+});
+
+describe('hasDeath', () => {
+  it('findet nur den Tod des gefragten Akteurs', () => {
+    const events = [
+      { type: 'died' as const, who: 3 },
+      { type: 'message' as const, text: 'x' },
+    ];
+    expect(hasDeath(events, 3)).toBe(true);
+    expect(hasDeath(events, 'player')).toBe(false);
+    expect(hasDeath([], 'player')).toBe(false);
+  });
+
+  it('verhindert ein doppeltes died fuer den Spieler', () => {
+    const { state, content } = setup({
+      entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 2, y: 1 } }],
+    });
+    state.player.health = 1;
+    state.player.attributes.agility = 0;
+
+    let fatal: ReturnType<typeof advanceRound> = null;
+    for (let round = 0; round < 20 && state.player.health > 0; round++) {
+      fatal = advanceRound(state, content);
+    }
+    expect(fatal?.filter((event) => event.type === 'died')).toHaveLength(1);
   });
 });

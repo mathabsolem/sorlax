@@ -68,9 +68,15 @@ export function rollDamage(
   return { raw: crit ? withBonus * 2 : withBonus, crit };
 }
 
-/** SPEC 4.2, Resistenzschritt. Mindestens 1 Schaden. */
+/**
+ * SPEC 4.2, Resistenzschritt. Mindestens 1 Schaden.
+ *
+ * Gerechnet wird `raw * (100 - resist) / 100` statt `raw * (1 - resist / 100)`.
+ * Das ist dieselbe Formel, vermeidet aber den Binaerbruchfehler: `1 - 80 / 100`
+ * ergibt 0.19999999999999996, womit aus 20 Schaden statt 4 nur 3 wuerden.
+ */
 export function applyResistance(raw: number, resist: number): number {
-  return Math.max(1, Math.floor(raw * (1 - resist / 100)));
+  return Math.max(1, Math.floor((raw * (100 - resist)) / 100));
 }
 
 /** SPEC 4.2, Ruestungsschritt. Mindestens 1 Schaden. */
@@ -86,7 +92,10 @@ export function splashDamage(
   resist: number,
   armor: number
 ): number {
-  const scaled = Math.floor(baseDamage * (1 - distance / radius) * (1 - resist / 100));
+  // Wie bei applyResistance ohne Zwischenbrueche gerechnet.
+  const scaled = Math.floor(
+    (baseDamage * (radius - distance) * (100 - resist)) / (radius * 100)
+  );
   return Math.max(1, scaled - Math.floor(armor * 0.5));
 }
 

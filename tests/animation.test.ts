@@ -14,21 +14,27 @@ import {
 } from '../src/render/animation';
 import { facingToAngle } from '../src/render/camera';
 import type { EnemyDef, GameEvent } from '../src/core/types';
-import { setup } from './fixtures/world';
+import { noResistances, setup } from './fixtures/world';
 
 const deg = (value: number): number => (value * Math.PI) / 180;
 
 function enemyDef(): EnemyDef {
   return {
     id: 'grunt',
+    archetype: 'test',
+    element: 'physical',
     name: 'Grunt',
-    stats: { health: 10, maxHealth: 10, armor: 0, accuracy: 5, evasion: 0 },
+    baseHealth: 10,
+    baseArmor: 0,
+    baseAccuracy: 5,
+    baseEvasion: 0,
+    resistances: noResistances(),
     speed: 1,
     behavior: 'melee',
     aggroRange: 5,
     preferredRange: 1,
     weaponId: 'fists',
-    xpReward: 10,
+    baseXp: 10,
     spriteWidth: 0.8,
     frames: {
       idle: ['idle_0', 'idle_1'],
@@ -96,8 +102,8 @@ describe('AnimationState', () => {
     const events: GameEvent[] = [
       { type: 'moved', who: 'player', from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
       { type: 'turned', who: 'player', facing: 2 },
-      { type: 'attack', attacker: 'player', target: 3, hit: true, damage: 4, crit: false },
-      { type: 'attack', attacker: 5, target: 'player', hit: true, damage: 2, crit: false },
+      { type: 'attack', attacker: 'player', target: 3, hit: true, damage: 4, crit: false, damageType: 'physical' },
+      { type: 'attack', attacker: 5, target: 'player', hit: true, damage: 2, crit: false, damageType: 'physical' },
     ];
     animation.consumeEvents(events);
     expect(animation.isAnimating()).toBe(true);
@@ -110,7 +116,7 @@ describe('AnimationState', () => {
   it('haelt den Trefferblitz ausserhalb der Sperre', () => {
     const animation = new AnimationState();
     animation.consumeEvents([
-      { type: 'attack', attacker: 5, target: 'player', hit: true, damage: 2, crit: false },
+      { type: 'attack', attacker: 5, target: 'player', hit: true, damage: 2, crit: false, damageType: 'physical' },
     ]);
     animation.advance(ENEMY_ATTACK_MS + 1);
     expect(animation.isAnimating()).toBe(false);
@@ -123,7 +129,7 @@ describe('AnimationState', () => {
   it('faehrt die Waffenansicht zurueck und wieder vor', () => {
     const animation = new AnimationState();
     animation.consumeEvents([
-      { type: 'attack', attacker: 'player', target: 1, hit: false, damage: 0, crit: false },
+      { type: 'attack', attacker: 'player', target: 1, hit: false, damage: 0, crit: false, damageType: 'physical' },
     ]);
     expect(animation.weaponRecoil()).toBeCloseTo(0, 6);
     animation.advance(WEAPON_MS / 2);
@@ -138,13 +144,13 @@ describe('AnimationState', () => {
     expect(animation.frameOf(1, def)).toBe('idle_0');
 
     animation.consumeEvents([
-      { type: 'attack', attacker: 1, target: 'player', hit: false, damage: 0, crit: false },
+      { type: 'attack', attacker: 1, target: 'player', hit: false, damage: 0, crit: false, damageType: 'physical' },
     ]);
     expect(animation.frameOf(1, def)).toBe('attack_0');
 
     animation.advance(ENEMY_ATTACK_MS + 1);
     animation.consumeEvents([
-      { type: 'attack', attacker: 'player', target: 1, hit: true, damage: 3, crit: false },
+      { type: 'attack', attacker: 'player', target: 1, hit: true, damage: 3, crit: false, damageType: 'physical' },
     ]);
     expect(animation.frameOf(1, def)).toBe('pain_0');
   });
@@ -164,7 +170,7 @@ describe('AnimationState', () => {
     const animation = new AnimationState();
     const def = enemyDef();
     animation.consumeEvents([
-      { type: 'attack', attacker: 'player', target: 1, hit: true, damage: 3, crit: false },
+      { type: 'attack', attacker: 'player', target: 1, hit: true, damage: 3, crit: false, damageType: 'physical' },
     ]);
     expect(animation.frameOf(1, def)).toBe('pain_0');
 

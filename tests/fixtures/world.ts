@@ -6,6 +6,7 @@ import { createNewGame } from '../../src/core/state';
 import { encodeTile } from '../../src/core/tiles';
 import type {
   ContentDb,
+  Difficulty,
   EnemyDef,
   Facing,
   GameState,
@@ -13,10 +14,21 @@ import type {
   LampDef,
   MapDef,
   MapEntityDef,
+  Resistances,
   TileCoord,
   TriggerDef,
   WeaponDef,
 } from '../../src/core/types';
+
+/** Sechzig Schwellen wie im Vertrag, aber klein genug zum Nachrechnen. */
+export const TEST_XP_THRESHOLDS: number[] = Array.from(
+  { length: 60 },
+  (_unused, index) => (10 * (index + 1) * (index + 2)) / 2
+);
+
+export function noResistances(): Resistances {
+  return { physical: 0, fire: 0, poison: 0, ice: 0, shock: 0, void: 0 };
+}
 
 const W = 1;
 const F = 0;
@@ -54,6 +66,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
     name: 'Fists',
     dmgMin: 2,
     dmgMax: 4,
+    damageType: 'physical',
     critChance: 0,
     optimalRange: 1,
     maxRange: 1,
@@ -67,6 +80,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
     name: 'Pistol',
     dmgMin: 3,
     dmgMax: 6,
+    damageType: 'physical',
     critChance: 0.1,
     optimalRange: 3,
     maxRange: 6,
@@ -80,6 +94,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
     name: 'Launcher',
     dmgMin: 5,
     dmgMax: 8,
+    damageType: 'fire',
     critChance: 0,
     optimalRange: 4,
     maxRange: 6,
@@ -93,14 +108,20 @@ export const WEAPONS: Record<string, WeaponDef> = {
 
 function enemy(overrides: Partial<EnemyDef> & { id: string }): EnemyDef {
   return {
+    archetype: 'test',
+    element: 'physical',
     name: overrides.id,
-    stats: { health: 10, maxHealth: 10, armor: 0, accuracy: 5, evasion: 0 },
+    baseHealth: 10,
+    baseArmor: 0,
+    baseAccuracy: 5,
+    baseEvasion: 0,
+    resistances: noResistances(),
     speed: 1,
     behavior: 'melee',
     aggroRange: 5,
     preferredRange: 1,
     weaponId: 'fists',
-    xpReward: 10,
+    baseXp: 10,
     spriteWidth: 0.8,
     frames: frames(),
     ...overrides,
@@ -109,50 +130,68 @@ function enemy(overrides: Partial<EnemyDef> & { id: string }): EnemyDef {
 
 export const ENEMIES: Record<string, EnemyDef> = {
   grunt: enemy({ id: 'grunt' }),
-  runner: enemy({ id: 'runner', behavior: 'charger', speed: 2, aggroRange: 8, xpReward: 15 }),
-  crawler: enemy({ id: 'crawler', speed: 0.5, aggroRange: 8, xpReward: 5 }),
+  runner: enemy({ id: 'runner', behavior: 'charger', speed: 2, aggroRange: 8, baseXp: 15 }),
+  crawler: enemy({ id: 'crawler', speed: 0.5, aggroRange: 8, baseXp: 5 }),
   sniper: enemy({
     id: 'sniper',
     behavior: 'ranged',
     aggroRange: 8,
     preferredRange: 3,
     weaponId: 'pistol',
-    xpReward: 20,
+    baseXp: 20,
   }),
   emplacement: enemy({
     id: 'emplacement',
     behavior: 'turret',
     aggroRange: 8,
     weaponId: 'pistol',
-    xpReward: 8,
+    baseXp: 8,
   }),
-  sleeper: enemy({ id: 'sleeper', aggroRange: 1, xpReward: 1 }),
+  sleeper: enemy({ id: 'sleeper', aggroRange: 1, baseXp: 1 }),
+  fireproof: enemy({
+    id: 'fireproof',
+    baseHealth: 999,
+    resistances: { ...noResistances(), fire: 60 },
+  }),
   tank: enemy({
     id: 'tank',
-    stats: { health: 999, maxHealth: 999, armor: 0, accuracy: 0, evasion: 0 },
+    baseHealth: 999,
+    baseAccuracy: 0,
     aggroRange: 0,
-    xpReward: 0,
+    baseXp: 0,
   }),
 };
 
+function item(overrides: Partial<ItemDef> & { id: string; type: ItemDef['type'] }): ItemDef {
+  return {
+    name: overrides.id,
+    amount: 1,
+    reqLevel: 1,
+    reqStrength: 0,
+    reqAgility: 0,
+    sprite: overrides.id,
+    icon: overrides.id,
+    ...overrides,
+  };
+}
+
 export const ITEMS: Record<string, ItemDef> = {
-  medkit: { id: 'medkit', name: 'Medkit', type: 'heal', amount: 20, sprite: 'medkit' },
-  bullets: { id: 'bullets', name: 'Bullets', type: 'ammo', amount: 10, sprite: 'bullets' },
-  redkey: { id: 'redkey', name: 'Red Key', type: 'key', amount: 1, sprite: 'redkey' },
-  shield: { id: 'shield', name: 'Shield', type: 'armor', amount: 4, sprite: 'shield' },
-  relic: { id: 'relic', name: 'Relic', type: 'quest', amount: 1, sprite: 'relic' },
-  stim: {
+  medkit: item({ id: 'medkit', name: 'Medkit', type: 'heal', amount: 20 }),
+  bullets: item({ id: 'bullets', name: 'Bullets', type: 'ammo', amount: 10 }),
+  redkey: item({ id: 'redkey', name: 'Red Key', type: 'key' }),
+  shield: item({ id: 'shield', name: 'Shield', type: 'armor', amount: 4 }),
+  relic: item({ id: 'relic', name: 'Relic', type: 'quest' }),
+  stim: item({
     id: 'stim',
     name: 'Stim',
     type: 'powerup',
-    amount: 1,
-    sprite: 'stim',
-    effect: { id: 'haste', turns: 3, magnitude: 1 },
-  },
+    effect: { id: 'burn', turns: 3, magnitude: 4 },
+  }),
 };
 
 export type MapOptions = {
   id?: string;
+  depth?: number;
   lamps?: LampDef[];
   light?: number[];
   entities?: MapEntityDef[];
@@ -166,6 +205,7 @@ export function makeMap(options: MapOptions = {}): MapDef {
   return {
     id: options.id ?? 'test',
     name: 'Test Map',
+    depth: options.depth ?? 1,
     width: 8,
     height: 8,
     walls: [...WALLS],
@@ -189,17 +229,28 @@ export function makeContent(maps: MapDef[]): ContentDb {
     enemies: ENEMIES,
     weapons: WEAPONS,
     items: ITEMS,
+    affixes: {},
+    uniques: {},
+    dropTables: {},
+    skills: {},
     maps: byId,
-    progression: { xpThresholds: [10, 30, 60] },
+    progression: { xpThresholds: [...TEST_XP_THRESHOLDS] },
   };
 }
 
 export type World = { state: GameState; content: ContentDb; map: MapDef };
 
 /** Komplette Testwelt inklusive frischem Spielstand. */
-export function setup(options: MapOptions & { seed?: number; extraMaps?: MapDef[] } = {}): World {
+export function setup(
+  options: MapOptions & { seed?: number; extraMaps?: MapDef[]; difficulty?: Difficulty } = {}
+): World {
   const map = makeMap(options);
   const content = makeContent([map, ...(options.extraMaps ?? [])]);
-  const state = createNewGame(options.seed ?? 1234, content, map.id);
+  const state = createNewGame(
+    options.seed ?? 1234,
+    content,
+    map.id,
+    options.difficulty ?? 'normal'
+  );
   return { state, content, map };
 }

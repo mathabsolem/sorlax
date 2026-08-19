@@ -111,7 +111,7 @@ describe('fireTriggers', () => {
       ],
     });
     fireTriggers(state, content, { x: 2, y: 1 }, 'enter');
-    expect(state.player.stats.health).toBe(43);
+    expect(state.player.health).toBe(43);
   });
 });
 

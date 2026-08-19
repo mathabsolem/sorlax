@@ -11,7 +11,14 @@ import { getDerivedStats, playerActor } from './derived';
 import { hasChill, tickEffects } from './effects';
 import { isAlive } from './entities';
 import { loadRng, saveRng } from './state';
-import type { ContentDb, DerivedStats, GameEvent, GameState, MapRuntimeState } from './types';
+import type {
+  ContentDb,
+  DerivedStats,
+  EntityId,
+  GameEvent,
+  GameState,
+  MapRuntimeState,
+} from './types';
 
 /** Notbremse gegen absurde `speed`-Werte in den Inhalten. */
 const MAX_ACTIONS_PER_ROUND = 16;
@@ -49,6 +56,15 @@ export function reapDead(mapState: MapRuntimeState): number[] {
     mapState.entities.splice(i, 1);
   }
   return removed.reverse();
+}
+
+/**
+ * Wurde der Tod dieses Akteurs in dieser Ereignisliste schon gemeldet?
+ * resolveAttack meldet den Todesstoss selbst; ohne diese Pruefung kaeme das
+ * Ereignis am Rundenende ein zweites Mal.
+ */
+export function hasDeath(events: readonly GameEvent[], who: EntityId | 'player'): boolean {
+  return events.some((event) => event.type === 'died' && event.who === who);
 }
 
 /** Senkt alle Abklingzeiten um 1, SPEC 3.2 Schritt 4. */
@@ -121,7 +137,7 @@ export function advanceRound(state: GameState, content: ContentDb): GameEvent[] 
 
   if (state.player.health <= 0) {
     state.player.health = 0;
-    events.push({ type: 'died', who: 'player' });
+    if (!hasDeath(events, 'player')) events.push({ type: 'died', who: 'player' });
   }
 
   return events;
