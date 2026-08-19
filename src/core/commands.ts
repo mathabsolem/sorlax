@@ -1,20 +1,29 @@
 /**
- * `applyCommand` ist nach INTERFACES Abschnitt 4 der einzige Weg, den Zustand zu
- * aendern. Der Zustand wird in place mutiert, zurueck kommt die Ereignisliste.
+ * `applyCommand` ist nach INTERFACES v1.2 Abschnitt 7 der einzige Weg, den
+ * Zustand zu aendern. Der Zustand wird in place mutiert, zurueck kommt die
+ * Ereignisliste.
+ *
+ * Kostenfrei sind laut SPEC 3.2: Drehen, Anlegen, Ablegen, Punkte verteilen,
+ * Menue und Karte. Der Waffenwechsel steht nicht in der Tabelle und wird hier
+ * ebenfalls kostenfrei gefuehrt.
  */
 import { rotate, tileKey } from './grid';
 import {
   attackAction,
   interactAction,
   moveAction,
+  spendAttributeAction,
   switchWeaponAction,
-  useItemAction,
+  useConsumableAction,
 } from './playerActions';
 import type { ActionResult } from './playerActions';
 import { createMapRuntime, pushLog } from './state';
 import { fireTriggers } from './triggers';
 import { advanceRound } from './turn';
 import type { Command, ContentDb, GameEvent, GameState } from './types';
+
+/** Kommandos, die erst mit Ausruestung und Fertigkeiten in Phase 3.6 kommen. */
+const NOT_IMPLEMENTED = 'not implemented';
 
 function invalid(reason: string): GameEvent[] {
   return [{ type: 'invalid', reason }];
@@ -28,8 +37,16 @@ function logEvents(state: GameState, events: GameEvent[]): void {
         pushLog(
           state,
           'combat',
-          event.hit ? `hit for ${event.damage}${event.crit ? ' (crit)' : ''}` : 'missed'
+          event.hit
+            ? `${event.damageType} hit for ${event.damage}${event.crit ? ' (crit)' : ''}`
+            : 'missed'
         );
+        break;
+      case 'effectApplied':
+        pushLog(state, 'combat', `${event.effectId} for ${event.turns} turns`);
+        break;
+      case 'effectTick':
+        pushLog(state, 'combat', `${event.effectId} deals ${event.damage}`);
         break;
       case 'died':
         pushLog(state, 'combat', `${event.who === 'player' ? 'player' : `entity ${event.who}`} died`);
@@ -39,6 +56,9 @@ function logEvents(state: GameState, events: GameEvent[]): void {
         break;
       case 'levelUp':
         pushLog(state, 'system', `reached level ${event.newLevel}`);
+        break;
+      case 'skillUsed':
+        pushLog(state, 'skill', `used ${event.skillId}`);
         break;
       case 'message':
         pushLog(state, 'story', event.text);
@@ -51,15 +71,16 @@ function logEvents(state: GameState, events: GameEvent[]): void {
 
 /**
  * Schliesst eine zeitkostende Aktion ab: bei Tod des Spielers nur noch `died`,
- * sonst die Gegnerrunde.
+ * sonst die Gegnerrunde. Eine freie Aktion laesst die Runde ganz entfallen.
  */
 function finishTurn(state: GameState, content: ContentDb, events: GameEvent[]): GameEvent[] {
-  if (state.player.stats.health <= 0) {
-    state.player.stats.health = 0;
+  if (state.player.health <= 0) {
+    state.player.health = 0;
     events.push({ type: 'died', who: 'player' });
     return events;
   }
-  events.push(...advanceRound(state, content));
+  const round = advanceRound(state, content);
+  if (round !== null) events.push(...round);
   return events;
 }
 
@@ -73,7 +94,8 @@ function changeMap(state: GameState, content: ContentDb, targetMapId: string): G
 
   let runtime = state.maps[targetMapId];
   if (runtime === undefined) {
-    runtime = createMapRuntime(target, content);
+    // Erstes Betreten der Sohle: hier wird das Gegnerlevel festgeschrieben.
+    runtime = createMapRuntime(target, content, state.player.level, state.difficulty);
     state.maps[targetMapId] = runtime;
   }
   runtime.visited = true;
@@ -105,7 +127,7 @@ function handleMove(
 
   finishTurn(state, content, events);
 
-  if (exit !== undefined && state.player.stats.health > 0) {
+  if (exit !== undefined && state.player.health > 0) {
     events.push(...changeMap(state, content, exit.targetMapId));
   }
   return events;
@@ -121,7 +143,7 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
   if (content.maps[state.currentMapId] === undefined || state.maps[state.currentMapId] === undefined) {
     return invalid('unknown map');
   }
-  if (state.player.stats.health <= 0) return invalid('player is dead');
+  if (state.player.health <= 0) return invalid('player is dead');
 
   let events: GameEvent[];
   switch (cmd.type) {
@@ -136,6 +158,11 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
       events = result.ok ? result.events : invalid(result.reason);
       break;
     }
+    case 'spendAttribute': {
+      const result = spendAttributeAction(state, cmd.attr);
+      events = result.ok ? result.events : invalid(result.reason);
+      break;
+    }
     case 'move':
       events = handleMove(state, content, cmd.dir);
       break;
@@ -145,11 +172,20 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
     case 'interact':
       events = fromResult(state, content, interactAction(state, content));
       break;
-    case 'useItem':
-      events = fromResult(state, content, useItemAction(state, content, cmd.itemId));
+    case 'useConsumable':
+      events = fromResult(state, content, useConsumableAction(state, content, cmd.itemId));
       break;
     case 'wait':
       events = fromResult(state, content, { ok: true, events: [] });
+      break;
+    // Ausruestung und Fertigkeiten kommen in Phase 3.6. Bis dahin melden diese
+    // Kommandos ausdruecklich, dass sie noch nichts tun.
+    case 'equip':
+    case 'unequip':
+    case 'dropItem':
+    case 'useSkill':
+    case 'spendSkillPoint':
+      events = invalid(NOT_IMPLEMENTED);
       break;
   }
 

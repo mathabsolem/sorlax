@@ -59,5 +59,5 @@ export async function loadAssets(base: string, manifest: AssetManifest): Promise
     ui[name] = await createImageBitmap(await response.blob());
   }
 
-  return { textures, sprites, weaponSprites, ui, sounds: {} };
+  return { textures, sprites, weaponSprites, ui, icons: {}, sounds: {} };
 }

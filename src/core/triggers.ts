@@ -3,6 +3,7 @@
  */
 import { createEnemyEntity, doorAt } from './entities';
 import { tileKey } from './grid';
+import { scaledHealth } from './scaling';
 import type {
   ContentDb,
   GameEvent,
@@ -30,12 +31,17 @@ function runAction(
     case 'spawn': {
       const def = content.enemies[action.defId];
       if (def === undefined) return [];
+      // Gespawnte Gegner erben das Gegnerlevel der Sohle, damit sie nicht aus
+      // der Reihe fallen. Es steht bereits in den vorhandenen Entitaeten.
+      const monsterLevel =
+        mapState.entities.find((entity) => entity.monsterLevel !== undefined)?.monsterLevel ?? 1;
       const entity = createEnemyEntity(
         mapState.nextEntityId,
         action.defId,
         action.pos,
         0,
-        def.stats
+        scaledHealth(def, monsterLevel, state.difficulty),
+        monsterLevel
       );
       mapState.nextEntityId += 1;
       mapState.entities.push(entity);
@@ -47,7 +53,7 @@ function runAction(
       state.flags[action.key] = action.value;
       return [];
     case 'damage':
-      state.player.stats.health -= action.amount;
+      state.player.health -= action.amount;
       return [{ type: 'message', text: `took ${action.amount} damage` }];
   }
 }

@@ -234,5 +234,5 @@ export function createPlaceholderAssets(spriteNames: string[], weaponNames: stri
   const weaponSprites: Record<string, PixelSurface> = {};
   for (const name of weaponNames) weaponSprites[name] = makeWeaponPlaceholder(name);
 
-  return { textures, sprites, weaponSprites, ui: {}, sounds: {} };
+  return { textures, sprites, weaponSprites, ui: {}, icons: {}, sounds: {} };
 }

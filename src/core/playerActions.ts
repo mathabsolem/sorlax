@@ -3,13 +3,18 @@
  * mutiert erst danach, damit ein ungueltiges Kommando den Zustand nicht anfasst.
  */
 import { applySplash, resolveAttack } from './combat';
-import { doorAt, enemyAt, isAlive, itemAt, removeEntity } from './entities';
+import type { SplashTarget } from './combat';
+import { enemyActor, getDerivedStats, playerActor } from './derived';
+import { applyEffectDefault } from './effects';
+import { doorAt, enemyAt, isAlive, itemAt, removeEntity, vitalsOf } from './entities';
 import { chebyshev, hasLineOfSight, stepFrom, tileKey } from './grid';
-import { grantXp } from './progression';
+import { grantXp, spendAttributePoint } from './progression';
+import { scaledXpReward } from './scaling';
 import { loadRng, saveRng } from './state';
 import { fireTriggers, hasUsableTrigger } from './triggers';
-import { reapDead } from './turn';
+import { invalidatePlayerDerived, playerDerived, reapDead } from './turn';
 import type {
+  Attributes,
   ContentDb,
   Entity,
   EntityId,
@@ -24,7 +29,10 @@ import type {
 /** Ergebnis einer Einzelaktion. `ok: false` fuehrt zu genau einem `invalid`-Event. */
 export type ActionResult = { ok: true; events: GameEvent[] } | { ok: false; reason: string };
 
-function scene(state: GameState, content: ContentDb): { map: MapDef; mapState: MapRuntimeState } | null {
+function scene(
+  state: GameState,
+  content: ContentDb
+): { map: MapDef; mapState: MapRuntimeState } | null {
   const map = content.maps[state.currentMapId];
   const mapState = state.maps[state.currentMapId];
   if (map === undefined || mapState === undefined) return null;
@@ -32,21 +40,25 @@ function scene(state: GameState, content: ContentDb): { map: MapDef; mapState: M
 }
 
 /** Legt ein aufgesammeltes Item in das passende Inventarfach des Spielers. */
-function stow(state: GameState, def: ItemDef): void {
+function stow(state: GameState, def: ItemDef): boolean {
   const player = state.player;
   switch (def.type) {
     case 'ammo':
       player.ammo[def.id] = (player.ammo[def.id] ?? 0) + def.amount;
-      return;
+      return true;
     case 'weapon':
       if (!player.weapons.includes(def.id)) player.weapons.push(def.id);
-      return;
+      return true;
     case 'key':
     case 'keyCard':
       if (!player.keys.includes(def.id)) player.keys.push(def.id);
-      return;
+      return true;
+    case 'equipment':
+      // Ausruestung wird erst in Phase 3.6 zu Instanzen gewuerfelt.
+      return false;
     default:
-      player.items[def.id] = (player.items[def.id] ?? 0) + def.amount;
+      player.consumables[def.id] = (player.consumables[def.id] ?? 0) + def.amount;
+      return true;
   }
 }
 
@@ -58,8 +70,8 @@ export function pickupAt(state: GameState, content: ContentDb, pos: TileCoord): 
   if (entity === undefined) return [];
   const def = content.items[entity.defId];
   if (def === undefined) return [];
+  if (!stow(state, def)) return [];
 
-  stow(state, def);
   removeEntity(here.mapState, entity.id);
   const key = tileKey(pos);
   if (!here.mapState.takenItems.includes(key)) here.mapState.takenItems.push(key);
@@ -100,10 +112,40 @@ function collectKills(
     if (event.type !== 'died' || event.who === 'player') continue;
     const entity = mapState.entities.find((candidate) => candidate.id === event.who);
     if (entity === undefined || entity.kind !== 'enemy') continue;
-    reward += content.enemies[entity.defId]?.xpReward ?? 0;
+    const def = content.enemies[entity.defId];
+    if (def === undefined) continue;
+    reward += scaledXpReward(def, entity.monsterLevel ?? 1, state.difficulty);
   }
   reapDead(mapState);
   return reward > 0 ? grantXp(state.player, reward, content.progression) : [];
+}
+
+/** Alle moeglichen Ziele einer Explosion, Spieler eingeschlossen. */
+function splashTargets(
+  state: GameState,
+  content: ContentDb,
+  mapState: MapRuntimeState
+): SplashTarget[] {
+  const targets: SplashTarget[] = [
+    {
+      ref: 'player',
+      stats: playerDerived(state, content),
+      vitals: state.player,
+      pos: state.player.pos,
+    },
+  ];
+  for (const entity of [...mapState.entities]) {
+    if (entity.kind !== 'enemy' || !isAlive(entity)) continue;
+    const actor = enemyActor(entity, content);
+    if (actor === null) continue;
+    targets.push({
+      ref: entity.id,
+      stats: getDerivedStats(actor, content, state.difficulty),
+      vitals: vitalsOf(entity),
+      pos: entity.pos,
+    });
+  }
+  return targets;
 }
 
 /** Angriff auf ein Ziel oder auf den naechsten sichtbaren Gegner. */
@@ -129,8 +171,8 @@ export function attackAction(
   if (target === undefined || target.kind !== 'enemy' || !isAlive(target)) {
     return { ok: false, reason: 'no target' };
   }
-  const targetStats = target.stats;
-  if (targetStats === undefined) return { ok: false, reason: 'target has no stats' };
+  const targetActor = enemyActor(target, content);
+  if (targetActor === null) return { ok: false, reason: 'unknown enemy' };
 
   const distance = chebyshev(state.player.pos, target.pos);
   if (distance > weapon.maxRange) return { ok: false, reason: 'target out of range' };
@@ -138,24 +180,46 @@ export function attackAction(
     return { ok: false, reason: 'no line of sight' };
   }
 
+  const playerStats = playerDerived(state, content);
   if (ammoType !== null) {
-    state.player.ammo[ammoType] = (state.player.ammo[ammoType] ?? 0) - weapon.ammoPerShot;
+    const saved = weapon.ammoPerShot > 0 && playerStats.ammoSaveChance > 0;
+    if (!saved) {
+      state.player.ammo[ammoType] = (state.player.ammo[ammoType] ?? 0) - weapon.ammoPerShot;
+    }
   }
 
   const rng = loadRng(state);
   const events = resolveAttack(
     rng,
-    { ref: 'player', stats: state.player.stats },
-    { ref: target.id, stats: targetStats },
+    { ref: 'player', stats: playerStats, vitals: state.player },
+    {
+      ref: target.id,
+      stats: getDerivedStats(targetActor, content, state.difficulty),
+      vitals: vitalsOf(target),
+    },
     weapon,
     distance
   );
   saveRng(state, rng);
   target.active = true;
 
+  const hit = events.some((event) => event.type === 'attack' && event.hit);
+  const effectId = weapon.appliesEffect;
+  if (hit && effectId !== undefined && isAlive(target)) {
+    events.push(...applyEffectDefault(targetActor, effectId, content, state.difficulty));
+  }
+
   const splash = weapon.splash;
   if (splash !== undefined) {
-    events.push(...applySplash(state.player, here.mapState, target.pos, splash, 'player'));
+    events.push(
+      ...applySplash(
+        splashTargets(state, content, here.mapState),
+        target.pos,
+        splash,
+        weapon.damageType,
+        'player'
+      )
+    );
   }
 
   events.push(...collectKills(state, content, here.mapState, events));
@@ -191,51 +255,37 @@ export function interactAction(state: GameState, content: ContentDb): ActionResu
   return { ok: false, reason: 'nothing to interact with' };
 }
 
-/** Benutzt ein Item aus dem Inventar. Questgegenstaende sind nicht benutzbar. */
-export function useItemAction(state: GameState, content: ContentDb, itemId: string): ActionResult {
+/** Benutzt ein Verbrauchsgut. Questgegenstaende sind nicht benutzbar. */
+export function useConsumableAction(
+  state: GameState,
+  content: ContentDb,
+  itemId: string
+): ActionResult {
   const player = state.player;
-  if ((player.items[itemId] ?? 0) <= 0) return { ok: false, reason: 'item not in inventory' };
+  if ((player.consumables[itemId] ?? 0) <= 0) return { ok: false, reason: 'item not in inventory' };
   const def = content.items[itemId];
   if (def === undefined) return { ok: false, reason: 'unknown item' };
   if (def.type === 'quest') return { ok: false, reason: 'quest item cannot be used' };
 
   const events: GameEvent[] = [];
-  switch (def.type) {
-    case 'heal':
-      player.stats.health = Math.min(player.stats.maxHealth, player.stats.health + def.amount);
-      break;
-    case 'armor':
-      player.stats.armor += def.amount;
-      break;
-    case 'ammo':
-      player.ammo[def.id] = (player.ammo[def.id] ?? 0) + def.amount;
-      break;
-    case 'weapon':
-      if (!player.weapons.includes(def.id)) player.weapons.push(def.id);
-      break;
-    case 'key':
-    case 'keyCard':
-      if (!player.keys.includes(def.id)) player.keys.push(def.id);
-      break;
-    default:
-      break;
+  if (def.type === 'heal') {
+    const maxHealth = playerDerived(state, content).maxHealth;
+    player.health = Math.min(maxHealth, player.health + def.amount);
   }
 
   const effect = def.effect;
   if (effect !== undefined) {
-    player.effects.push({
-      id: effect.id,
-      remainingTurns: effect.turns,
-      magnitude: effect.magnitude,
-    });
+    events.push(
+      ...applyEffectDefault(playerActor(state), effect.id, content, state.difficulty)
+    );
   }
 
-  player.items[itemId] = (player.items[itemId] ?? 0) - 1;
+  player.consumables[itemId] = (player.consumables[itemId] ?? 0) - 1;
   events.push({ type: 'message', text: `used ${def.id}` });
   return { ok: true, events };
 }
 
-/** Waffenwechsel. Kostet keine Runde, SPEC 3.2 fuehrt ihn nicht als Zeitkosten. */
+/** Waffenwechsel. Kostet keine Runde, SPEC 3.2. */
 export function switchWeaponAction(
   state: GameState,
   content: ContentDb,
@@ -248,6 +298,16 @@ export function switchWeaponAction(
   }
   state.player.equippedWeaponId = weaponId;
   return { ok: true, events: [{ type: 'message', text: `equipped ${weaponId}` }] };
+}
+
+/** Verteilt einen Attributpunkt. Kostet keine Runde, SPEC 3.2. */
+export function spendAttributeAction(state: GameState, attr: keyof Attributes): ActionResult {
+  if (!spendAttributePoint(state.player, attr)) {
+    return { ok: false, reason: 'no attribute point available' };
+  }
+  // Der Rundencache haelt sonst die alten abgeleiteten Werte fest.
+  invalidatePlayerDerived(state);
+  return { ok: true, events: [{ type: 'message', text: `spent point on ${attr}` }] };
 }
 
 /** Bewegungsziel pruefen und den Spieler versetzen. */

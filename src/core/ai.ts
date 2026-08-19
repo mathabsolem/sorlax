@@ -3,8 +3,11 @@
  * Gegner oeffnen keine Tueren und sammeln keine Items ein.
  */
 import { resolveAttack } from './combat';
+import { enemyActor, getDerivedStats, playerActor } from './derived';
+import { vitalsOf } from './entities';
 import { chebyshev, hasLineOfSight, isWalkable } from './grid';
 import { findPath } from './pathfinding';
+import { scaleWeapon } from './scaling';
 import { loadRng, saveRng } from './state';
 import type {
   ContentDb,
@@ -19,7 +22,13 @@ import type {
   WeaponDef,
 } from './types';
 
-type Scene = { map: MapDef; mapState: MapRuntimeState; def: EnemyDef; weapon: WeaponDef };
+type Scene = {
+  map: MapDef;
+  mapState: MapRuntimeState;
+  def: EnemyDef;
+  weapon: WeaponDef;
+  content: ContentDb;
+};
 
 function sceneFor(state: GameState, entity: Entity, content: ContentDb): Scene | null {
   const map = content.maps[state.currentMapId];
@@ -28,7 +37,7 @@ function sceneFor(state: GameState, entity: Entity, content: ContentDb): Scene |
   if (map === undefined || mapState === undefined || def === undefined) return null;
   const weapon = content.weapons[def.weaponId];
   if (weapon === undefined) return null;
-  return { map, mapState, def, weapon };
+  return { map, mapState, def, weapon, content };
 }
 
 function facingFromDelta(dx: number, dy: number): Facing | null {
@@ -97,20 +106,27 @@ function stepAlongAxis(
 }
 
 function attackPlayer(state: GameState, scene: Scene, entity: Entity): GameEvent[] {
-  const stats = entity.stats;
-  if (stats === undefined) return [];
+  const actor = enemyActor(entity, scene.content);
+  if (actor === null) return [];
   const facing = facingFromDelta(
     Math.sign(state.player.pos.x - entity.pos.x),
     Math.sign(state.player.pos.y - entity.pos.y)
   );
   if (facing !== null) entity.facing = facing;
 
+  const monsterLevel = entity.monsterLevel ?? 1;
+  const weapon = scaleWeapon(scene.weapon, monsterLevel, state.difficulty);
+
   const rng = loadRng(state);
   const events = resolveAttack(
     rng,
-    { ref: entity.id, stats },
-    { ref: 'player', stats: state.player.stats },
-    scene.weapon,
+    { ref: entity.id, stats: getDerivedStats(actor, scene.content, state.difficulty), vitals: vitalsOf(entity) },
+    {
+      ref: 'player',
+      stats: getDerivedStats(playerActor(state), scene.content, state.difficulty),
+      vitals: state.player,
+    },
+    weapon,
     chebyshev(entity.pos, state.player.pos)
   );
   saveRng(state, rng);
@@ -164,5 +180,10 @@ export function takeEnemyTurn(state: GameState, entity: Entity, content: Content
       return chargerTurn(state, scene, entity, distance);
     case 'turret':
       return turretTurn(state, scene, entity, distance);
+    case 'scripted':
+      // Bossskripte liegen laut INTERFACES Abschnitt 10 in src/core/bosses/ und
+      // werden ueber BOSS_REGISTRY aufgeloest. Bis dahin handelt ein solcher
+      // Gegner nicht, statt ersatzweise Nahkampf zu spielen.
+      return [];
   }
 }

@@ -5,9 +5,10 @@
  * 16 x 16 Kacheln, eine verriegelbare Tuer, zwei Gegner mit verschiedenen
  * Verhaltensmustern, ein Item, zwei Deckenlampen, gedrehte Bodenkacheln.
  */
+import progression from '../../content/progression.json';
 import { generateLightMap } from '../core/lighting';
 import { encodeTile } from '../core/tiles';
-import type { ContentDb, EnemyDef, MapDef, WeaponDef } from '../core/types';
+import type { ContentDb, EnemyDef, ItemDef, MapDef, WeaponDef } from '../core/types';
 import {
   TEX_CEILING,
   TEX_FLOOR_PLATE,
@@ -95,6 +96,7 @@ export function createDevMap(): MapDef {
   return {
     id: DEV_MAP_ID,
     name: 'Vortrieb 1',
+    depth: 1,
     width: SIZE,
     height: SIZE,
     walls,
@@ -115,12 +117,28 @@ export function createDevMap(): MapDef {
   };
 }
 
+/** Kleiner Bauer fuer Gegenstaende ohne Anforderungen. */
+function consumable(id: string, name: string, type: ItemDef['type'], amount: number): ItemDef {
+  return {
+    id,
+    name,
+    type,
+    amount,
+    reqLevel: 1,
+    reqStrength: 0,
+    reqAgility: 0,
+    sprite: id,
+    icon: id,
+  };
+}
+
 const WEAPONS: Record<string, WeaponDef> = {
   cutter: {
     id: 'cutter',
     name: 'Schneidbrenner',
     dmgMin: 3,
     dmgMax: 6,
+    damageType: 'physical',
     critChance: 0.05,
     optimalRange: 1,
     maxRange: 1,
@@ -134,6 +152,8 @@ const WEAPONS: Record<string, WeaponDef> = {
     name: 'Bolzenwerfer',
     dmgMin: 4,
     dmgMax: 9,
+    damageType: 'shock',
+    appliesEffect: 'jolt',
     critChance: 0.12,
     optimalRange: 4,
     maxRange: 9,
@@ -156,27 +176,39 @@ function framesFor(name: string): EnemyDef['frames'] {
 const ENEMIES: Record<string, EnemyDef> = {
   grubling: {
     id: 'grubling',
+    archetype: 'grub',
+    element: 'physical',
     name: 'Grubling',
-    stats: { health: 14, maxHealth: 14, armor: 0, accuracy: 6, evasion: 3 },
+    baseHealth: 14,
+    baseArmor: 0,
+    baseAccuracy: 6,
+    baseEvasion: 3,
+    resistances: { physical: 0, fire: -20, poison: 20, ice: 0, shock: 0, void: 0 },
     speed: 1,
     behavior: 'melee',
     aggroRange: 7,
     preferredRange: 1,
     weaponId: 'cutter',
-    xpReward: 12,
+    baseXp: 12,
     spriteWidth: 0.8,
     frames: framesFor('grubling'),
   },
   sentry: {
     id: 'sentry',
+    archetype: 'turret',
+    element: 'shock',
     name: 'Wachgeschuetz',
-    stats: { health: 20, maxHealth: 20, armor: 2, accuracy: 9, evasion: 0 },
+    baseHealth: 20,
+    baseArmor: 2,
+    baseAccuracy: 9,
+    baseEvasion: 0,
+    resistances: { physical: 10, fire: 0, poison: 40, ice: 0, shock: 30, void: 0 },
     speed: 1,
     behavior: 'turret',
     aggroRange: 9,
     preferredRange: 4,
     weaponId: 'bolter',
-    xpReward: 18,
+    baseXp: 18,
     spriteWidth: 0.9,
     frames: framesFor('sentry'),
   },
@@ -188,11 +220,15 @@ export function createDevContent(): ContentDb {
     enemies: ENEMIES,
     weapons: WEAPONS,
     items: {
-      medkit: { id: 'medkit', name: 'Verbandpack', type: 'heal', amount: 20, sprite: 'medkit' },
-      bolts: { id: 'bolts', name: 'Bolzen', type: 'ammo', amount: 12, sprite: 'bolts' },
+      medkit: consumable('medkit', 'Verbandpack', 'heal', 20),
+      bolts: consumable('bolts', 'Bolzen', 'ammo', 12),
     },
+    affixes: {},
+    uniques: {},
+    dropTables: {},
+    skills: {},
     maps: { [map.id]: map },
-    progression: { xpThresholds: [20, 60, 120, 200] },
+    progression,
   };
 }
 
