@@ -17,6 +17,8 @@ import type {
   ContentDb,
   DerivedStats,
   Difficulty,
+  Entity,
+  GameState,
   Resistances,
 } from './types';
 
@@ -132,4 +134,20 @@ export function getDerivedStats(
     return playerStats(actor.state.attributes, actor.state.effects, difficulty);
   }
   return enemyStats(actor, difficulty);
+}
+
+/** Akteur des Spielers fuer getDerivedStats. */
+export function playerActor(state: GameState): Actor {
+  return { kind: 'player', state: state.player };
+}
+
+/**
+ * Akteur eines Gegners. Liefert null, wenn die Definition fehlt oder die
+ * Entitaet kein Gegner ist. `monsterLevel` wird beim Spawn festgeschrieben.
+ */
+export function enemyActor(entity: Entity, content: ContentDb): Actor | null {
+  if (entity.kind !== 'enemy') return null;
+  const def = content.enemies[entity.defId];
+  if (def === undefined) return null;
+  return { kind: 'enemy', entity, def, monsterLevel: entity.monsterLevel ?? 1 };
 }

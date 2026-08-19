@@ -2,7 +2,7 @@
  * Nachschlagehilfen fuer Entitaeten einer Karte.
  * Bewusst ohne Import aus grid.ts, damit grid.ts hier importieren kann.
  */
-import type { Entity, EntityId, MapRuntimeState, Stats, TileCoord } from './types';
+import type { Entity, EntityId, MapRuntimeState, TileCoord } from './types';
 
 /** Entitaet ueber ihre Id, oder undefined wenn sie nicht mehr existiert. */
 export function findEntity(mapState: MapRuntimeState, id: EntityId): Entity | undefined {
@@ -15,12 +15,12 @@ export function entitiesAt(mapState: MapRuntimeState, x: number, y: number): Ent
 }
 
 /**
- * Lebendig heisst: entweder ohne Stats (Tuer, Item, Deko) oder mit Health ueber 0.
+ * Lebendig heisst: entweder ohne Lebenswert (Tuer, Item, Deko) oder ueber 0.
  * Tote Gegner werden aus `entities` entfernt, diese Pruefung deckt das Fenster
  * zwischen Todesstoss und Aufraeumen ab.
  */
 export function isAlive(entity: Entity): boolean {
-  return entity.stats === undefined || entity.stats.health > 0;
+  return entity.health === undefined || entity.health > 0;
 }
 
 /** Tuer auf einer Kachel. */
@@ -58,13 +58,18 @@ export function removeEntity(mapState: MapRuntimeState, id: EntityId): boolean {
   return true;
 }
 
-/** Frische Gegner-Entitaet mit eigener Kopie der Stats. */
+/**
+ * Frische Gegner-Entitaet. `monsterLevel` wird beim Spawn festgeschrieben und
+ * aendert sich danach nicht mehr (SPEC v1.2 Abschnitt 8).
+ */
 export function createEnemyEntity(
   id: EntityId,
   defId: string,
   pos: TileCoord,
   facing: Entity['facing'],
-  stats: Stats
+  health: number,
+  monsterLevel: number,
+  rank: Entity['rank'] = 'common'
 ): Entity {
   return {
     id,
@@ -72,9 +77,24 @@ export function createEnemyEntity(
     defId,
     pos: { x: pos.x, y: pos.y },
     facing,
-    stats: { ...stats },
+    health,
+    monsterLevel,
+    rank,
     actionPoints: 0,
     active: false,
+    effects: [],
     animation: { frame: 'idle', startedAtTurn: 0 },
+  };
+}
+
+/** Lebenswert-Traeger einer Entitaet, ohne Kopie. Schreibt in die Entitaet zurueck. */
+export function vitalsOf(entity: Entity): { health: number } {
+  return {
+    get health(): number {
+      return entity.health ?? 0;
+    },
+    set health(value: number) {
+      entity.health = value;
+    },
   };
 }
