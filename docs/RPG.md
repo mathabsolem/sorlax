@@ -264,7 +264,50 @@ Diese Punkte brechen den bisherigen Vertrag und werden dort nachgezogen:
 - `GameState` bekommt `difficulty`, `nextItemUid`, `unlockedDifficulties`
 - `ContentDb` bekommt `affixes`, `skills`, `uniques`, `dropTables`
 
-## 9. Was mir daran nicht gefällt
+## 9. Ausgerüstete Gegner
+
+Ein Gegner, der Ausrüstung fallen lässt, trägt sie vorher selbst und profitiert von ihren
+Werten. Was du erbeutest, hat dich vorher geärgert.
+
+### Wer trägt Ausrüstung
+
+Nicht jeder. Sonst wächst der Spielstand um jede gewürfelte Instanz auf allen 16 Sohlen,
+und jeder Trittbrettgegner wird zur Lotterie.
+
+| Klasse | Anteil der Spawns | Ausrüstung | Kennzeichnung |
+|---|---|---|---|
+| gewöhnlich | 90 Prozent | keine | keine |
+| ausgerüstet | 9 Prozent | 1 bis 2 Teile, magisch oder selten | farbiger Umriss, Name im Ziel-Anzeiger |
+| Boss | fest | 2 bis 4 Teile, davon mindestens eines einzigartig | eigene Zeichnung |
+
+Der Anteil steigt pro Schwierigkeitsgrad um 4 Prozentpunkte.
+
+### Wirkung
+
+`getDerivedStats` gilt für Gegner genauso wie für den Spieler. Basiswerte kommen aus
+`EnemyDef` und der Skalierung nach `monsterLevel`, darauf werden die Affixe der getragenen
+Teile angewendet. Ein ausgerüsteter Kettenläufer mit `+18 Leben` und `+12 Prozent Schaden`
+ist damit rechnerisch ein anderer Gegner als sein gewöhnlicher Artgenosse.
+
+Affixe, die für Gegner sinnlos sind, werden nicht gewürfelt. Dafür trägt jeder `AffixDef`
+ein Feld `appliesTo: 'player' | 'enemy' | 'both'`. Munitionsverbrauch und Identifizieren
+gelten nur für den Spieler, Sichtweite wird bei Gegnern auf `aggroRange` abgebildet.
+
+### Erzeugung und Ablage
+
+Die Ausrüstung wird gewürfelt, wenn die Sohle zum ersten Mal betreten wird, nicht beim
+Tod. Sonst könnte der Spieler durch Neuladen würfeln. Sie liegt in `Entity.equipment` und
+damit im persistenten Kartenzustand.
+
+Beim Tod fällt jedes getragene Teil zu 100 Prozent. Die Drop-Tabellen aus BESTIARY
+Abschnitt 7 bleiben daneben bestehen und liefern weiterhin Stapelware.
+
+### Grenzen
+
+Höchstens 60 ausgerüstete Gegner pro Sohle. Wird die Grenze beim Kartenbau erreicht,
+spawnen die übrigen als gewöhnlich. Das deckelt den Spielstand nach oben.
+
+## 10. Was mir daran nicht gefällt
 
 **Der Grafikbedarf explodiert.** Zehn Steckplätze mal vier Raritäten mal mehrere
 Grundtypen ergibt schnell dreistellige Symbolzahlen. Mein Vorschlag: ein Symbol pro

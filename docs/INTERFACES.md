@@ -1,8 +1,12 @@
-# Scepter of Sorlax — INTERFACES v1.1
+# Scepter of Sorlax — INTERFACES v1.2
 
-Status: eingefroren. Ersetzt v1.0 vollständig.
-Änderungen gegenüber v1.0: `AssetBundle` liefert Pixeldaten statt `ImageBitmap`, `MapDef`
-hat Boden, Decke und Licht pro Kachel, `MapRuntimeState` unverändert.
+Status: eingefroren. Ersetzt v1.1 vollständig.
+Grundlage: SPEC v1.2, BESTIARY v2, RPG.md.
+
+Änderungen gegenüber v1.1: `PlayerState.stats` entfällt zugunsten von Attributen und
+abgeleiteten Werten, Gegenstände werden Instanzen mit Affixen, Fertigkeiten kommen dazu,
+Schadensarten und Resistenzen kommen dazu, `behavior` kennt `'scripted'`, Gegner tragen
+Ausrüstung.
 
 Dies ist der Vertrag zwischen den Modulen. Kein Sub-Task ändert hier etwas.
 Änderungsbedarf wird gemeldet, nicht umgesetzt.
@@ -13,38 +17,78 @@ Dies ist der Vertrag zwischen den Modulen. Kein Sub-Task ändert hier etwas.
 
 ```
 src/
-  core/      reine Logik, kein DOM, kein Canvas, kein fetch, kein Math.random
-  render/    Software-Renderer, liest core, schreibt nie
-  ui/        DOM-Overlay, HUD, Menüs, sendet Kommandos an core
-  input/     Touch und Tastatur, übersetzt zu Command
-  data/      JSON-Inhalte plus Loader plus Laufzeitvalidierung
-  net/       Auth und Save-Sync gegen die PHP-API
-  app/       Bootstrap, verdrahtet alles, einziger Ort mit Seiteneffekten
+  core/        reine Logik, kein DOM, kein Canvas, kein fetch, kein Math.random
+  core/bosses/ Bossskripte, denselben Regeln unterworfen
+  render/      Software-Renderer, liest core, schreibt nie
+  ui/          DOM-Overlay, HUD, Menüs, Inventar, Skilltree
+  input/       Touch und Tastatur, übersetzt zu Command
+  data/        JSON-Inhalte plus Loader plus Laufzeitvalidierung
+  net/         Auth und Save-Sync gegen die PHP-API
+  app/         Bootstrap, verdrahtet alles, einziger Ort mit Seiteneffekten
 ```
 
-Abhängigkeitsrichtung ist strikt: `app` darf alles, `render` `ui` `input` `net` dürfen
-`core` und `data` lesen, `core` kennt nur sich selbst.
+Abhängigkeitsrichtung strikt: `app` darf alles, `render` `ui` `input` `net` dürfen `core`
+und `data` lesen, `core` kennt nur sich selbst.
 
-Alle hier definierten Typen leben in `src/core/types.ts`. Andere Module importieren von
-dort und definieren sie nicht erneut.
+Alle hier definierten Typen leben in `src/core/types.ts`.
 
 ## 2. Basistypen
 
 ```ts
 export type TileCoord = { x: number; y: number };
-export type Facing = 0 | 1 | 2 | 3; // Nord, Ost, Süd, West
+export type Facing = 0 | 1 | 2 | 3;              // Nord, Ost, Süd, West
 export type EntityId = number;
 
-export type Stats = {
-  health: number;
-  maxHealth: number;
-  armor: number;
-  accuracy: number;
-  evasion: number;
+export type DamageType = 'physical' | 'fire' | 'poison' | 'ice' | 'shock' | 'void';
+export const DAMAGE_TYPES: readonly DamageType[];
+
+export type Difficulty = 'normal' | 'hard' | 'nightmare';
+
+export type EquipSlot =
+  | 'suit' | 'helmet' | 'belt' | 'boots' | 'gloves'
+  | 'weapon' | 'guard' | 'amulet' | 'gauge_left' | 'gauge_right';
+export const EQUIP_SLOTS: readonly EquipSlot[];
+
+export type Attributes = {
+  strength: number;
+  agility: number;
+  vitality: number;
+  focus: number;
 };
+
+export type Resistances = Record<DamageType, number>;   // Prozent, -100 bis 90
 ```
 
-## 3. Zustand
+## 3. Abgeleitete Werte
+
+```ts
+export type DerivedStats = {
+  maxHealth: number;
+  accuracy: number;
+  evasion: number;
+  armor: number;
+  meleeBonus: number;       // Faktor, 0.12 heißt plus 12 Prozent
+  elemBonus: number;
+  critBonus: number;        // additiv auf weapon.critChance
+  resistances: Resistances;
+  lightRadius: number;
+  freeActionChance: number; // 0 bis 1
+  ammoSaveChance: number;   // 0 bis 1
+};
+
+export function getDerivedStats(actor: Actor, content: ContentDb, difficulty: Difficulty): DerivedStats;
+```
+
+`Actor` ist der gemeinsame Nenner von Spieler und Gegner. Die Funktion ist rein und wird
+pro Runde einmal berechnet und zwischengespeichert, nicht pro Angriff.
+
+```ts
+export type Actor =
+  | { kind: 'player'; state: PlayerState }
+  | { kind: 'enemy'; entity: Entity; def: EnemyDef; monsterLevel: number };
+```
+
+## 4. Zustand
 
 ```ts
 export type GameState = {
@@ -52,24 +96,34 @@ export type GameState = {
   rngState: [number, number, number, number];
   turnCount: number;
   playTimeMs: number;
+  difficulty: Difficulty;
+  unlockedDifficulties: Difficulty[];
+  nextItemUid: number;
   player: PlayerState;
   currentMapId: string;
   maps: Record<string, MapRuntimeState>;
   flags: Record<string, boolean | number>;
-  log: LogEntry[]; // maximal 100 Einträge, ältere werden vorne verworfen
+  log: LogEntry[];          // maximal 100 Einträge, ältere werden vorne verworfen
 };
 
 export type PlayerState = {
   pos: TileCoord;
   facing: Facing;
-  stats: Stats;
+  health: number;           // einziger gespeicherter Kampfwert
+  attributes: Attributes;
+  unspentAttributePoints: number;
   level: number;
   xp: number;
   actionPoints: number;
+  skills: Record<string, number>;      // skillId auf Punkte, 0 bis 5
+  unspentSkillPoints: number;
+  cooldowns: Record<string, number>;   // skillId auf verbleibende Runden
+  equipment: Partial<Record<EquipSlot, ItemInstance>>;
+  inventory: ItemInstance[];           // maximal 40
+  weapons: string[];                   // Grundwaffen, unabhängig von Instanzen
   equippedWeaponId: string;
-  weapons: string[];
   ammo: Record<string, number>;
-  items: Record<string, number>;
+  consumables: Record<string, number>;
   keys: string[];
   effects: ActiveEffect[];
 };
@@ -77,11 +131,18 @@ export type PlayerState = {
 export type MapRuntimeState = {
   entities: Entity[];
   nextEntityId: EntityId;
-  openedDoors: string[];   // Schlüssel "x,y"
-  takenItems: string[];    // Schlüssel "x,y"
-  firedTriggers: string[]; // Trigger-Id
+  openedDoors: string[];    // Schlüssel "x,y"
+  takenItems: string[];     // Schlüssel "x,y"
+  groundItems: GroundItem[];
+  firedTriggers: string[];
+  rolled: boolean;          // true, sobald Ausrüstung und Drops gewürfelt wurden
   visited: boolean;
-  explored: string[];      // für die Automap, Schlüssel "x,y"
+  explored: string[];
+};
+
+export type GroundItem = {
+  pos: TileCoord;
+  item: ItemInstance;
 };
 
 export type Entity = {
@@ -90,50 +151,159 @@ export type Entity = {
   defId: string;
   pos: TileCoord;
   facing: Facing;
-  stats?: Stats;
+  health?: number;
+  monsterLevel?: number;
+  rank?: 'common' | 'equipped' | 'boss';
+  equipment?: Partial<Record<EquipSlot, ItemInstance>>;
   actionPoints: number;
   active: boolean;
   state?: string;
+  scriptState?: Record<string, number>;   // nur für behavior 'scripted'
+  effects: ActiveEffect[];
   animation: { frame: string; startedAtTurn: number };
 };
 
 export type ActiveEffect = {
-  id: string;
+  id: string;               // 'burn' | 'toxin' | 'chill' | 'jolt' | 'drain'
   remainingTurns: number;
   magnitude: number;
+  sourceType: DamageType;
 };
 
 export type LogEntry = {
   turn: number;
-  kind: 'combat' | 'pickup' | 'system' | 'story';
+  kind: 'combat' | 'pickup' | 'system' | 'story' | 'skill';
   text: string;
 };
 ```
 
-## 4. Kommandos und Ereignisse
+## 5. Gegenstände
 
-Einziger Mutationspunkt ist `applyCommand`. Der Zustand wird in place verändert, die
-Funktion gibt keinen neuen Zustand zurück, sondern eine Liste von Ereignissen.
+```ts
+export type Rarity = 'normal' | 'magic' | 'rare' | 'unique';
+
+export type ItemInstance = {
+  uid: number;
+  baseId: string;
+  slot: EquipSlot;
+  rarity: Rarity;
+  itemLevel: number;
+  affixes: RolledAffix[];
+  identified: boolean;
+};
+
+export type RolledAffix = {
+  affixId: string;
+  value: number;
+};
+
+export type AffixDef = {
+  id: string;
+  kind: 'prefix' | 'suffix';
+  stat: string;             // Feldname in DerivedStats oder 'res_fire' usw.
+  mode: 'flat' | 'percent';
+  min: number;
+  max: number;
+  tier: number;             // 1 bis 6
+  minItemLevel: number;
+  slots: EquipSlot[];
+  appliesTo: 'player' | 'enemy' | 'both';
+};
+
+export type UniqueDef = {
+  id: string;
+  baseId: string;
+  name: string;
+  minItemLevel: number;
+  affixes: { affixId: string; value: number }[];
+};
+
+export type DropTableDef = {
+  id: string;
+  rarityWeights: Record<Rarity, number>;
+  slotWeights: Partial<Record<EquipSlot, number>>;
+};
+
+export function rollItem(
+  rng: Rng,
+  baseId: string,
+  itemLevel: number,
+  table: DropTableDef,
+  content: ContentDb,
+  forEnemy: boolean
+): ItemInstance;
+```
+
+## 6. Fertigkeiten
+
+```ts
+export type SkillTreeId = 'tree_gear' | 'tree_reaction' | 'tree_endure';
+
+export type SkillDef = {
+  id: string;
+  tree: SkillTreeId;
+  name: string;
+  description: string;
+  maxPoints: number;                // 5
+  tier: 1 | 2 | 3;
+  reqLevel: number;
+  reqPointsInTree: number;
+  active: boolean;
+  cooldown: number;                 // Runden, 0 bei passiv
+  locked: boolean;                  // true für noch nicht umgesetzte Bäume
+  modifiers?: { stat: string; mode: 'flat' | 'percent'; perPoint: number }[];
+};
+```
+
+Passive Fertigkeiten wirken über `modifiers` in `getDerivedStats`.
+Aktive Fertigkeiten werden in `src/core/skills/` implementiert und über eine Registry
+`Record<string, SkillHandler>` aufgelöst.
+
+```ts
+export type SkillHandler = (
+  state: GameState,
+  skill: SkillDef,
+  points: number,
+  targetId: EntityId | undefined,
+  content: ContentDb
+) => GameEvent[];
+```
+
+## 7. Kommandos und Ereignisse
 
 ```ts
 export type Command =
   | { type: 'move'; dir: 'forward' | 'back' | 'left' | 'right' }
   | { type: 'turn'; dir: 'cw' | 'ccw' }
   | { type: 'attack'; targetId?: EntityId }
+  | { type: 'useSkill'; skillId: string; targetId?: EntityId }
   | { type: 'interact' }
-  | { type: 'useItem'; itemId: string }
+  | { type: 'useConsumable'; itemId: string }
   | { type: 'switchWeapon'; weaponId: string }
+  | { type: 'equip'; uid: number }
+  | { type: 'unequip'; slot: EquipSlot }
+  | { type: 'dropItem'; uid: number }
+  | { type: 'spendAttribute'; attr: keyof Attributes }
+  | { type: 'spendSkillPoint'; skillId: string }
   | { type: 'wait' };
 
 export type GameEvent =
   | { type: 'moved'; who: EntityId | 'player'; from: TileCoord; to: TileCoord }
   | { type: 'turned'; who: EntityId | 'player'; facing: Facing }
-  | { type: 'attack'; attacker: EntityId | 'player'; target: EntityId | 'player'; hit: boolean; damage: number; crit: boolean }
+  | { type: 'attack'; attacker: EntityId | 'player'; target: EntityId | 'player'; hit: boolean; damage: number; crit: boolean; damageType: DamageType }
+  | { type: 'skillUsed'; skillId: string; by: EntityId | 'player' }
+  | { type: 'effectApplied'; who: EntityId | 'player'; effectId: string; turns: number }
+  | { type: 'effectExpired'; who: EntityId | 'player'; effectId: string }
+  | { type: 'effectTick'; who: EntityId | 'player'; effectId: string; damage: number }
   | { type: 'died'; who: EntityId | 'player' }
+  | { type: 'itemDropped'; pos: TileCoord; uid: number }
   | { type: 'pickup'; defId: string; amount: number }
+  | { type: 'itemPickedUp'; uid: number }
+  | { type: 'equipped'; slot: EquipSlot; uid: number }
   | { type: 'doorChanged'; pos: TileCoord; state: 'open' | 'closed' | 'blocked' }
   | { type: 'levelUp'; newLevel: number }
   | { type: 'mapChange'; mapId: string }
+  | { type: 'difficultyUnlocked'; difficulty: Difficulty }
   | { type: 'message'; text: string }
   | { type: 'invalid'; reason: string };
 
@@ -141,31 +311,44 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
 ```
 
 Ein `invalid`-Ereignis bedeutet: keine Runde vergangen, Zustand unverändert.
+`equip`, `unequip`, `dropItem`, `spendAttribute` und `spendSkillPoint` kosten keine Runde.
 
-## 5. Inhalte
+## 8. Inhalte
 
 ```ts
 export type ContentDb = {
   enemies: Record<string, EnemyDef>;
   weapons: Record<string, WeaponDef>;
   items: Record<string, ItemDef>;
+  affixes: Record<string, AffixDef>;
+  uniques: Record<string, UniqueDef>;
+  dropTables: Record<string, DropTableDef>;
+  skills: Record<string, SkillDef>;
   maps: Record<string, MapDef>;
-  progression: { xpThresholds: number[] };
+  progression: { xpThresholds: number[] };   // Länge 60
 };
 
 export type EnemyDef = {
   id: string;
+  archetype: string;                  // 'rat', 'miner', ...
+  element: DamageType;
   name: string;
-  stats: Stats;
+  baseHealth: number;
+  baseArmor: number;
+  baseAccuracy: number;
+  baseEvasion: number;
+  resistances: Resistances;
   speed: number;
-  behavior: 'melee' | 'ranged' | 'charger' | 'turret';
+  behavior: 'melee' | 'ranged' | 'charger' | 'turret' | 'scripted';
+  scriptId?: string;                  // Pflicht bei behavior 'scripted'
   aggroRange: number;
   preferredRange: number;
   weaponId: string;
-  xpReward: number;
-  spriteWidth: number;     // Weltbreite in Kacheln, meist 0.8
+  baseXp: number;
+  spriteWidth: number;
   frames: { idle: string[]; attack: string[]; pain: string[]; death: string[] };
   drops?: { defId: string; amount: number; chance: number }[];
+  dropTableId?: string;               // für Ausrüstung
 };
 
 export type WeaponDef = {
@@ -173,59 +356,65 @@ export type WeaponDef = {
   name: string;
   dmgMin: number;
   dmgMax: number;
-  critChance: number;      // 0 bis 1
+  damageType: DamageType;
+  critChance: number;
   optimalRange: number;
   maxRange: number;
   ammoType: string | null;
   ammoPerShot: number;
   splash?: { radius: number; baseDamage: number };
-  sprite: string;          // Basisname der Waffenansicht
+  appliesEffect?: string;             // Effekt-Id
+  sprite: string;
   sound: string;
 };
 
 export type ItemDef = {
   id: string;
   name: string;
-  type: 'weapon' | 'ammo' | 'heal' | 'armor' | 'key' | 'keyCard' | 'quest' | 'powerup';
+  type: 'weapon' | 'ammo' | 'heal' | 'armor' | 'key' | 'keyCard' | 'quest' | 'powerup' | 'equipment';
+  slot?: EquipSlot;                   // Pflicht bei type 'equipment'
   amount: number;
+  reqLevel: number;
+  reqStrength: number;
+  reqAgility: number;
+  baseModifiers?: { stat: string; mode: 'flat' | 'percent'; value: number }[];
   sprite: string;
+  icon: string;
   effect?: { id: string; turns: number; magnitude: number };
 };
 ```
 
-## 6. Kartenformat
+## 9. Kartenformat
 
 ```ts
 export type MapDef = {
   id: string;
   name: string;
+  depth: number;                      // Sohle 1 bis 16
   width: number;
   height: number;
-  walls: number[];      // width * height, 0 = begehbar, sonst kodierter Wandwert
-  floors: number[];     // width * height, kodierter Bodenwert
-  ceilings: number[];   // width * height, kodierter Deckenwert
-  light: number[];      // width * height, 0 bis 255
+  walls: number[];
+  floors: number[];
+  ceilings: number[];
+  light: number[];
   spawn: { pos: TileCoord; facing: Facing };
   lamps: LampDef[];
   entities: MapEntityDef[];
   triggers: TriggerDef[];
   exits: { pos: TileCoord; targetMapId: string; targetSpawnId?: string }[];
-  ambientLight: number; // 0 bis 1, globaler Multiplikator
+  ambientLight: number;
 };
 
-export type LampDef = {
-  pos: TileCoord;
-  radius: number;
-  intensity: number;    // 0 bis 255
-};
+export type LampDef = { pos: TileCoord; radius: number; intensity: number };
 
 export type MapEntityDef = {
   kind: 'enemy' | 'door' | 'item' | 'decoration';
   defId: string;
   pos: TileCoord;
   facing?: Facing;
-  locked?: string;      // Schlüsselfarbe für Türen
+  locked?: string;
   secret?: boolean;
+  forceRank?: 'common' | 'equipped' | 'boss';
 };
 
 export type TriggerDef = {
@@ -246,9 +435,6 @@ export type TriggerAction =
 
 Alle Raster sind row major, Index = `y * width + x`.
 
-`lamps` ist Quellmaterial für `generateLightMap`. Das Ergebnis steht in `light` und hat
-Vorrang. Wird `light` weggelassen oder ist es leer, erzeugt der Loader es aus `lamps`.
-
 ### Kachelkodierung
 
 ```ts
@@ -261,59 +447,69 @@ export function rotationOf(value: number): 0 | 1 | 2 | 3;
 export function encodeTile(textureId: number, rotation: 0 | 1 | 2 | 3): number;
 ```
 
-## 7. Assets
+## 10. Bossskripte
 
-Der Renderer arbeitet auf rohen Pixeldaten, nicht auf `ImageBitmap`.
+```ts
+export type BossHandler = (
+  state: GameState,
+  entity: Entity,
+  def: EnemyDef,
+  content: ContentDb
+) => GameEvent[];
+
+export const BOSS_REGISTRY: Record<string, BossHandler>;
+```
+
+Bossskripte liegen in `src/core/bosses/<scriptId>.ts`, unterliegen denselben Regeln wie
+`core` und nutzen `entity.scriptState` für Phasenzähler und Abklingzeiten. Kein eigener
+Zufallsgenerator.
+
+## 11. Assets
 
 ```ts
 export type PixelSurface = {
   width: number;
   height: number;
-  pixels: Uint32Array;  // Länge width * height
+  pixels: Uint32Array;
 };
 
 export type AssetBundle = {
-  textures: Record<number, PixelSurface>;       // Wände, Boden, Decke, je 64 x 64
-  sprites: Record<string, PixelSurface>;        // Gegner und Items, 64 x 64
+  textures: Record<number, PixelSurface>;       // 64 x 64
+  sprites: Record<string, PixelSurface>;        // 64 x 64
   weaponSprites: Record<string, PixelSurface>;  // 160 x 100
-  ui: Record<string, ImageBitmap>;              // nur DOM-Overlay, kein Pixelzugriff
+  ui: Record<string, ImageBitmap>;
+  icons: Record<string, ImageBitmap>;           // Inventarsymbole, 32 x 32
   sounds: Record<string, AudioBuffer>;
 };
 ```
 
-Pixelformat: Byte-Reihenfolge identisch zu `ImageData.data`, also R, G, B, A.
-Auf Little-Endian-Systemen entspricht ein `Uint32` damit `0xAABBGGRR`. Alle Zielplattformen
-sind Little Endian, eine Byte-Order-Prüfung findet nicht statt.
+Pixelformat: Byte-Reihenfolge wie `ImageData.data`, also R, G, B, A. Auf Little Endian
+entspricht ein `Uint32` damit `0xAABBGGRR`. Alpha 0 wird übersprungen, kein Blending.
 
-Ein Alphawert von 0 bedeutet vollständig transparent und wird beim Zeichnen übersprungen.
-Zwischenwerte werden nicht unterstützt, es gibt kein Alpha-Blending im Renderer.
-Sprites müssen mit harter Kante freigestellt sein.
+Raritätsfarben werden als Rahmen im DOM gezeichnet, nicht als eigene Symbole.
 
-Dateikonvention:
 ```
-public/assets/textures/<id>.png        64 x 64
-public/assets/sprites/<name>.png       64 x 64
-public/assets/weapons/<name>.png       160 x 100
-public/assets/ui/<name>.png            beliebig
+public/assets/textures/<id>.png       64 x 64
+public/assets/sprites/<name>.png      64 x 64
+public/assets/weapons/<name>.png      160 x 100
+public/assets/icons/<name>.png        32 x 32
+public/assets/ui/<name>.png           beliebig
 ```
 
-Framenamen in `EnemyDef.frames` sind Dateinamen ohne Endung, zum Beispiel
-`grubling_idle_0`. Der Loader ergänzt Pfad und Endung.
-
-## 8. Renderer
+## 12. Renderer
 
 ```ts
 export interface Renderer {
   init(canvas: HTMLCanvasElement, assets: AssetBundle): Promise<void>;
   setState(state: GameState, content: ContentDb): void;
-  consumeEvents(events: GameEvent[]): void;   // startet Animationen
-  frame(dtMs: number): void;                  // zeichnet, mutiert den Zustand nicht
-  isAnimating(): boolean;                     // solange true nimmt Input keine Kommandos an
+  consumeEvents(events: GameEvent[]): void;
+  frame(dtMs: number): void;
+  isAnimating(): boolean;
   pickEntityAt(screenX: number, screenY: number): EntityId | null;
 }
 ```
 
-## 9. Netz
+## 13. Netz
 
 ```ts
 export interface ApiClient {
@@ -331,12 +527,13 @@ export type SaveMeta = {
   slot: number;
   turnCount: number;
   level: number;
+  difficulty: Difficulty;
   mapId: string;
   playTimeMs: number;
   updatedAt: string;
-  checksum: string;   // SHA-256 über den serialisierten Zustand
+  checksum: string;
 };
 ```
 
-Jeder Aufruf wirft bei HTTP-Status ungleich 200 einen `ApiError` mit `code` und `message`.
 Netzfehler dürfen das Spiel nie blockieren, lokales Speichern hat Vorrang.
+Ein serialisierter Spielstand ist auf 2 MB begrenzt, siehe BACKEND.md.

@@ -1,26 +1,25 @@
-# Scepter of Sorlax — SPEC v1.1
+# Scepter of Sorlax — SPEC v1.2
 
-Status: eingefroren. Ersetzt v1.0 vollständig.
-Änderungen gegenüber v1.0: Software-Renderer statt Canvas-Zeichenbefehlen, texturierter
-Boden und Decke pro Kachel, Beleuchtung pro Kachel, Setting festgelegt.
+Status: eingefroren. Ersetzt v1.1 vollständig.
+Ergänzende Dokumente: BESTIARY.md v2 für Inhalte, RPG.md für das Fortschrittssystem.
 
-Alle Module lesen diese Datei plus INTERFACES.md als Input.
+Änderungen gegenüber v1.1: Schadensarten und Resistenzen, Statuseffekte, Attribute und
+abgeleitete Werte, Ausrüstung, Fertigkeiten, drei Schwierigkeitsgrade, 16 Sohlen,
+Bossskripte, ausgerüstete Gegner.
 
 ---
 
 ## 1. Ziel und Setting
 
-Rundenbasierter Dungeon Crawler aus der Ego-Perspektive, mechanisch angelehnt an DOOM RPG.
-Eigene Marke, eigene Assets, keine Übernahme geschützter Namen, Texturen oder Töne.
+Rundenbasierter Dungeon Crawler aus der Ego-Perspektive mit Fortschrittssystem in der
+Tradition von Diablo 2. Eigene Marke, eigene Assets.
 
-Setting: eine unterirdische Bergbauanlage, in der ein Konzern beim Vortrieb eine ältere,
-nicht menschliche Struktur angeschnitten hat. Optischer Kontrast aus verrosteter
-Industrietechnik und organisch wirkendem Gestein. Der Kontrast ist kein Selbstzweck,
-sondern liefert mit wenigen Texturen viel Abwechslung.
+Setting: die unterirdische Bergbauanlage Schacht Corvane der Verrath Fördergesellschaft.
+Beim Vortrieb auf Sohle 7 wurde eine ältere, nicht menschliche Struktur angeschnitten.
+Sechzehn Sohlen, alle vier Sohlen ein Boss.
 
 Kernschleife: Der Spieler bewegt sich Feld für Feld durch ein Raster, jede zeitkostende
-Aktion gibt allen Gegnern eine Aktion. Kämpfe sind Rechenoperationen ohne
-Reaktionszeitanforderung.
+Aktion gibt allen Gegnern eine Aktion.
 
 ## 2. Plattform und Technik
 
@@ -30,70 +29,56 @@ Reaktionszeitanforderung.
 | Build | Vite |
 | Rendering | Software-Renderer in einen Pixelpuffer, Ausgabe per putImageData |
 | Interne Auflösung | 320 x 200, per Nearest Neighbor hochskaliert |
-| Ziel-Framerate | 60 fps, Logik ist framerateunabhängig |
 | Mobile Verpackung | Capacitor, Android und iOS |
 | Backend | PHP 8.1+, MySQL 8, JSON über HTTPS |
 | Framework Frontend | keines |
-
-Warum Software-Renderer: Texturierter Boden erfordert Pixelzugriff. Ein Mischbetrieb aus
-Pixelpuffer für den Boden und `drawImage` für Wände kostet mehr als er spart, weil der
-Browser den Puffer bei jedem Wechsel synchronisieren muss. Deshalb wird alles in einen
-`Uint32Array` geschrieben und einmal pro Bild ausgegeben.
-
-Kostenabschätzung: 320 x 200 sind 64000 Pixel pro Bild. Boden und Decke nutzen
-Zeilenkohärenz, also eine Division pro Bildzeile und zwei Additionen pro Pixel. Das ist
-auf Geräten der letzten zehn Jahre unkritisch.
 
 ## 3. Spielmodell
 
 ### 3.1 Raster und Koordinaten
 
-- Karte ist ein 2D-Raster fester Größe, Kachelgröße 1.0 in Weltkoordinaten.
-- x wächst nach Osten, y wächst nach Süden.
-- Spieler und Gegner besetzen genau eine Kachel.
-- Vier Blickrichtungen: 0 = Nord, 1 = Ost, 2 = Süd, 3 = West.
-- Die Logik kennt nur ganzzahlige Positionen und die vier Richtungen. Der Renderer hält
-  zusätzlich eine interpolierte Float-Position und einen Float-Winkel.
+Kachelgröße 1.0, x nach Osten, y nach Süden. Vier Blickrichtungen: 0 Nord, 1 Ost, 2 Süd,
+3 West. Die Logik kennt nur ganzzahlige Positionen, der Renderer interpoliert.
 
 ### 3.2 Rundenmodell
 
 | Aktion | Kosten |
 |---|---|
-| Drehen um 90 Grad | 0 |
-| Schritt vorwärts, rückwärts, seitwärts | 1 |
+| Drehen | 0 |
+| Schritt | 1 |
 | Angriff | 1 |
-| Item benutzen | 1 |
+| Aktive Fertigkeit | 1 |
+| Verbrauchsgut benutzen | 1 |
 | Warten | 1 |
-| Tür öffnen, Schalter betätigen | 1 |
-| Menü öffnen, Karte ansehen | 0 |
+| Tür oder Schalter | 1 |
+| Anlegen, Ablegen, Punkte verteilen, Menü, Karte | 0 |
 
 Ablauf pro Runde:
 1. Spieler führt eine Aktion mit Kosten 1 aus.
 2. Rundenzähler wird erhöht.
-3. Jeder aktive Akteur erhält `speed` Aktionspunkte. Solange ein Akteur mindestens 1.0
-   Punkte hat, führt er eine Aktion aus und verliert 1.0 Punkte.
-4. Statuseffekte werden abgearbeitet, dann Siegbedingung und Tod geprüft.
+3. Jeder aktive Akteur erhält `speed` Aktionspunkte, bei `chill` beim Spieler das Doppelte.
+   Solange ein Akteur mindestens 1.0 Punkte hat, handelt er und verliert 1.0.
+4. Statuseffekte werden abgearbeitet, Abklingzeiten um 1 gesenkt, dann Tod geprüft.
 
-`speed` 1.0 ist Standard, 2.0 bedeutet zwei Aktionen pro Runde, 0.5 eine Aktion in jeder
-zweiten Runde. Die Punkte werden im Savegame persistiert, sonst ist Laden nicht
-deterministisch.
+`freeActionChance` wird vor Schritt 2 geprüft. Bei Erfolg kostet die Aktion keine Runde,
+Schritte 2 bis 4 entfallen. Höchstens einmal pro Spieleraktion.
 
 ### 3.3 Determinismus
 
-Ein einziger Seeded RNG, xorshift128, Zustand ist Teil des Savegames. Kein `Math.random()`
-in `src/core/`.
+Ein Seeded RNG, xorshift128, Zustand im Savegame. Kein `Math.random()` in `src/core/`,
+einschließlich `src/core/bosses/` und `src/core/skills/`.
+
+Ausrüstung und Drops einer Sohle werden beim ersten Betreten gewürfelt und in
+`MapRuntimeState` festgeschrieben, `rolled` wird auf true gesetzt. Neuladen erzeugt keine
+neuen Würfe.
 
 ### 3.4 Sichtbarkeit
 
-- Ein Gegner wird aktiv, wenn er Sichtlinie zum Spieler hat und die Distanz kleiner gleich
-  `aggroRange` ist, oder wenn er Schaden nimmt.
-- Sichtlinie per Bresenham über das Raster, blockiert durch solide Kacheln und
-  geschlossene Türen.
-- Einmal aktiv bleibt ein Gegner aktiv bis zu seinem Tod.
+Ein Gegner wird aktiv bei Sichtlinie und Distanz kleiner gleich `aggroRange`, oder bei
+erlittenem Schaden. Einmal aktiv bleibt aktiv. Sichtlinie per Bresenham, blockiert durch
+solide Kacheln und geschlossene Türen.
 
 ## 4. Kampfregeln
-
-Verbindlich. Kein Modul erfindet eigene Formeln.
 
 ### 4.1 Trefferwahrscheinlichkeit
 
@@ -102,139 +87,165 @@ hitChance = clamp(0.05, 0.95, 0.75 + (attacker.accuracy - defender.evasion) * 0.
 rangePenalty = max(0, distance - weapon.optimalRange) * 0.05
 ```
 
-Distanz ist die Chebyshev-Distanz in Kacheln. Nahkampf hat `optimalRange` 1.
+Distanz ist die Chebyshev-Distanz in Kacheln.
 
 ### 4.2 Schaden
 
+Verbindliche Reihenfolge:
+
 ```
-roll   = randInt(weapon.dmgMin, weapon.dmgMax)
-isCrit = rng() < weapon.critChance
-raw    = isCrit ? roll * 2 : roll
-final  = max(1, raw - floor(defender.armor * 0.5))
+roll        = randInt(weapon.dmgMin, weapon.dmgMax)
+typBonus    = (damageType === 'physical' && optimalRange <= 1) ? meleeBonus
+            : (damageType !== 'physical') ? elemBonus : 0
+raw         = round(roll * (1 + typBonus))
+isCrit      = rng() < (weapon.critChance + attacker.critBonus)
+raw         = isCrit ? raw * 2 : raw
+afterResist = max(1, floor(raw * (1 - defender.resistances[damageType] / 100)))
+final       = max(1, afterResist - floor(defender.armor * 0.5))
 ```
+
+Erst Resistenz, dann Rüstung. Umgekehrt wären Resistenzen bei gepanzerten Zielen fast
+wirkungslos.
+
+Spielerresistenzen sind auf 75 Prozent gedeckelt, nach unten unbegrenzt.
 
 ### 4.3 Flächenschaden
 
 ```
-final = max(1, floor(baseDamage * (1 - distance / radius)) - floor(armor * 0.5))
+final = max(1, floor(baseDamage * (1 - distance / radius) * (1 - resist / 100)) - floor(armor * 0.5))
 ```
 
 Der Spieler nimmt Selbstschaden aus eigenen Explosionen zu 50 Prozent.
 
 ### 4.4 Munition
 
-Jede Waffe hat einen `ammoType` oder `null` für Nahkampf. Ein Angriff ohne Munition ist
-keine gültige Aktion und kostet keine Runde.
+Waffen ohne `ammoType` sind Nahkampf. Ein Angriff ohne Munition ist ungültig und kostet
+keine Runde. `ammoSaveChance` verhindert den Verbrauch, nicht den Schuss.
 
-## 5. Entitäten
+### 4.5 Statuseffekte
 
-### 5.1 Spieler
+| id | Quelle | Wirkung | Dauer |
+|---|---|---|---|
+| `burn` | fire | 4 Schaden pro Runde, ignoriert Rüstung | 3 |
+| `toxin` | poison | 2 Schaden pro Runde, ignoriert Rüstung | 6 |
+| `chill` | ice | Gegner erhalten doppelte Aktionspunkte | 4 |
+| `jolt` | shock | Genauigkeit minus 8 | 3 |
+| `drain` | void | maxHealth minus 15 Prozent, Rüstung minus 3 | 5 |
 
-Startwerte: maxHealth 50, armor 0, accuracy 10, evasion 5, level 1, xp 0.
+Gleiche Effekte stapeln nicht, die Dauer wird erneuert. Abarbeitung in fester Reihenfolge
+`burn`, `toxin`, `drain`, `chill`, `jolt`.
 
-### 5.2 Gegner
+Ein Effekt wird nicht ausgelöst, wenn die Resistenz des Ziels gegen sein Element 50 oder
+höher ist.
+
+## 5. Fortschritt
+
+Attribute, abgeleitete Werte, Ausrüstung, Gegenstände und Fertigkeiten sind vollständig in
+RPG.md beschrieben. Verbindlich sind dort die Abschnitte 1 bis 7 und 9.
+
+Kurzfassung:
+- vier Attribute, Start je 10, fünf Punkte pro Level, Maximum 300
+- `maxHealth = 20 + 3 * vitality`, `accuracy = floor(4 + 0.6 * agility)`,
+  `evasion = floor(1 + 0.4 * agility)`
+- ein Fertigkeitspunkt pro Level, höchstens 5 pro Fertigkeit
+- Maximales Spielerlevel 60, XP-Schwellen in `content/progression.json`
+- zehn Ausrüstungsplätze, 40 Inventarplätze
+- Gegenstände sind Instanzen mit gewürfelten Affixen
+
+## 6. Texturkodierung
+
+```
+textureId = value & 0x0FFF
+rotation  = (value >> 12) & 0x3
+```
+
+Konstanten in `src/core/tiles.ts`.
+
+## 7. Beleuchtung
+
+```
+staticLight    = light[tileIndex] / 255
+distanceFactor = clamp(0, 1, 1 - dist / MAX_VIEW_DIST)          // MAX_VIEW_DIST = 16
+playerLight    = 0.35 * clamp(0, 1, 1 - dist / lightRadius)     // lightRadius aus DerivedStats
+brightness     = clamp(0.04, 1, ambientLight * staticLight * distanceFactor + playerLight)
+```
+
+Wandflächen nutzen den Lichtwert der Kachel, aus der der Ray auf die Wand trifft.
+Nordsüdwände zusätzlich Faktor 0.7.
+
+`generateLightMap` erzeugt beim Kartenbau einen Startwert aus `lamps`, Flutfüllung mit
+linearem Abfall, blockiert durch solide Kacheln, mehrere Lampen per Maximum kombiniert.
+
+## 8. Schwierigkeitsgrade und Gegnerlevel
+
+| Grad | Stufenversatz | Resistenzstrafe Spieler | Gegner-HP | Gegner-Schaden | XP | Gegnerresistenz |
+|---|---|---|---|---|---|---|
+| `normal` | 0 | 0 | x1.0 | x1.0 | x1.0 | +0 |
+| `hard` | +18 | -40 | x1.9 | x1.6 | x2.0 | +25 |
+| `nightmare` | +36 | -100 | x3.2 | x2.4 | x3.0 | +50 |
+
+```
+sohleBasis   = round(depth * 1.6) + gradVersatz
+monsterLevel = clamp(sohleBasis, sohleBasis + 6, playerLevel)
+
+faktor     = 1 + 0.045 * (monsterLevel - 1)
+health     = round(baseHealth * faktor * gradFaktorHP)
+dmgMin/Max = round(base * (1 + 0.030 * (monsterLevel - 1)) * gradFaktorDmg)
+armor      = baseArmor    + floor(monsterLevel / 6)
+accuracy   = baseAccuracy + floor(monsterLevel * 0.8)
+evasion    = baseEvasion  + floor(monsterLevel / 3)
+xpReward   = round(baseXp * (1 + 0.10 * (monsterLevel - 1)) * gradFaktorXP)
+```
+
+Ein Grad wird durch den Sieg über Sorlax im vorherigen freigeschaltet. Level, Attribute,
+Fertigkeiten und Ausrüstung bleiben erhalten.
+
+## 9. Gegner
 
 | behavior | Beschreibung |
 |---|---|
 | `melee` | nähert sich per Pfadsuche, greift bei Distanz 1 an |
-| `ranged` | hält Distanz `preferredRange`, schießt bei Sichtlinie |
-| `charger` | speed 2.0, nur Nahkampf, keine Pfadsuche, läuft direkt |
+| `ranged` | hält `preferredRange`, schießt bei Sichtlinie |
+| `charger` | speed 2.0, keine Pfadsuche, läuft direkt |
 | `turret` | bewegt sich nie, schießt bei Sichtlinie |
+| `scripted` | Verhalten aus `src/core/bosses/<scriptId>.ts` |
 
-Pfadsuche: A-Stern auf dem Raster, nur vier Nachbarn, Grenze 200 besuchte Knoten pro
-Aufruf. Bei Überschreitung fällt der Gegner auf Direktbewegung zurück.
-
+Pfadsuche: A-Stern, vier Nachbarn, Grenze 200 Knoten, danach Direktbewegung.
 Gegner öffnen keine Türen und sammeln keine Items ein.
 
-### 5.3 Items
+Ränge: `common` ohne Ausrüstung, `equipped` mit ein bis zwei Teilen und farbigem Umriss,
+`boss` mit zwei bis vier Teilen. Anteile und Grenzen in RPG.md Abschnitt 9.
 
-Typen: `weapon`, `ammo`, `heal`, `armor`, `key`, `keyCard`, `quest`, `powerup`.
-Schlüssel sind farbcodiert und blockieren passende Türen.
+## 10. Karten
 
-### 5.4 Kacheln
+16 Sohlen, maximal 48 x 48 Kacheln, erzeugt durch einen deterministischen Generator mit
+Seed und geprüft durch einen Validator. Der Validator bricht ab bei nicht erreichbaren
+Bereichen, Türen ohne erreichbaren Schlüssel, Gegnern in soliden Kacheln oder fehlendem
+Ausgang.
 
-Jede Kachel trägt vier Werte: Wand, Boden, Decke, Licht.
-Wand 0 bedeutet begehbarer Boden. Boden und Decke sind immer gesetzt, auch unter Wänden,
-dort werden sie nur nie sichtbar.
+Persistenter Kartenzustand gehört ins Savegame.
 
-Türen sind eigene Entitäten mit Zustand `closed`, `open`, `locked`. Geheimtüren sehen wie
-Wände aus und öffnen per Schalter.
+## 11. Speichern und Sync
 
-## 6. Texturkodierung
+- Autosave bei Sohlenwechsel und alle 50 Runden
+- drei manuelle Plätze plus ein Autosave-Platz, je Schwierigkeitsgrad geteilt
+- lokal in IndexedDB, remote über BACKEND.md
+- Konflikt: Server gewinnt bei höherem `turnCount`, sonst lokal, bei Gleichstand fragt das
+  Spiel nach
+- versioniert mit Migrationskette
+- Obergrenze 2 MB je serialisiertem Stand
 
-Boden-, Decken- und Wandwerte sind je eine Zahl mit eingebetteter Drehung:
+## 12. Steuerung
 
-```
-textureId = value & 0x0FFF          // 0 bis 4095
-rotation  = (value >> 12) & 0x3     // 0 bis 3, Vierteldrehungen im Uhrzeigersinn
-```
+Touch: Steuerkreuz links unten, Drehknöpfe daneben, Aktionsknopf rechts unten,
+Fertigkeitsleiste über dem Aktionsknopf, Tippen auf einen Gegner setzt das Ziel.
+Alle Bedienelemente sind DOM-Elemente über dem Canvas, mindestens 48 x 48 CSS-Pixel.
 
-Der Renderer dreht beim Auslesen die Texturkoordinaten. Damit reicht eine Blutspur als
-gerades Stück und als Kurve, statt acht Einzelbilder für alle Richtungen.
+Tastatur: WASD oder Pfeiltasten, Q und E drehen, Leertaste Aktion, 1 bis 9 Waffen,
+F1 bis F6 Fertigkeiten, I Inventar, K Fertigkeiten, Tab Karte, Escape Menü.
 
-Konstanten liegen in `src/core/tiles.ts`, kein Modul schreibt die Werte direkt hin.
+## 13. Ausdrücklich nicht im Umfang
 
-## 7. Beleuchtung
-
-Jede Kachel hat einen statischen Lichtwert 0 bis 255. Er wird beim Kartenbau gesetzt und
-zur Laufzeit nicht verändert.
-
-```
-staticLight    = light[tileIndex] / 255
-distanceFactor = clamp(0, 1, 1 - dist / MAX_VIEW_DIST)     // MAX_VIEW_DIST = 16
-playerLight    = 0.35 * clamp(0, 1, 1 - dist / 4)
-brightness     = clamp(0.04, 1, ambientLight * staticLight * distanceFactor + playerLight)
-```
-
-`playerLight` ist eine Nahbereichsaufhellung. Ohne sie steht der Spieler in dunklen
-Bereichen vor einer schwarzen Wand und sieht gar nichts.
-
-Für Wandflächen wird der Lichtwert der Kachel verwendet, aus der der Ray auf die Wand
-trifft, nicht der Wert der Wandkachel selbst. Wandkacheln haben keinen sinnvollen
-eigenen Lichtwert.
-
-Nordsüdwände werden zusätzlich mit Faktor 0.7 abgedunkelt, damit Kanten erkennbar sind.
-
-Beim Kartenbau erzeugt `generateLightMap` einen Startwert aus den Positionen der
-Deckenlampen. Das Ergebnis wird in die Karte geschrieben und darf danach von Hand
-übermalt werden. Der Algorithmus ist eine Flutfüllung mit linearem Abfall über den Radius,
-blockiert durch solide Kacheln, mehrere Lampen werden per Maximum kombiniert.
-
-## 8. Progression
-
-XP-Schwellen liegen als Tabelle in `content/progression.json`, nicht im Code.
-Pro Levelaufstieg: maxHealth +10, accuracy +2, evasion +1, armor +1 bei geraden Leveln.
-Health wird beim Aufstieg voll aufgefüllt.
-
-## 9. Karten
-
-Eine Karte ist eine JSON-Datei nach dem Schema in INTERFACES.md.
-Level 1 bis 3 sind handgebaut, maximal 48 x 48 Kacheln.
-
-Persistenter Kartenzustand gehört ins Savegame, nicht in die Kartendatei:
-geöffnete Türen, getötete Gegner, aufgesammelte Items, ausgelöste Trigger.
-
-## 10. Speichern und Sync
-
-- Autosave bei jedem Kartenwechsel und alle 50 Runden.
-- Drei manuelle Speicherplätze plus ein Autosave-Slot.
-- Lokal in IndexedDB, remote über die API aus BACKEND.md.
-- Konflikt: Server gewinnt bei höherem `turnCount`, sonst lokal. Bei Gleichstand fragt
-  das Spiel nach.
-- Savegames sind versioniert, beim Laden läuft eine Migrationskette.
-
-## 11. Steuerung
-
-Touch: virtuelles Steuerkreuz links unten, Drehknöpfe daneben, Aktionsknopf rechts unten,
-Waffenwechsel per Wischen über die Waffenanzeige, Tippen auf einen Gegner setzt das Ziel.
-Alle Bedienelemente sind DOM-Elemente über dem Canvas, nicht in das Bild gezeichnet, und
-mindestens 48 x 48 CSS-Pixel groß.
-
-Tastatur: WASD oder Pfeiltasten, Q und E zum Drehen, Leertaste für Aktion, 1 bis 9 für
-Waffen, Tab für Karte, Escape für Menü.
-
-## 12. Ausdrücklich nicht im Umfang
-
-Multiplayer, prozedurale Level, Sprachausgabe, Controller-Support, Achievements, Shop,
-dynamische Lichtquellen, Höhenunterschiede, schräge Wände.
-Diese Punkte werden nicht vorbereitet und nicht abstrahiert.
+Multiplayer, Handel, Handwerk, Sockelsystem, Söldner, prozedurale Levelgeometrie zur
+Laufzeit, Sprachausgabe, Controller, Achievements, dynamische Lichtquellen,
+Höhenunterschiede, schräge Wände, Rasterinventar mit Gegenstandsgrößen.
