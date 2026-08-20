@@ -9,6 +9,7 @@ import {
   tickCooldowns,
 } from '../src/core/turn';
 import { tickEffects } from '../src/core/effects';
+import { createInstance } from '../src/core/items';
 import { setup } from './fixtures/world';
 
 describe('reapDead', () => {
@@ -194,5 +195,46 @@ describe('hasDeath', () => {
       fatal = advanceRound(state, content);
     }
     expect(fatal?.filter((event) => event.type === 'died')).toHaveLength(1);
+  });
+});
+
+describe('freie Aktion mit Ausruestung', () => {
+  it('laesst bei voller Chance die Runde ganz entfallen', () => {
+    const { state, content } = setup();
+    const boots = createInstance(
+      state,
+      'boots_tread',
+      20,
+      'rare',
+      [{ affixId: 'suf_of_haste', value: 100 }],
+      content
+    );
+    if (boots === null) throw new Error('kein Grundtyp');
+    state.player.equipment['boots'] = boots;
+    invalidatePlayerDerived(state);
+    expect(playerDerived(state, content).freeActionChance).toBe(1);
+
+    expect(rollFreeAction(state, content)).toBe(true);
+    expect(advanceRound(state, content)).toBeNull();
+    expect(state.turnCount).toBe(0);
+  });
+
+  it('verbraucht bei einer Chance ueber 0 einen Wurf', () => {
+    const { state, content } = setup();
+    const boots = createInstance(
+      state,
+      'boots_tread',
+      20,
+      'rare',
+      [{ affixId: 'suf_of_haste', value: 50 }],
+      content
+    );
+    if (boots === null) throw new Error('kein Grundtyp');
+    state.player.equipment['boots'] = boots;
+    invalidatePlayerDerived(state);
+
+    const before = [...state.rngState];
+    rollFreeAction(state, content);
+    expect([...state.rngState]).not.toEqual(before);
   });
 });

@@ -3,6 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { attackAction } from '../src/core/attack';
+import { createInstance } from '../src/core/items';
+import { invalidatePlayerDerived, playerDerived } from '../src/core/turn';
 import { setup } from './fixtures/world';
 
 describe('attackAction', () => {
@@ -104,5 +106,76 @@ describe('attackAction', () => {
     // baseXp 10, monsterLevel 2 auf Sohle 1 -> round(10 * 1.1) = 11
     expect(state.player.xp).toBe(11);
     expect(state.player.level).toBe(2);
+  });
+});
+
+describe('Munitionsverbrauch', () => {
+  it('zieht ohne Ausruestung jeden Schuss ab', () => {
+    const { state, content } = setup({
+      spawn: { pos: { x: 1, y: 1 }, facing: 1 },
+      entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } }],
+    });
+    state.player.weapons.push('pistol');
+    state.player.equippedWeaponId = 'pistol';
+    state.player.ammo['bullets'] = 3;
+
+    expect(attackAction(state, content).ok).toBe(true);
+    expect(state.player.ammo['bullets']).toBe(2);
+  });
+
+  // ammoSaveChance verhindert den Verbrauch, nicht den Schuss (SPEC 4.4).
+  it('spart bei voller Chance jede Patrone, feuert aber trotzdem', () => {
+    const { state, content } = setup({
+      spawn: { pos: { x: 1, y: 1 }, facing: 1 },
+      entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } }],
+    });
+    state.player.weapons.push('pistol');
+    state.player.equippedWeaponId = 'pistol';
+    state.player.ammo['bullets'] = 3;
+
+    const belt = createInstance(
+      state,
+      'belt_strap',
+      20,
+      'rare',
+      [{ affixId: 'suf_of_thrift', value: 100 }],
+      content
+    );
+    if (belt === null) throw new Error('kein Grundtyp');
+    state.player.equipment['belt'] = belt;
+    invalidatePlayerDerived(state);
+    expect(playerDerived(state, content).ammoSaveChance).toBe(1);
+
+    const result = attackAction(state, content);
+
+    expect(result.ok).toBe(true);
+    expect(state.player.ammo['bullets']).toBe(3);
+    expect(result.ok && result.events.some((event) => event.type === 'attack')).toBe(true);
+  });
+});
+
+describe('Flaechenschaden ueber attackAction', () => {
+  it('trifft Nachbarn des Ziels mit der Explosion', () => {
+    const { state, content } = setup({
+      spawn: { pos: { x: 1, y: 1 }, facing: 1 },
+      entities: [
+        { kind: 'enemy', defId: 'tank', pos: { x: 4, y: 1 } },
+        { kind: 'enemy', defId: 'tank', pos: { x: 5, y: 1 } },
+      ],
+    });
+    state.player.weapons.push('launcher');
+    state.player.equippedWeaponId = 'launcher';
+    state.player.ammo['rockets'] = 2;
+
+    const neighbour = state.maps['test']?.entities[1];
+    const before = neighbour?.health;
+    const healthBefore = state.player.health;
+
+    const result = attackAction(state, content);
+
+    expect(result.ok).toBe(true);
+    expect(neighbour?.health).toBeLessThan(before ?? 0);
+    // Der Spieler steht drei Kacheln entfernt, ausserhalb des Radius von 2.
+    expect(state.player.health).toBe(healthBefore);
   });
 });

@@ -131,14 +131,18 @@ export function attackAction(
   }
 
   const playerStats = playerDerived(state, content);
+  const rng = loadRng(state);
+
   if (ammoType !== null) {
-    const saved = weapon.ammoPerShot > 0 && playerStats.ammoSaveChance > 0;
+    // SPEC 4.4: ammoSaveChance verhindert den Verbrauch, nicht den Schuss.
+    // Bei Chance 0 wird kein Wurf verbraucht, damit der Zufallsstrom ohne
+    // entsprechende Ausruestung unveraendert bleibt.
+    const saved = playerStats.ammoSaveChance > 0 && rng.next() < playerStats.ammoSaveChance;
     if (!saved) {
       state.player.ammo[ammoType] = (state.player.ammo[ammoType] ?? 0) - weapon.ammoPerShot;
     }
   }
 
-  const rng = loadRng(state);
   const events = resolveAttack(
     rng,
     { ref: 'player', stats: playerStats, vitals: state.player },
