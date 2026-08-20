@@ -3,7 +3,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
-import { clampHealthToMax, equipAction, unequipAction } from '../src/core/equipActions';
+import {
+  clampHealthToMax,
+  dropItemAction,
+  equipAction,
+  unequipAction,
+} from '../src/core/equipActions';
 import { MAX_INVENTORY, addToInventory, createInstance } from '../src/core/items';
 import { pickupGroundItems } from '../src/core/playerActions';
 import { invalidatePlayerDerived, playerDerived } from '../src/core/turn';
@@ -200,6 +205,17 @@ describe('dropItem und Aufnahme', () => {
     expect(state.maps['test']?.groundItems).toEqual([{ pos: { x: 1, y: 1 }, item }]);
     expect(state.player.inventory).toHaveLength(0);
     expect(state.turnCount).toBe(0);
+  });
+
+  it('lehnt unbekannte Gegenstaende ab und laesst die Karte in Ruhe', () => {
+    const { state, content } = setup();
+    expect(dropItemAction(state, content, 99999)).toEqual({ ok: false, reason: 'unknown item' });
+    expect(state.maps['test']?.groundItems).toEqual([]);
+
+    const item = give(state, content, 'suit_liner');
+    const result = dropItemAction(state, content, item.uid);
+    expect(result.ok).toBe(true);
+    expect(state.maps['test']?.groundItems).toHaveLength(1);
   });
 
   it('legt auch ein getragenes Teil ab und senkt health mit', () => {
