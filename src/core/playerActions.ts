@@ -6,12 +6,21 @@ import { currentScene } from './actionResult';
 import type { ActionResult } from './actionResult';
 import { playerActor } from './derived';
 import { applyEffectDefault } from './effects';
-import { doorAt, enemyAt, itemAt, removeEntity } from './entities';
+import { doorAt, enemyAt, entitiesAt, removeEntity } from './entities';
 import { stepFrom, tileKey } from './grid';
+import { addToInventory, groundItemsAt, removeGroundItem } from './items';
 import { spendAttributePoint } from './progression';
 import { fireTriggers, hasUsableTrigger } from './triggers';
 import { invalidatePlayerDerived, playerDerived } from './turn';
-import type { Attributes, ContentDb, GameEvent, GameState, ItemDef, TileCoord } from './types';
+import type {
+  Attributes,
+  ContentDb,
+  GameEvent,
+  GameState,
+  ItemDef,
+  MapRuntimeState,
+  TileCoord,
+} from './types';
 
 /** Legt ein aufgesammeltes Item in das passende Inventarfach des Spielers. */
 function stow(state: GameState, def: ItemDef): boolean {
@@ -36,20 +45,50 @@ function stow(state: GameState, def: ItemDef): boolean {
   }
 }
 
-/** Sammelt ein Item auf der Kachel ein, falls dort eines liegt. */
+/**
+ * Sammelt die Stapelware auf der Kachel ein. Mehrere Eintraege werden alle
+ * genommen: ein getoeteter Gegner kann mehr als einen Stapel hinterlassen
+ * (PHASE_3_6 Block 6).
+ */
 export function pickupAt(state: GameState, content: ContentDb, pos: TileCoord): GameEvent[] {
   const here = currentScene(state, content);
   if (here === null) return [];
-  const entity = itemAt(here.mapState, pos.x, pos.y);
-  if (entity === undefined) return [];
-  const def = content.items[entity.defId];
-  if (def === undefined) return [];
-  if (!stow(state, def)) return [];
 
-  removeEntity(here.mapState, entity.id);
-  const key = tileKey(pos);
-  if (!here.mapState.takenItems.includes(key)) here.mapState.takenItems.push(key);
-  return [{ type: 'pickup', defId: def.id, amount: def.amount }];
+  const events: GameEvent[] = [];
+  for (const entity of entitiesAt(here.mapState, pos.x, pos.y)) {
+    if (entity.kind !== 'item') continue;
+    const def = content.items[entity.defId];
+    if (def === undefined) continue;
+    if (!stow(state, def)) continue;
+
+    removeEntity(here.mapState, entity.id);
+    const key = tileKey(pos);
+    if (!here.mapState.takenItems.includes(key)) here.mapState.takenItems.push(key);
+    events.push({ type: 'pickup', defId: def.id, amount: def.amount });
+  }
+  return events;
+}
+
+/**
+ * Nimmt die Ausruestungsinstanzen auf, die auf der Kachel liegen, PHASE_3_6
+ * Block 4. Mehrere Teile werden nacheinander aufgenommen, bis das Inventar voll
+ * ist; der Rest bleibt liegen.
+ */
+export function pickupGroundItems(
+  state: GameState,
+  mapState: MapRuntimeState,
+  pos: TileCoord
+): GameEvent[] {
+  const events: GameEvent[] = [];
+  for (const entry of groundItemsAt(mapState, pos)) {
+    if (!addToInventory(state, entry.item)) {
+      events.push({ type: 'message', text: 'inventory full' });
+      break;
+    }
+    removeGroundItem(mapState, entry.item.uid);
+    events.push({ type: 'itemPickedUp', uid: entry.item.uid });
+  }
+  return events;
 }
 
 /** Tuer oder Schalter auf der Kachel direkt vor dem Spieler. */
@@ -170,5 +209,6 @@ export function moveAction(
 
   const events: GameEvent[] = [{ type: 'moved', who: 'player', from, to: { ...target } }];
   events.push(...pickupAt(state, content, target));
+  events.push(...pickupGroundItems(state, here.mapState, target));
   return { ok: true, events };
 }

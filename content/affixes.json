@@ -1,0 +1,281 @@
+{
+  "pre_sturdy": {
+    "id": "pre_sturdy",
+    "kind": "prefix",
+    "stat": "maxHealth",
+    "mode": "flat",
+    "min": 6,
+    "max": 14,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "suit",
+      "helmet",
+      "belt"
+    ],
+    "appliesTo": "both"
+  },
+  "pre_plated": {
+    "id": "pre_plated",
+    "kind": "prefix",
+    "stat": "armor",
+    "mode": "flat",
+    "min": 2,
+    "max": 5,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "suit",
+      "helmet",
+      "guard"
+    ],
+    "appliesTo": "both"
+  },
+  "pre_honed": {
+    "id": "pre_honed",
+    "kind": "prefix",
+    "stat": "accuracy",
+    "mode": "flat",
+    "min": 3,
+    "max": 8,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "gloves",
+      "weapon",
+      "gauge_left",
+      "gauge_right"
+    ],
+    "appliesTo": "both"
+  },
+  "pre_brutal": {
+    "id": "pre_brutal",
+    "kind": "prefix",
+    "stat": "meleeBonus",
+    "mode": "percent",
+    "min": 4,
+    "max": 9,
+    "tier": 2,
+    "minItemLevel": 8,
+    "slots": [
+      "weapon",
+      "gloves"
+    ],
+    "appliesTo": "both"
+  },
+  "pre_charged": {
+    "id": "pre_charged",
+    "kind": "prefix",
+    "stat": "elemBonus",
+    "mode": "percent",
+    "min": 4,
+    "max": 9,
+    "tier": 2,
+    "minItemLevel": 8,
+    "slots": [
+      "weapon",
+      "amulet"
+    ],
+    "appliesTo": "both"
+  },
+  "pre_reinforced": {
+    "id": "pre_reinforced",
+    "kind": "prefix",
+    "stat": "armor",
+    "mode": "flat",
+    "min": 6,
+    "max": 12,
+    "tier": 3,
+    "minItemLevel": 16,
+    "slots": [
+      "suit",
+      "guard"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_vigor": {
+    "id": "suf_of_vigor",
+    "kind": "suffix",
+    "stat": "maxHealth",
+    "mode": "flat",
+    "min": 15,
+    "max": 30,
+    "tier": 2,
+    "minItemLevel": 10,
+    "slots": [
+      "suit",
+      "amulet",
+      "belt"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_evasion": {
+    "id": "suf_of_evasion",
+    "kind": "suffix",
+    "stat": "evasion",
+    "mode": "flat",
+    "min": 2,
+    "max": 6,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "boots",
+      "gauge_left",
+      "gauge_right"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_embers": {
+    "id": "suf_of_embers",
+    "kind": "suffix",
+    "stat": "res_fire",
+    "mode": "flat",
+    "min": 8,
+    "max": 20,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "suit",
+      "guard",
+      "amulet"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_spores": {
+    "id": "suf_of_spores",
+    "kind": "suffix",
+    "stat": "res_poison",
+    "mode": "flat",
+    "min": 8,
+    "max": 20,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "suit",
+      "guard",
+      "amulet"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_rime": {
+    "id": "suf_of_rime",
+    "kind": "suffix",
+    "stat": "res_ice",
+    "mode": "flat",
+    "min": 8,
+    "max": 20,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "suit",
+      "guard",
+      "amulet"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_current": {
+    "id": "suf_of_current",
+    "kind": "suffix",
+    "stat": "res_shock",
+    "mode": "flat",
+    "min": 8,
+    "max": 20,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "suit",
+      "guard",
+      "amulet"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_precision": {
+    "id": "suf_of_precision",
+    "kind": "suffix",
+    "stat": "critBonus",
+    "mode": "flat",
+    "min": 2,
+    "max": 5,
+    "tier": 2,
+    "minItemLevel": 12,
+    "slots": [
+      "gloves",
+      "weapon"
+    ],
+    "appliesTo": "both"
+  },
+  "suf_of_the_lamp": {
+    "id": "suf_of_the_lamp",
+    "kind": "suffix",
+    "stat": "lightRadius",
+    "mode": "flat",
+    "min": 1,
+    "max": 3,
+    "tier": 1,
+    "minItemLevel": 1,
+    "slots": [
+      "helmet",
+      "amulet"
+    ],
+    "appliesTo": "player"
+  },
+  "suf_of_haste": {
+    "id": "suf_of_haste",
+    "kind": "suffix",
+    "stat": "freeActionChance",
+    "mode": "flat",
+    "min": 3,
+    "max": 8,
+    "tier": 3,
+    "minItemLevel": 18,
+    "slots": [
+      "boots"
+    ],
+    "appliesTo": "player"
+  },
+  "suf_of_thrift": {
+    "id": "suf_of_thrift",
+    "kind": "suffix",
+    "stat": "ammoSaveChance",
+    "mode": "flat",
+    "min": 5,
+    "max": 12,
+    "tier": 2,
+    "minItemLevel": 10,
+    "slots": [
+      "belt",
+      "gloves"
+    ],
+    "appliesTo": "player"
+  },
+  "suf_of_might": {
+    "id": "suf_of_might",
+    "kind": "suffix",
+    "stat": "strength",
+    "mode": "flat",
+    "min": 2,
+    "max": 6,
+    "tier": 2,
+    "minItemLevel": 10,
+    "slots": [
+      "gloves",
+      "amulet"
+    ],
+    "appliesTo": "player"
+  },
+  "suf_of_focus": {
+    "id": "suf_of_focus",
+    "kind": "suffix",
+    "stat": "focus",
+    "mode": "flat",
+    "min": 2,
+    "max": 6,
+    "tier": 2,
+    "minItemLevel": 10,
+    "slots": [
+      "helmet",
+      "amulet"
+    ],
+    "appliesTo": "player"
+  }
+}

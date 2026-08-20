@@ -1,0 +1,417 @@
+{
+  "suit_liner": {
+    "id": "suit_liner",
+    "name": "Liner Suit",
+    "type": "equipment",
+    "slot": "suit",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 2
+      }
+    ],
+    "sprite": "suit_liner",
+    "icon": "suit_liner"
+  },
+  "suit_plate": {
+    "id": "suit_plate",
+    "name": "Plated Suit",
+    "type": "equipment",
+    "slot": "suit",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 30,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 7
+      },
+      {
+        "stat": "maxHealth",
+        "mode": "flat",
+        "value": 10
+      }
+    ],
+    "sprite": "suit_plate",
+    "icon": "suit_plate"
+  },
+  "helmet_cap": {
+    "id": "helmet_cap",
+    "name": "Mining Cap",
+    "type": "equipment",
+    "slot": "helmet",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "helmet_cap",
+    "icon": "helmet_cap"
+  },
+  "helmet_visor": {
+    "id": "helmet_visor",
+    "name": "Sealed Visor",
+    "type": "equipment",
+    "slot": "helmet",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 22,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 4
+      },
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 2
+      }
+    ],
+    "sprite": "helmet_visor",
+    "icon": "helmet_visor"
+  },
+  "belt_strap": {
+    "id": "belt_strap",
+    "name": "Tool Strap",
+    "type": "equipment",
+    "slot": "belt",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "maxHealth",
+        "mode": "flat",
+        "value": 4
+      }
+    ],
+    "sprite": "belt_strap",
+    "icon": "belt_strap"
+  },
+  "belt_rig": {
+    "id": "belt_rig",
+    "name": "Hauling Rig",
+    "type": "equipment",
+    "slot": "belt",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 26,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "maxHealth",
+        "mode": "flat",
+        "value": 14
+      }
+    ],
+    "sprite": "belt_rig",
+    "icon": "belt_rig"
+  },
+  "boots_tread": {
+    "id": "boots_tread",
+    "name": "Tread Boots",
+    "type": "equipment",
+    "slot": "boots",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "boots_tread",
+    "icon": "boots_tread"
+  },
+  "boots_grip": {
+    "id": "boots_grip",
+    "name": "Grip Boots",
+    "type": "equipment",
+    "slot": "boots",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 0,
+    "reqAgility": 26,
+    "baseModifiers": [
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 4
+      }
+    ],
+    "sprite": "boots_grip",
+    "icon": "boots_grip"
+  },
+  "gloves_wrap": {
+    "id": "gloves_wrap",
+    "name": "Hand Wraps",
+    "type": "equipment",
+    "slot": "gloves",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "gloves_wrap",
+    "icon": "gloves_wrap"
+  },
+  "gloves_bracer": {
+    "id": "gloves_bracer",
+    "name": "Servo Bracers",
+    "type": "equipment",
+    "slot": "gloves",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 0,
+    "reqAgility": 24,
+    "baseModifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 4
+      },
+      {
+        "stat": "meleeBonus",
+        "mode": "percent",
+        "value": 4
+      }
+    ],
+    "sprite": "gloves_bracer",
+    "icon": "gloves_bracer"
+  },
+  "weapon_rig_light": {
+    "id": "weapon_rig_light",
+    "name": "Light Weapon Rig",
+    "type": "equipment",
+    "slot": "weapon",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "weapon_rig_light",
+    "icon": "weapon_rig_light"
+  },
+  "weapon_rig_heavy": {
+    "id": "weapon_rig_heavy",
+    "name": "Heavy Weapon Rig",
+    "type": "equipment",
+    "slot": "weapon",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 34,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 3
+      },
+      {
+        "stat": "meleeBonus",
+        "mode": "percent",
+        "value": 6
+      }
+    ],
+    "sprite": "weapon_rig_heavy",
+    "icon": "weapon_rig_heavy"
+  },
+  "guard_buckler": {
+    "id": "guard_buckler",
+    "name": "Bracing Plate",
+    "type": "equipment",
+    "slot": "guard",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 2
+      }
+    ],
+    "sprite": "guard_buckler",
+    "icon": "guard_buckler"
+  },
+  "guard_bulwark": {
+    "id": "guard_bulwark",
+    "name": "Bulwark Plate",
+    "type": "equipment",
+    "slot": "guard",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 32,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 6
+      }
+    ],
+    "sprite": "guard_bulwark",
+    "icon": "guard_bulwark"
+  },
+  "amulet_tag": {
+    "id": "amulet_tag",
+    "name": "Crew Tag",
+    "type": "equipment",
+    "slot": "amulet",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "elemBonus",
+        "mode": "percent",
+        "value": 2
+      }
+    ],
+    "sprite": "amulet_tag",
+    "icon": "amulet_tag"
+  },
+  "amulet_sigil": {
+    "id": "amulet_sigil",
+    "name": "Corvane Sigil",
+    "type": "equipment",
+    "slot": "amulet",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 0,
+    "reqAgility": 18,
+    "baseModifiers": [
+      {
+        "stat": "elemBonus",
+        "mode": "percent",
+        "value": 6
+      },
+      {
+        "stat": "critBonus",
+        "mode": "flat",
+        "value": 2
+      }
+    ],
+    "sprite": "amulet_sigil",
+    "icon": "amulet_sigil"
+  },
+  "gauge_left_basic": {
+    "id": "gauge_left_basic",
+    "name": "Basic Gauge",
+    "type": "equipment",
+    "slot": "gauge_left",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "gauge_left_basic",
+    "icon": "gauge_left_basic"
+  },
+  "gauge_left_fine": {
+    "id": "gauge_left_fine",
+    "name": "Fine Gauge",
+    "type": "equipment",
+    "slot": "gauge_left",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 0,
+    "reqAgility": 20,
+    "baseModifiers": [
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 3
+      },
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 2
+      }
+    ],
+    "sprite": "gauge_left_fine",
+    "icon": "gauge_left_fine"
+  },
+  "gauge_right_basic": {
+    "id": "gauge_right_basic",
+    "name": "Basic Meter",
+    "type": "equipment",
+    "slot": "gauge_right",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "baseModifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "gauge_right_basic",
+    "icon": "gauge_right_basic"
+  },
+  "gauge_right_fine": {
+    "id": "gauge_right_fine",
+    "name": "Fine Meter",
+    "type": "equipment",
+    "slot": "gauge_right",
+    "amount": 1,
+    "reqLevel": 12,
+    "reqStrength": 0,
+    "reqAgility": 20,
+    "baseModifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "value": 3
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 2
+      }
+    ],
+    "sprite": "gauge_right_fine",
+    "icon": "gauge_right_fine"
+  }
+}

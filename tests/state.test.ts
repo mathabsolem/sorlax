@@ -12,6 +12,8 @@ import {
 } from '../src/core/state';
 import { migrate } from '../src/core/migrate';
 import { Rng } from '../src/core/rng';
+import { MAX_INVENTORY, addToInventory, createInstance } from '../src/core/items';
+import { equipAction } from '../src/core/equipActions';
 import { makeContent, makeMap, setup } from './fixtures/world';
 
 describe('createNewGame', () => {
@@ -106,6 +108,50 @@ describe('serialize, deserialize und migrate', () => {
     expect(() => migrate(null)).toThrow();
     expect(() => migrate({})).toThrow();
     expect(() => migrate({ version: CURRENT_SAVE_VERSION + 1 })).toThrow();
+  });
+});
+
+describe('Rundreise mit Ausruestung', () => {
+  // Test 16 aus PHASE_3_6
+  it('ueberlebt vollen Inventar- und Ausruestungsbestand unveraendert', () => {
+    const { state, content } = setup({ loot: true });
+    const mapState = state.maps['test'];
+    if (mapState === undefined) throw new Error('kein Kartenzustand');
+
+    const worn = createInstance(
+      state,
+      'suit_liner',
+      12,
+      'rare',
+      [
+        { affixId: 'pre_sturdy', value: 11 },
+        { affixId: 'suf_of_embers', value: 17 },
+      ],
+      content
+    );
+    if (worn === null) throw new Error('kein Grundtyp');
+    addToInventory(state, worn);
+    expect(equipAction(state, content, worn.uid).ok).toBe(true);
+
+    for (let index = 0; index < MAX_INVENTORY; index++) {
+      const item = createInstance(state, 'belt_strap', index + 1, 'magic', [
+        { affixId: 'suf_of_vigor', value: 15 + (index % 16) },
+      ], content);
+      if (item === null) throw new Error('kein Grundtyp');
+      addToInventory(state, item);
+    }
+    const spare = createInstance(state, 'gloves_wrap', 3, 'normal', [], content);
+    if (spare === null) throw new Error('kein Grundtyp');
+    mapState.groundItems.push({ pos: { x: 2, y: 2 }, item: spare });
+
+    expect(state.player.inventory).toHaveLength(MAX_INVENTORY);
+    const restored = deserialize(serialize(state));
+
+    expect(restored).toEqual(state);
+    expect(restored.player.equipment['suit']).toEqual(worn);
+    expect(restored.player.inventory).toHaveLength(MAX_INVENTORY);
+    expect(restored.nextItemUid).toBe(state.nextItemUid);
+    expect(restored.maps['test']?.groundItems).toEqual([{ pos: { x: 2, y: 2 }, item: spare }]);
   });
 });
 

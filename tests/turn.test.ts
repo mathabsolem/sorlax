@@ -13,7 +13,7 @@ import { setup } from './fixtures/world';
 
 describe('reapDead', () => {
   it('entfernt tote Gegner und laesst den Rest stehen', () => {
-    const { state } = setup({
+    const { state, content } = setup({
       entities: [
         { kind: 'enemy', defId: 'grunt', pos: { x: 3, y: 1 } },
         { kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } },
@@ -26,7 +26,7 @@ describe('reapDead', () => {
     if (first === undefined) throw new Error('missing enemy');
     first.health = 0;
 
-    expect(reapDead(mapState)).toEqual([1]);
+    expect(reapDead(state, mapState, content)).toEqual([]);
     expect(mapState.entities.map((entity) => entity.id)).toEqual([2, 3]);
   });
 });

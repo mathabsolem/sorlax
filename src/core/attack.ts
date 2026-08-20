@@ -10,7 +10,7 @@ import { isAlive, vitalsOf } from './entities';
 import { chebyshev, hasLineOfSight } from './grid';
 import { grantXp } from './progression';
 import { scaledXpReward } from './scaling';
-import { loadRng, saveRng } from './state';
+import { loadRng, saveRng } from './rng';
 import { playerDerived, reapDead } from './turn';
 import type {
   ContentDb,
@@ -46,7 +46,10 @@ function autoTarget(
   return best;
 }
 
-/** Vergibt XP fuer alle in `events` getoeteten Gegner und raeumt sie ab. */
+/**
+ * Vergibt XP fuer alle in `events` getoeteten Gegner, raeumt sie ab und laesst
+ * ihre Ausruestung fallen.
+ */
 function collectKills(
   state: GameState,
   content: ContentDb,
@@ -62,8 +65,9 @@ function collectKills(
     if (def === undefined) continue;
     reward += scaledXpReward(def, entity.monsterLevel ?? 1, state.difficulty);
   }
-  reapDead(mapState);
-  return reward > 0 ? grantXp(state.player, reward, content.progression) : [];
+  const after = reapDead(state, mapState, content);
+  if (reward > 0) after.push(...grantXp(state.player, reward, content.progression));
+  return after;
 }
 
 /** Alle moeglichen Ziele einer Explosion, Spieler eingeschlossen. */

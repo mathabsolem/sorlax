@@ -1,0 +1,44 @@
+{
+  "common_drop": {
+    "id": "common_drop",
+    "rarityWeights": {
+      "normal": 62,
+      "magic": 28,
+      "rare": 9,
+      "unique": 1
+    },
+    "slotWeights": {
+      "suit": 10,
+      "helmet": 10,
+      "belt": 10,
+      "boots": 10,
+      "gloves": 10,
+      "weapon": 10,
+      "guard": 10,
+      "amulet": 10,
+      "gauge_left": 10,
+      "gauge_right": 10
+    }
+  },
+  "boss_drop": {
+    "id": "boss_drop",
+    "rarityWeights": {
+      "normal": 32,
+      "magic": 40,
+      "rare": 20,
+      "unique": 8
+    },
+    "slotWeights": {
+      "suit": 10,
+      "helmet": 10,
+      "belt": 10,
+      "boots": 10,
+      "gloves": 10,
+      "weapon": 10,
+      "guard": 10,
+      "amulet": 10,
+      "gauge_left": 10,
+      "gauge_right": 10
+    }
+  }
+}

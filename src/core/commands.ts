@@ -10,6 +10,7 @@
 import { rotate, tileKey } from './grid';
 import { attackAction } from './attack';
 import type { ActionResult } from './actionResult';
+import { dropItemAction, equipAction, unequipAction } from './equipActions';
 import {
   interactAction,
   moveAction,
@@ -18,11 +19,12 @@ import {
   useConsumableAction,
 } from './playerActions';
 import { createMapRuntime, pushLog } from './state';
+import { rollMapLoot } from './spawn';
 import { fireTriggers } from './triggers';
 import { advanceRound, hasDeath } from './turn';
 import type { Command, ContentDb, GameEvent, GameState } from './types';
 
-/** Kommandos, die erst mit Ausruestung und Fertigkeiten in Phase 3.6 kommen. */
+/** Kommandos, die erst mit den Fertigkeiten in Phase 3.7 kommen. */
 const NOT_IMPLEMENTED = 'not implemented';
 
 function invalid(reason: string): GameEvent[] {
@@ -53,6 +55,15 @@ function logEvents(state: GameState, events: GameEvent[]): void {
         break;
       case 'pickup':
         pushLog(state, 'pickup', `picked up ${event.defId} x${event.amount}`);
+        break;
+      case 'itemPickedUp':
+        pushLog(state, 'pickup', `picked up item ${event.uid}`);
+        break;
+      case 'itemDropped':
+        pushLog(state, 'pickup', `dropped item ${event.uid}`);
+        break;
+      case 'equipped':
+        pushLog(state, 'pickup', `equipped item ${event.uid} in ${event.slot}`);
         break;
       case 'levelUp':
         pushLog(state, 'system', `reached level ${event.newLevel}`);
@@ -99,6 +110,8 @@ function changeMap(state: GameState, content: ContentDb, targetMapId: string): G
     state.maps[targetMapId] = runtime;
   }
   runtime.visited = true;
+  // Ausruestung und Drops werden beim ersten Betreten festgeschrieben (SPEC 3.3).
+  rollMapLoot(state, target, content);
 
   state.currentMapId = targetMapId;
   state.player.pos = { x: target.spawn.pos.x, y: target.spawn.pos.y };
@@ -163,6 +176,22 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
       events = result.ok ? result.events : invalid(result.reason);
       break;
     }
+    // Anlegen, Ablegen und Fallenlassen kosten keine Runde (SPEC 3.2).
+    case 'equip': {
+      const result = equipAction(state, content, cmd.uid);
+      events = result.ok ? result.events : invalid(result.reason);
+      break;
+    }
+    case 'unequip': {
+      const result = unequipAction(state, content, cmd.slot);
+      events = result.ok ? result.events : invalid(result.reason);
+      break;
+    }
+    case 'dropItem': {
+      const result = dropItemAction(state, content, cmd.uid);
+      events = result.ok ? result.events : invalid(result.reason);
+      break;
+    }
     case 'move':
       events = handleMove(state, content, cmd.dir);
       break;
@@ -178,11 +207,8 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
     case 'wait':
       events = fromResult(state, content, { ok: true, events: [] });
       break;
-    // Ausruestung und Fertigkeiten kommen in Phase 3.6. Bis dahin melden diese
-    // Kommandos ausdruecklich, dass sie noch nichts tun.
-    case 'equip':
-    case 'unequip':
-    case 'dropItem':
+    // Fertigkeiten kommen in Phase 3.7. Bis dahin melden diese Kommandos
+    // ausdruecklich, dass sie noch nichts tun.
     case 'useSkill':
     case 'spendSkillPoint':
       events = invalid(NOT_IMPLEMENTED);

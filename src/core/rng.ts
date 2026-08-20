@@ -84,3 +84,19 @@ export class Rng {
     this.x3 = state[3] >>> 0;
   }
 }
+
+/**
+ * Laedt den RNG aus einem Spielstand. Der Parameter ist bewusst strukturell
+ * getippt: types.ts wird hier nicht importiert, damit rng.ts am Ende der
+ * Abhaengigkeitskette bleibt und auch spawn.ts es ohne Ringschluss nutzen kann.
+ */
+export function loadRng(state: { rngState: RngState }): Rng {
+  const rng = new Rng(0);
+  rng.setState(state.rngState);
+  return rng;
+}
+
+/** Schreibt den RNG-Zustand zurueck, damit der Spielverlauf reproduzierbar bleibt. */
+export function saveRng(state: { rngState: RngState }, rng: Rng): void {
+  state.rngState = rng.getState();
+}

@@ -10,10 +10,12 @@ import { checkActivation, takeEnemyTurn } from './ai';
 import { getDerivedStats, playerActor } from './derived';
 import { hasChill, tickEffects } from './effects';
 import { isAlive } from './entities';
-import { loadRng, saveRng } from './state';
+import { loadRng, saveRng } from './rng';
+import { dropLoot } from './spawn';
 import type {
   ContentDb,
   DerivedStats,
+  Entity,
   EntityId,
   GameEvent,
   GameState,
@@ -45,17 +47,31 @@ export function invalidatePlayerDerived(state: GameState): void {
   playerCache.delete(state);
 }
 
-/** Entfernt tote Gegner von der Karte. Liefert deren Ids. */
-export function reapDead(mapState: MapRuntimeState): number[] {
-  const removed: number[] = [];
+/**
+ * Entfernt tote Gegner von der Karte und laesst ihre Ausruestung fallen
+ * (PHASE_3_6 Block 6). Liefert die `itemDropped`-Ereignisse.
+ */
+export function reapDead(
+  state: GameState,
+  mapState: MapRuntimeState,
+  content: ContentDb
+): GameEvent[] {
+  const events: GameEvent[] = [];
+  const dead: Entity[] = [];
+
   for (let i = mapState.entities.length - 1; i >= 0; i--) {
     const entity = mapState.entities[i];
     if (entity === undefined) continue;
     if (entity.kind !== 'enemy' || isAlive(entity)) continue;
-    removed.push(entity.id);
+    dead.push(entity);
     mapState.entities.splice(i, 1);
   }
-  return removed.reverse();
+
+  // Von hinten eingesammelt, deshalb hier wieder in Kartenreihenfolge.
+  for (const entity of dead.reverse()) {
+    events.push(...dropLoot(state, mapState, entity, content));
+  }
+  return events;
 }
 
 /**
@@ -133,7 +149,7 @@ export function advanceRound(state: GameState, content: ContentDb): GameEvent[] 
 
   events.push(...tickEffects(state, content));
   tickCooldowns(state);
-  reapDead(mapState);
+  events.push(...reapDead(state, mapState, content));
 
   if (state.player.health <= 0) {
     state.player.health = 0;

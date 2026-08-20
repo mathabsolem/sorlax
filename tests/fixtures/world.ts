@@ -2,6 +2,7 @@
  * Kleine Testwelt: 8 x 8 Kacheln, dazu ein Minimalsatz an Inhalten.
  * Nur fuer Tests, gehoert bewusst nicht nach content/.
  */
+import { AFFIXES, DROP_TABLES, EQUIPMENT, UNIQUES } from './catalog';
 import { createNewGame } from '../../src/core/state';
 import { encodeTile } from '../../src/core/tiles';
 import type {
@@ -19,6 +20,8 @@ import type {
   TriggerDef,
   WeaponDef,
 } from '../../src/core/types';
+
+export { AFFIXES, DROP_TABLES, EQUIPMENT, UNIQUES } from './catalog';
 
 /** Sechzig Schwellen wie im Vertrag, aber klein genug zum Nachrechnen. */
 export const TEST_XP_THRESHOLDS: number[] = Array.from(
@@ -221,17 +224,23 @@ export function makeMap(options: MapOptions = {}): MapDef {
   };
 }
 
-/** ContentDb aus einer oder mehreren Karten. */
-export function makeContent(maps: MapDef[]): ContentDb {
+/**
+ * ContentDb aus einer oder mehreren Karten.
+ *
+ * `loot` schaltet die Drop-Tabellen zu. Ohne sie vergibt rollMapLoot zwar
+ * Raenge, findet aber keine Tabelle und ruestet niemanden aus. Das haelt die
+ * uebrigen Tests frei von zufaelliger Gegnerausruestung.
+ */
+export function makeContent(maps: MapDef[], loot = false): ContentDb {
   const byId: Record<string, MapDef> = {};
   for (const map of maps) byId[map.id] = map;
   return {
     enemies: ENEMIES,
     weapons: WEAPONS,
-    items: ITEMS,
-    affixes: {},
-    uniques: {},
-    dropTables: {},
+    items: { ...ITEMS, ...EQUIPMENT },
+    affixes: AFFIXES,
+    uniques: UNIQUES,
+    dropTables: loot ? DROP_TABLES : {},
     skills: {},
     maps: byId,
     progression: { xpThresholds: [...TEST_XP_THRESHOLDS] },
@@ -242,10 +251,15 @@ export type World = { state: GameState; content: ContentDb; map: MapDef };
 
 /** Komplette Testwelt inklusive frischem Spielstand. */
 export function setup(
-  options: MapOptions & { seed?: number; extraMaps?: MapDef[]; difficulty?: Difficulty } = {}
+  options: MapOptions & {
+    seed?: number;
+    extraMaps?: MapDef[];
+    difficulty?: Difficulty;
+    loot?: boolean;
+  } = {}
 ): World {
   const map = makeMap(options);
-  const content = makeContent([map, ...(options.extraMaps ?? [])]);
+  const content = makeContent([map, ...(options.extraMaps ?? [])], options.loot ?? false);
   const state = createNewGame(
     options.seed ?? 1234,
     content,

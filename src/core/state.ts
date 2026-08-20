@@ -6,6 +6,7 @@ import { migrate } from './migrate';
 import { tileKey } from './grid';
 import { Rng } from './rng';
 import { monsterLevelFor, scaledHealth } from './scaling';
+import { rollMapLoot } from './spawn';
 import type {
   Attributes,
   ContentDb,
@@ -25,11 +26,14 @@ export const CURRENT_SAVE_VERSION = 2;
 /** Obergrenze des Logs nach INTERFACES Abschnitt 4. */
 export const MAX_LOG_ENTRIES = 100;
 
+/** Obergrenze des Inventars. Liegt in items.ts, hier nur weitergereicht. */
+export { MAX_INVENTORY } from './items';
+
+/** RNG-Zugriff. Liegt in rng.ts, hier nur weitergereicht. */
+export { loadRng, saveRng } from './rng';
+
 /** Startwert je Attribut, RPG.md Abschnitt 1. */
 export const START_ATTRIBUTE = 10;
-
-/** Obergrenze des Inventars, RPG.md Abschnitt 4. */
-export const MAX_INVENTORY = 40;
 
 export function startAttributes(): Attributes {
   return {
@@ -38,18 +42,6 @@ export function startAttributes(): Attributes {
     vitality: START_ATTRIBUTE,
     focus: START_ATTRIBUTE,
   };
-}
-
-/** Laedt den RNG aus dem Zustand. */
-export function loadRng(state: GameState): Rng {
-  const rng = new Rng(0);
-  rng.setState(state.rngState);
-  return rng;
-}
-
-/** Schreibt den RNG-Zustand zurueck, damit der Spielverlauf reproduzierbar bleibt. */
-export function saveRng(state: GameState, rng: Rng): void {
-  state.rngState = rng.getState();
 }
 
 /** Haengt einen Logeintrag an und kuerzt vorne, sobald das Limit ueberschritten ist. */
@@ -85,7 +77,9 @@ function instantiate(
     if (enemyDef === undefined) return null;
     base.monsterLevel = monsterLevel;
     base.health = scaledHealth(enemyDef, monsterLevel, difficulty);
-    base.rank = def.forceRank ?? 'common';
+    // Kein Vorgabewert: `undefined` heisst 'noch nicht gewuerfelt', und genau
+    // daran erkennt rollMapLoot, wo forceRank Vorrang hat (PHASE_3_6 Block 6).
+    if (def.forceRank !== undefined) base.rank = def.forceRank;
     if (enemyDef.behavior === 'scripted') base.scriptState = {};
     return base;
   }
@@ -188,6 +182,7 @@ export function createNewGame(
   const mapState = createMapRuntime(map, content, player.level, difficulty);
   mapState.explored.push(tileKey(map.spawn.pos));
   state.maps[startMapId] = mapState;
+  rollMapLoot(state, map, content);
 
   player.health = getDerivedStats(playerActor(state), content, difficulty).maxHealth;
   return state;

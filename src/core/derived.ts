@@ -4,11 +4,22 @@
  *
  * Reine Funktion ohne Mutation. Der Rundencache liegt in turn.ts, nicht hier.
  *
- * In dieser Phase tragen Ausruestung und Fertigkeiten null bei; die Stellen sind
- * markiert und werden in Phase 3.6 nachgezogen. Die Signatur ist final.
+ * Die Berechnung laeuft in zwei Durchgaengen (PHASE_3_6 Block 5): erst die
+ * Attributsaffixe, dann alles, was auf den Attributen aufbaut. Ein
+ * Rekursionsproblem entsteht dabei nicht, weil Attributsaffixe selbst nicht von
+ * abgeleiteten Werten abhaengen.
+ *
+ * Fertigkeiten tragen weiterhin null bei; sie kommen in Phase 3.7.
  */
 import { modifiersFor } from './difficulty';
 import { DRAIN_ARMOR_PENALTY } from './effectDefs';
+import {
+  attributeBonus,
+  collectEquipmentModifiers,
+  magnitudeOf,
+  ratioOf,
+} from './modifiers';
+import type { ModifierSums } from './modifiers';
 import { DAMAGE_TYPES } from './types';
 import type {
   ActiveEffect,
@@ -19,6 +30,7 @@ import type {
   Difficulty,
   Entity,
   GameState,
+  PlayerState,
   Resistances,
 } from './types';
 
@@ -43,6 +55,10 @@ export function clampPlayerResistance(value: number): number {
   return Math.min(PLAYER_RESIST_CAP, value);
 }
 
+function clampChance(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
 function findEffect(effects: readonly ActiveEffect[], id: string): ActiveEffect | undefined {
   return effects.find((effect) => effect.id === id && effect.remainingTurns > 0);
 }
@@ -61,59 +77,91 @@ function applyEffects(stats: DerivedStats, effects: readonly ActiveEffect[]): vo
   }
 }
 
-function playerStats(attributes: Attributes, effects: readonly ActiveEffect[], difficulty: Difficulty): DerivedStats {
-  const penalty = modifiersFor(difficulty).playerResistPenalty;
+/**
+ * Resistenzen eines Akteurs: Grundwert plus Ausruestung, dann die Gradstrafe
+ * beziehungsweise der Gradbonus, zuletzt der Deckel (PHASE_3_6 Block 5).
+ */
+function resistancesFrom(
+  sums: ModifierSums,
+  base: (type: (typeof DAMAGE_TYPES)[number]) => number,
+  offset: number,
+  clamp: (value: number) => number
+): Resistances {
   const resistances = zeroResistances();
   for (const type of DAMAGE_TYPES) {
-    // Grundwert 0 plus Ausruestung und Fertigkeiten (Phase 3.6), dann Gradstrafe.
-    resistances[type] = clampPlayerResistance(0 + penalty);
+    const withGear = magnitudeOf(sums, `res_${type}`, base(type));
+    resistances[type] = clamp(Math.round(withGear + offset));
   }
+  return resistances;
+}
+
+/** Deckelt eine Gegnerresistenz nach oben, siehe ENEMY_RESIST_CAP. */
+function clampEnemyResistance(value: number): number {
+  return Math.min(ENEMY_RESIST_CAP, value);
+}
+
+function playerStats(
+  player: PlayerState,
+  content: ContentDb,
+  difficulty: Difficulty
+): DerivedStats {
+  const sums = collectEquipmentModifiers(player.equipment, content);
+  const attributes = attributeBonus(sums, player.attributes);
+  const penalty = modifiersFor(difficulty).playerResistPenalty;
 
   const stats: DerivedStats = {
-    maxHealth: 20 + 3 * attributes.vitality,
-    accuracy: Math.floor(4 + 0.6 * attributes.agility),
-    evasion: Math.floor(1 + 0.4 * attributes.agility),
-    armor: 0,
-    meleeBonus: 0.01 * (attributes.strength - 10),
-    elemBonus: 0.01 * (attributes.focus - 10),
-    critBonus: 0.002 * (attributes.focus - 10),
-    resistances,
-    lightRadius: BASE_LIGHT_RADIUS,
-    freeActionChance: 0,
-    ammoSaveChance: 0,
+    maxHealth: Math.round(magnitudeOf(sums, 'maxHealth', 20 + 3 * attributes.vitality)),
+    accuracy: Math.floor(magnitudeOf(sums, 'accuracy', Math.floor(4 + 0.6 * attributes.agility))),
+    evasion: Math.floor(magnitudeOf(sums, 'evasion', Math.floor(1 + 0.4 * attributes.agility))),
+    armor: Math.floor(magnitudeOf(sums, 'armor', 0)),
+    meleeBonus: 0.01 * (attributes.strength - 10) + ratioOf(sums, 'meleeBonus'),
+    elemBonus: 0.01 * (attributes.focus - 10) + ratioOf(sums, 'elemBonus'),
+    critBonus: 0.002 * (attributes.focus - 10) + ratioOf(sums, 'critBonus'),
+    resistances: resistancesFrom(sums, () => 0, penalty, clampPlayerResistance),
+    lightRadius: Math.round(magnitudeOf(sums, 'lightRadius', BASE_LIGHT_RADIUS)),
+    freeActionChance: clampChance(ratioOf(sums, 'freeActionChance')),
+    ammoSaveChance: clampChance(ratioOf(sums, 'ammoSaveChance')),
   };
 
-  applyEffects(stats, effects);
+  applyEffects(stats, player.effects);
   return stats;
 }
 
 function enemyStats(
   actor: Extract<Actor, { kind: 'enemy' }>,
+  content: ContentDb,
   difficulty: Difficulty
 ): DerivedStats {
   const { def, monsterLevel } = actor;
   const mods = modifiersFor(difficulty);
   const factor = 1 + 0.045 * (monsterLevel - 1);
-
-  const resistances = zeroResistances();
-  for (const type of DAMAGE_TYPES) {
-    const base = def.resistances[type] ?? 0;
-    resistances[type] = Math.min(ENEMY_RESIST_CAP, base + mods.enemyResistBonus);
-  }
+  const sums = collectEquipmentModifiers(actor.entity.equipment ?? {}, content);
 
   const stats: DerivedStats = {
-    maxHealth: Math.round(def.baseHealth * factor * mods.healthFactor),
-    accuracy: def.baseAccuracy + Math.floor(monsterLevel * 0.8),
-    evasion: def.baseEvasion + Math.floor(monsterLevel / 3),
-    armor: def.baseArmor + Math.floor(monsterLevel / 6),
-    meleeBonus: 0,
-    elemBonus: 0,
-    critBonus: 0,
-    resistances,
+    maxHealth: Math.round(
+      magnitudeOf(sums, 'maxHealth', def.baseHealth * factor * mods.healthFactor)
+    ),
+    accuracy: Math.floor(
+      magnitudeOf(sums, 'accuracy', def.baseAccuracy + Math.floor(monsterLevel * 0.8))
+    ),
+    evasion: Math.floor(
+      magnitudeOf(sums, 'evasion', def.baseEvasion + Math.floor(monsterLevel / 3))
+    ),
+    armor: Math.floor(magnitudeOf(sums, 'armor', def.baseArmor + Math.floor(monsterLevel / 6))),
+    meleeBonus: ratioOf(sums, 'meleeBonus'),
+    elemBonus: ratioOf(sums, 'elemBonus'),
+    critBonus: ratioOf(sums, 'critBonus'),
+    resistances: resistancesFrom(
+      sums,
+      (type) => def.resistances[type] ?? 0,
+      mods.enemyResistBonus,
+      clampEnemyResistance
+    ),
     // RPG.md Abschnitt 9: Sichtweite wird bei Gegnern auf aggroRange abgebildet.
-    lightRadius: def.aggroRange,
-    freeActionChance: 0,
-    ammoSaveChance: 0,
+    // Deshalb wirkt `suf_of_the_lamp` hier auf die Aggroreichweite.
+    lightRadius: Math.round(magnitudeOf(sums, 'lightRadius', def.aggroRange)),
+    freeActionChance: clampChance(ratioOf(sums, 'freeActionChance')),
+    ammoSaveChance: clampChance(ratioOf(sums, 'ammoSaveChance')),
   };
 
   applyEffects(stats, actor.entity.effects);
@@ -122,18 +170,25 @@ function enemyStats(
 
 /**
  * Abgeleitete Werte eines Akteurs. Veraendert weder den Akteur noch die Inhalte.
- * Der zweite Parameter heisst in INTERFACES `content`; er wird erst ab Phase 3.6
- * fuer Affixe und Fertigkeiten ausgewertet und traegt bis dahin den Unterstrich.
  */
 export function getDerivedStats(
   actor: Actor,
-  _content: ContentDb,
+  content: ContentDb,
   difficulty: Difficulty
 ): DerivedStats {
   if (actor.kind === 'player') {
-    return playerStats(actor.state.attributes, actor.state.effects, difficulty);
+    return playerStats(actor.state, content, difficulty);
   }
-  return enemyStats(actor, difficulty);
+  return enemyStats(actor, content, difficulty);
+}
+
+/**
+ * Attribute des Spielers einschliesslich der Zuschlaege aus der Ausruestung.
+ * Das sind die Werte, gegen die `reqStrength` und `reqAgility` gepruefen werden.
+ */
+export function effectiveAttributes(state: GameState, content: ContentDb): Attributes {
+  const sums = collectEquipmentModifiers(state.player.equipment, content);
+  return attributeBonus(sums, state.player.attributes);
 }
 
 /** Akteur des Spielers fuer getDerivedStats. */

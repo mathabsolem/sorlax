@@ -37,6 +37,25 @@ describe('1. Determinismus', () => {
     expect(run()).toBe(run());
   });
 
+  // Test 17 aus PHASE_3_6: der Determinismustest bleibt gruen, auch wenn
+  // Ausruestung gewuerfelt und fallen gelassen wird.
+  it('bleibt auch mit gewuerfelter Gegnerausruestung reproduzierbar', () => {
+    const run = () => {
+      const { state, content } = setup({
+        seed: 99,
+        loot: true,
+        spawn: EAST_SPAWN,
+        entities: [
+          { kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 }, forceRank: 'equipped' },
+          { kind: 'enemy', defId: 'sniper', pos: { x: 6, y: 3 }, forceRank: 'boss' },
+        ],
+      });
+      for (const cmd of SCRIPT) applyCommand(state, cmd, content);
+      return serialize(state);
+    };
+    expect(run()).toBe(run());
+  });
+
   it('unterschiedliche Seeds ergeben unterschiedliche Verlaeufe', () => {
     const run = (seed: number) => {
       const { state, content } = setup({
@@ -218,10 +237,8 @@ describe('8. Kommandos aus INTERFACES v1.2', () => {
 
   it('meldet die noch nicht umgesetzten Kommandos ausdruecklich', () => {
     const { state, content } = setup();
+    // Ausruestung ist seit Phase 3.6 umgesetzt, Fertigkeiten kommen in 3.7.
     const pending: Command[] = [
-      { type: 'equip', uid: 1 },
-      { type: 'unequip', slot: 'weapon' },
-      { type: 'dropItem', uid: 1 },
       { type: 'useSkill', skillId: 'breach' },
       { type: 'spendSkillPoint', skillId: 'breach' },
     ];
@@ -230,6 +247,23 @@ describe('8. Kommandos aus INTERFACES v1.2', () => {
         { type: 'invalid', reason: 'not implemented' },
       ]);
     }
+    expect(state.turnCount).toBe(0);
+  });
+
+  it('lehnt Ausruestungskommandos ohne passenden Gegenstand ab', () => {
+    const { state, content } = setup();
+    const rejected: Command[] = [
+      { type: 'equip', uid: 1 },
+      { type: 'dropItem', uid: 1 },
+    ];
+    for (const cmd of rejected) {
+      expect(applyCommand(state, cmd, content)).toEqual([
+        { type: 'invalid', reason: 'unknown item' },
+      ]);
+    }
+    expect(applyCommand(state, { type: 'unequip', slot: 'weapon' }, content)).toEqual([
+      { type: 'invalid', reason: 'slot is empty' },
+    ]);
     expect(state.turnCount).toBe(0);
   });
 
