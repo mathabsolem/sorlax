@@ -235,18 +235,18 @@ describe('8. Kommandos aus INTERFACES v1.2', () => {
     ]);
   });
 
-  it('meldet die noch nicht umgesetzten Kommandos ausdruecklich', () => {
+  it('lehnt Fertigkeitskommandos ohne gelernte Fertigkeit ab', () => {
     const { state, content } = setup();
-    // Ausruestung ist seit Phase 3.6 umgesetzt, Fertigkeiten kommen in 3.7.
-    const pending: Command[] = [
-      { type: 'useSkill', skillId: 'breach' },
-      { type: 'spendSkillPoint', skillId: 'breach' },
-    ];
-    for (const cmd of pending) {
-      expect(applyCommand(state, cmd, content)).toEqual([
-        { type: 'invalid', reason: 'not implemented' },
-      ]);
-    }
+    // Seit Phase 3.7 gibt es alle Kommandos; ohne Punkte greifen die Regeln.
+    expect(applyCommand(state, { type: 'useSkill', skillId: 'breach' }, content)).toEqual([
+      { type: 'invalid', reason: 'skill not learned: breach' },
+    ]);
+    expect(applyCommand(state, { type: 'spendSkillPoint', skillId: 'breach' }, content)).toEqual([
+      { type: 'invalid', reason: 'no skill point available' },
+    ]);
+    expect(applyCommand(state, { type: 'useSkill', skillId: 'nixgibts' }, content)).toEqual([
+      { type: 'invalid', reason: 'unknown skill: nixgibts' },
+    ]);
     expect(state.turnCount).toBe(0);
   });
 

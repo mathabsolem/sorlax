@@ -6,7 +6,7 @@ import { migrate } from './migrate';
 import { tileKey } from './grid';
 import { Rng } from './rng';
 import { monsterLevelFor, scaledHealth } from './scaling';
-import { rollMapLoot } from './spawn';
+import { rollMapLoot } from './loot';
 import type {
   Attributes,
   ContentDb,
@@ -21,7 +21,7 @@ import type {
 } from './types';
 
 /** Version der Savegame-Struktur. Bei Aenderungen erhoehen und migrate erweitern. */
-export const CURRENT_SAVE_VERSION = 2;
+export const CURRENT_SAVE_VERSION = 3;
 
 /** Obergrenze des Logs nach INTERFACES Abschnitt 4. */
 export const MAX_LOG_ENTRIES = 100;
@@ -116,6 +116,7 @@ export function createMapRuntime(
     takenItems: [],
     groundItems: [],
     firedTriggers: [],
+    tempWalls: [],
     rolled: false,
     visited: true,
     explored: [],

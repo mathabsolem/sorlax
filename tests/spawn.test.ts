@@ -9,7 +9,7 @@ import {
   dropLoot,
   equippedChanceFor,
   rollMapLoot,
-} from '../src/core/spawn';
+} from '../src/core/loot';
 import { reapDead } from '../src/core/turn';
 import { EQUIP_SLOTS } from '../src/core/types';
 import type { Entity, MapEntityDef, MapRuntimeState } from '../src/core/types';

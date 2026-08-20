@@ -22,10 +22,33 @@ export type CombatSide = {
   ref: ActorRef;
   stats: DerivedStats;
   vitals: Vitals;
+  /**
+   * Spiegelt `Entity.scriptState.guarded`. Ist es gesetzt, nimmt der Traeger nur
+   * halben Schaden. Die `sporemother` setzt es, solange ein Sporentraeger lebt
+   * (PHASE_3_7 Block 7).
+   */
+  guarded?: boolean;
 };
 
 /** Ziel einer Explosion, siehe applySplash. */
 export type SplashTarget = CombatSide & { pos: TileCoord };
+
+/**
+ * Zusaetzliche Stellschrauben eines Angriffs, die nicht aus den abgeleiteten
+ * Werten kommen. `executionBonus` ist der Zuschlag aus der Fertigkeit
+ * `execution` (RPG.md Abschnitt 5); ob er greift, entscheidet allein die
+ * Schwelle unten, damit die Regel an einer Stelle steht.
+ */
+export type AttackOptions = { executionBonus?: number };
+
+/** Ab diesem Anteil der maxHealth greift `execution` nicht mehr. */
+export const EXECUTION_THRESHOLD = 0.3;
+
+/** Liegt das Ziel unter 30 Prozent seiner maxHealth? */
+export function isExecutable(defender: CombatSide): boolean {
+  if (defender.stats.maxHealth <= 0) return false;
+  return defender.vitals.health < EXECUTION_THRESHOLD * defender.stats.maxHealth;
+}
 
 function clamp(min: number, max: number, value: number): number {
   return value < min ? min : value > max ? max : value;
@@ -56,16 +79,22 @@ export function typeBonus(attacker: DerivedStats, weapon: WeaponDef): number {
 /**
  * SPEC 4.2, Schritte 1 bis 4. Die Reihenfolge der beiden Ziehungen ist Teil des
  * Determinismus: erst der Schadenswurf, dann der Kritwurf.
+ *
+ * `extraBonus` ist der Zuschlag aus `execution` und wird laut PHASE_3_7 Block 3
+ * nach dem Typbonus und vor dem kritischen Treffer angewendet. Bei 0 aendert
+ * sich nichts, auch keine Rundung.
  */
 export function rollDamage(
   rng: Rng,
   weapon: WeaponDef,
-  attacker: DerivedStats
+  attacker: DerivedStats,
+  extraBonus = 0
 ): { raw: number; crit: boolean } {
   const roll = rng.randInt(weapon.dmgMin, weapon.dmgMax);
   const withBonus = Math.round(roll * (1 + typeBonus(attacker, weapon)));
+  const withExtra = extraBonus > 0 ? Math.round(withBonus * (1 + extraBonus)) : withBonus;
   const crit = rng.next() < weapon.critChance + attacker.critBonus;
-  return { raw: crit ? withBonus * 2 : withBonus, crit };
+  return { raw: crit ? withExtra * 2 : withExtra, crit };
 }
 
 /**
@@ -128,16 +157,20 @@ export function resolveAttack(
   attacker: CombatSide,
   defender: CombatSide,
   weapon: WeaponDef,
-  distance: number
+  distance: number,
+  options: AttackOptions = {}
 ): GameEvent[] {
   const chance = hitChance(attacker.stats, defender.stats, weapon, distance);
   if (rng.next() >= chance) {
     return [damageEvent(attacker.ref, defender.ref, false, 0, false, weapon.damageType)];
   }
 
-  const { raw, crit } = rollDamage(rng, weapon, attacker.stats);
+  const execution = options.executionBonus ?? 0;
+  const extraBonus = execution > 0 && isExecutable(defender) ? execution : 0;
+  const { raw, crit } = rollDamage(rng, weapon, attacker.stats, extraBonus);
   const resist = defender.stats.resistances[weapon.damageType];
-  const damage = applyArmor(applyResistance(raw, resist), defender.stats.armor);
+  const afterArmor = applyArmor(applyResistance(raw, resist), defender.stats.armor);
+  const damage = defender.guarded === true ? Math.max(1, Math.floor(afterArmor / 2)) : afterArmor;
 
   const events: GameEvent[] = [
     damageEvent(attacker.ref, defender.ref, true, damage, crit, weapon.damageType),

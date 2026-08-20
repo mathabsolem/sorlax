@@ -5,7 +5,8 @@
 import affixesJson from '../../content/affixes.json';
 import dropTablesJson from '../../content/dropTables.json';
 import equipmentJson from '../../content/items.json';
-import type { AffixDef, DropTableDef, ItemDef, UniqueDef } from '../../src/core/types';
+import skillsJson from '../../content/skills.json';
+import type { AffixDef, DropTableDef, ItemDef, SkillDef, UniqueDef } from '../../src/core/types';
 
 /**
  * Der echte Startkatalog aus content/. Ein JSON-Import kennt nur die weiten
@@ -18,6 +19,7 @@ export const EQUIPMENT: Record<string, ItemDef> = equipmentJson as unknown as Re
   string,
   ItemDef
 >;
+export const SKILLS = skillsJson as unknown as Record<string, SkillDef>;
 
 /**
  * Einzigartige Gegenstaende gibt es in content/ noch nicht, siehe Bericht zu

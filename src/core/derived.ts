@@ -9,14 +9,18 @@
  * Rekursionsproblem entsteht dabei nicht, weil Attributsaffixe selbst nicht von
  * abgeleiteten Werten abhaengen.
  *
- * Fertigkeiten tragen weiterhin null bei; sie kommen in Phase 3.7.
+ * Passive Fertigkeiten wirken ueber `SkillDef.modifiers` und werden mit den
+ * Beitraegen der Ausruestung zusammengefasst. `execution` ist kein Wert in
+ * DerivedStats, sondern ein Zuschlag im Kampf und liegt deshalb in combat.ts.
  */
 import { modifiersFor } from './difficulty';
 import { DRAIN_ARMOR_PENALTY } from './effectDefs';
 import {
   attributeBonus,
   collectEquipmentModifiers,
+  collectSkillModifiers,
   magnitudeOf,
+  mergeModifiers,
   ratioOf,
 } from './modifiers';
 import type { ModifierSums } from './modifiers';
@@ -105,7 +109,12 @@ function playerStats(
   content: ContentDb,
   difficulty: Difficulty
 ): DerivedStats {
-  const sums = collectEquipmentModifiers(player.equipment, content);
+  // Ausruestung und passive Fertigkeiten tragen nach denselben Regeln bei
+  // (PHASE_3_7 Block 3).
+  const sums = mergeModifiers(
+    collectEquipmentModifiers(player.equipment, content),
+    collectSkillModifiers(player.skills, content)
+  );
   const attributes = attributeBonus(sums, player.attributes);
   const penalty = modifiersFor(difficulty).playerResistPenalty;
 
@@ -187,7 +196,10 @@ export function getDerivedStats(
  * Das sind die Werte, gegen die `reqStrength` und `reqAgility` gepruefen werden.
  */
 export function effectiveAttributes(state: GameState, content: ContentDb): Attributes {
-  const sums = collectEquipmentModifiers(state.player.equipment, content);
+  const sums = mergeModifiers(
+    collectEquipmentModifiers(state.player.equipment, content),
+    collectSkillModifiers(state.player.skills, content)
+  );
   return attributeBonus(sums, state.player.attributes);
 }
 

@@ -3,6 +3,10 @@
  *
  * Version 1 kannte `PlayerState.stats` als Wahrheit. Ab Version 2 sind nur noch
  * Attribute und `health` gespeichert, alles andere entsteht in getDerivedStats.
+ * Version 3 ergaenzt `MapRuntimeState.tempWalls` (INTERFACES v1.2.1).
+ *
+ * Die Kette laeuft in Stufen: 1 auf 2, dann 2 auf 3. Jede Stufe kennt nur ihren
+ * eigenen Schritt.
  */
 import { EFFECT_DEFS, isEffectId } from './effectDefs';
 import { CURRENT_SAVE_VERSION, START_ATTRIBUTE } from './state';
@@ -95,8 +99,23 @@ function entityFromLegacy(entity: LegacyEntity): Entity {
   return migrated;
 }
 
-function migrateV1(old: LegacyState): GameState {
+// --- Migration von Version 2 --------------------------------------------------
+
+/** Version 2 kannte noch keine temporaeren Waende. */
+type V2MapRuntime = Omit<MapRuntimeState, 'tempWalls'>;
+
+type V2State = Omit<GameState, 'maps'> & { maps: Record<string, V2MapRuntime> };
+
+function migrateV2(old: V2State): GameState {
   const maps: Record<string, MapRuntimeState> = {};
+  for (const [id, runtime] of Object.entries(old.maps)) {
+    maps[id] = { ...runtime, tempWalls: [] };
+  }
+  return { ...old, version: CURRENT_SAVE_VERSION, maps };
+}
+
+function migrateV1(old: LegacyState): V2State {
+  const maps: Record<string, V2MapRuntime> = {};
   for (const [id, runtime] of Object.entries(old.maps)) {
     maps[id] = {
       ...runtime,
@@ -124,7 +143,7 @@ function migrateV1(old: LegacyState): GameState {
   const { player: _oldPlayer, maps: _oldMaps, ...rest } = old;
   return {
     ...rest,
-    version: CURRENT_SAVE_VERSION,
+    version: 2,
     difficulty: 'normal',
     unlockedDifficulties: ['normal'],
     nextItemUid: 1,
@@ -134,8 +153,8 @@ function migrateV1(old: LegacyState): GameState {
 }
 
 /**
- * Migrationskette. Version 1 wird auf Attribute umgerechnet, Version 2 wird
- * durchgereicht, jede unbekannte Version ist ein Fehler.
+ * Migrationskette. Jede Version wird ueber alle Zwischenstufen hochgezogen,
+ * jede unbekannte Version ist ein Fehler.
  */
 export function migrate(raw: unknown): GameState {
   if (typeof raw !== 'object' || raw === null) {
@@ -146,7 +165,10 @@ export function migrate(raw: unknown): GameState {
     throw new Error('savegame has no version');
   }
   if (version === 1) {
-    return migrateV1(raw as LegacyState);
+    return migrateV2(migrateV1(raw as LegacyState));
+  }
+  if (version === 2) {
+    return migrateV2(raw as V2State);
   }
   if (version === CURRENT_SAVE_VERSION) {
     return raw as GameState;

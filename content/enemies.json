@@ -1,0 +1,325 @@
+{
+  "halvern": {
+    "id": "halvern",
+    "archetype": "warden",
+    "element": "fire",
+    "name": "Halvern, Brandmeister",
+    "baseHealth": 220,
+    "baseArmor": 6,
+    "baseAccuracy": 12,
+    "baseEvasion": 4,
+    "resistances": {
+      "physical": 10,
+      "fire": 60,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1.0,
+    "behavior": "scripted",
+    "scriptId": "halvern",
+    "aggroRange": 10,
+    "preferredRange": 1,
+    "weaponId": "cinder_maul",
+    "baseXp": 400,
+    "spriteWidth": 1.1,
+    "frames": {
+      "idle": [
+        "halvern_idle0",
+        "halvern_idle1"
+      ],
+      "attack": [
+        "halvern_attack0"
+      ],
+      "pain": [
+        "halvern_pain0"
+      ],
+      "death": [
+        "halvern_death0",
+        "halvern_death1"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "medkit",
+        "amount": 2,
+        "chance": 1.0
+      }
+    ],
+    "dropTableId": "boss_drop"
+  },
+  "sporemother": {
+    "id": "sporemother",
+    "archetype": "growth",
+    "element": "poison",
+    "name": "Sporenmutter",
+    "baseHealth": 380,
+    "baseArmor": 8,
+    "baseAccuracy": 14,
+    "baseEvasion": 0,
+    "resistances": {
+      "physical": 20,
+      "fire": -25,
+      "poison": 80,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1.0,
+    "behavior": "scripted",
+    "scriptId": "sporemother",
+    "aggroRange": 12,
+    "preferredRange": 3,
+    "weaponId": "spore_burst",
+    "baseXp": 700,
+    "spriteWidth": 1.6,
+    "frames": {
+      "idle": [
+        "sporemother_idle0",
+        "sporemother_idle1"
+      ],
+      "attack": [
+        "sporemother_attack0"
+      ],
+      "pain": [
+        "sporemother_pain0"
+      ],
+      "death": [
+        "sporemother_death0",
+        "sporemother_death1"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "medkit",
+        "amount": 3,
+        "chance": 1.0
+      }
+    ],
+    "dropTableId": "boss_drop"
+  },
+  "rime": {
+    "id": "rime",
+    "archetype": "revenant",
+    "element": "ice",
+    "name": "Rime",
+    "baseHealth": 520,
+    "baseArmor": 10,
+    "baseAccuracy": 18,
+    "baseEvasion": 8,
+    "resistances": {
+      "physical": 15,
+      "fire": -30,
+      "poison": 0,
+      "ice": 75,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1.0,
+    "behavior": "scripted",
+    "scriptId": "rime",
+    "aggroRange": 12,
+    "preferredRange": 6,
+    "weaponId": "frost_lance",
+    "baseXp": 1100,
+    "spriteWidth": 1.0,
+    "frames": {
+      "idle": [
+        "rime_idle0",
+        "rime_idle1"
+      ],
+      "attack": [
+        "rime_attack0"
+      ],
+      "pain": [
+        "rime_pain0"
+      ],
+      "death": [
+        "rime_death0",
+        "rime_death1"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "medkit",
+        "amount": 3,
+        "chance": 1.0
+      }
+    ],
+    "dropTableId": "boss_drop"
+  },
+  "sorlax": {
+    "id": "sorlax",
+    "archetype": "sorlax",
+    "element": "void",
+    "name": "Sorlax",
+    "baseHealth": 900,
+    "baseArmor": 14,
+    "baseAccuracy": 24,
+    "baseEvasion": 10,
+    "resistances": {
+      "physical": 25,
+      "fire": 25,
+      "poison": 0,
+      "ice": 25,
+      "shock": 0,
+      "void": 70
+    },
+    "speed": 1.0,
+    "behavior": "scripted",
+    "scriptId": "sorlax",
+    "aggroRange": 14,
+    "preferredRange": 4,
+    "weaponId": "void_scepter",
+    "baseXp": 3000,
+    "spriteWidth": 1.8,
+    "frames": {
+      "idle": [
+        "sorlax_idle0",
+        "sorlax_idle1"
+      ],
+      "attack": [
+        "sorlax_attack0"
+      ],
+      "pain": [
+        "sorlax_pain0"
+      ],
+      "death": [
+        "sorlax_death0",
+        "sorlax_death1"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "medkit",
+        "amount": 4,
+        "chance": 1.0
+      }
+    ],
+    "dropTableId": "boss_drop"
+  },
+  "spore_poison": {
+    "id": "spore_poison",
+    "archetype": "growth",
+    "element": "poison",
+    "name": "Sporentraeger",
+    "baseHealth": 18,
+    "baseArmor": 0,
+    "baseAccuracy": 8,
+    "baseEvasion": 2,
+    "resistances": {
+      "physical": 0,
+      "fire": -30,
+      "poison": 60,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1.0,
+    "behavior": "melee",
+    "aggroRange": 6,
+    "preferredRange": 1,
+    "weaponId": "spore_lash",
+    "baseXp": 12,
+    "spriteWidth": 0.7,
+    "frames": {
+      "idle": [
+        "spore_poison_idle0",
+        "spore_poison_idle1"
+      ],
+      "attack": [
+        "spore_poison_attack0"
+      ],
+      "pain": [
+        "spore_poison_pain0"
+      ],
+      "death": [
+        "spore_poison_death0",
+        "spore_poison_death1"
+      ]
+    }
+  },
+  "corvane_rat": {
+    "id": "corvane_rat",
+    "archetype": "rat",
+    "element": "physical",
+    "name": "Schachtratte",
+    "baseHealth": 14,
+    "baseArmor": 0,
+    "baseAccuracy": 6,
+    "baseEvasion": 4,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 2.0,
+    "behavior": "charger",
+    "aggroRange": 8,
+    "preferredRange": 1,
+    "weaponId": "rat_bite",
+    "baseXp": 10,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "corvane_rat_idle0",
+        "corvane_rat_idle1"
+      ],
+      "attack": [
+        "corvane_rat_attack0"
+      ],
+      "pain": [
+        "corvane_rat_pain0"
+      ],
+      "death": [
+        "corvane_rat_death0",
+        "corvane_rat_death1"
+      ]
+    }
+  },
+  "corvane_miner": {
+    "id": "corvane_miner",
+    "archetype": "miner",
+    "element": "physical",
+    "name": "Verrath-Haeuer",
+    "baseHealth": 30,
+    "baseArmor": 2,
+    "baseAccuracy": 9,
+    "baseEvasion": 2,
+    "resistances": {
+      "physical": 10,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1.0,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "pick_axe",
+    "baseXp": 20,
+    "spriteWidth": 0.9,
+    "frames": {
+      "idle": [
+        "corvane_miner_idle0",
+        "corvane_miner_idle1"
+      ],
+      "attack": [
+        "corvane_miner_attack0"
+      ],
+      "pain": [
+        "corvane_miner_pain0"
+      ],
+      "death": [
+        "corvane_miner_death0",
+        "corvane_miner_death1"
+      ]
+    }
+  }
+}

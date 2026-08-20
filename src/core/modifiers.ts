@@ -16,6 +16,9 @@
  * - Attribute (`strength`, `agility`, `vitality`, `focus`): wirken auf die
  *   Attribute selbst und damit auf die Basis aller uebrigen Werte. Deshalb
  *   laeuft die Berechnung in zwei Durchgaengen.
+ *
+ * Passive Fertigkeiten (INTERFACES Abschnitt 6, `SkillDef.modifiers`) folgen
+ * denselben Regeln, nur dass ihr Beitrag `perPoint` mal der Punktzahl ist.
  */
 import { DAMAGE_TYPES, EQUIP_SLOTS } from './types';
 import type {
@@ -95,6 +98,44 @@ export function collectEquipmentModifiers(
   }
 
   return sums;
+}
+
+/**
+ * Beitraege der gelernten passiven Fertigkeiten. Gesperrte Baeume tragen nie
+ * bei, auch wenn ein manipulierter Spielstand dort Punkte fuehrt. Die
+ * Reihenfolge ist nach `skillId` sortiert, damit die Summe nicht von der
+ * Schluesselreihenfolge des Spielstands abhaengt.
+ */
+export function collectSkillModifiers(
+  skills: Record<string, number>,
+  content: ContentDb
+): ModifierSums {
+  const sums = emptySums();
+
+  for (const skillId of Object.keys(skills).sort()) {
+    const points = skills[skillId] ?? 0;
+    if (points <= 0) continue;
+    const def = content.skills[skillId];
+    if (def === undefined || def.locked) continue;
+
+    for (const mod of def.modifiers ?? []) {
+      add(sums, mod.stat, mod.mode, mod.perPoint * points);
+    }
+  }
+
+  return sums;
+}
+
+/** Fasst zwei Beitragssummen zusammen, ohne eine der beiden zu veraendern. */
+export function mergeModifiers(first: ModifierSums, second: ModifierSums): ModifierSums {
+  const merged = emptySums();
+  for (const source of [first, second]) {
+    for (const [stat, value] of Object.entries(source.flat)) add(merged, stat, 'flat', value);
+    for (const [stat, value] of Object.entries(source.percent)) {
+      add(merged, stat, 'percent', value);
+    }
+  }
+  return merged;
 }
 
 /** Summe der flachen Beitraege zu einem Wert. */

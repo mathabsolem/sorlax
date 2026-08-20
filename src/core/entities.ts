@@ -87,6 +87,14 @@ export function createEnemyEntity(
   };
 }
 
+/**
+ * Steht die Entitaet gerade unter dem Schutz eines Bossskripts?
+ * Der Wert liegt in `scriptState.guarded` und wird dort jede Runde gesetzt.
+ */
+export function isGuarded(entity: Entity): boolean {
+  return (entity.scriptState?.['guarded'] ?? 0) > 0;
+}
+
 /** Lebenswert-Traeger einer Entitaet, ohne Kopie. Schreibt in die Entitaet zurueck. */
 export function vitalsOf(entity: Entity): { health: number } {
   return {

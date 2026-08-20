@@ -37,5 +37,13 @@ export function createRenderMap(
     walls[index] = doorTileValue;
   }
 
+  // Temporaere Waende aus INTERFACES v1.2.1. Der Raycaster liest ausschliesslich
+  // dieses Array, deshalb genuegt der Eintrag hier.
+  for (const wall of mapState.tempWalls) {
+    const index = wall.pos.y * map.width + wall.pos.x;
+    if (index < 0 || index >= size) continue;
+    walls[index] = wall.tileValue;
+  }
+
   return { width: map.width, height: map.height, walls, floors, ceilings, light, ambientLight: map.ambientLight };
 }

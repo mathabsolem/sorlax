@@ -11,7 +11,8 @@ import { getDerivedStats, playerActor } from './derived';
 import { hasChill, tickEffects } from './effects';
 import { isAlive } from './entities';
 import { loadRng, saveRng } from './rng';
-import { dropLoot } from './spawn';
+import { dropLoot } from './loot';
+import { expireTempWalls } from './tempWalls';
 import type {
   ContentDb,
   DerivedStats,
@@ -146,6 +147,10 @@ export function advanceRound(state: GameState, content: ContentDb): GameEvent[] 
       if (state.player.health <= 0) break;
     }
   }
+
+  // Abgelaufene temporaere Waende verschwinden, bevor die Effekte laufen
+  // (PHASE_3_7 Block 1).
+  expireTempWalls(mapState, state.turnCount);
 
   events.push(...tickEffects(state, content));
   tickCooldowns(state);

@@ -1,0 +1,257 @@
+{
+  "precise_strike": {
+    "id": "precise_strike",
+    "tree": "tree_gear",
+    "name": "Zielschlag",
+    "description": "Genauigkeit plus 3 pro Punkt.",
+    "maxPoints": 5,
+    "tier": 1,
+    "reqLevel": 1,
+    "reqPointsInTree": 0,
+    "active": false,
+    "cooldown": 0,
+    "locked": false,
+    "modifiers": [
+      {
+        "stat": "accuracy",
+        "mode": "flat",
+        "perPoint": 3
+      }
+    ]
+  },
+  "heavy_hand": {
+    "id": "heavy_hand",
+    "tree": "tree_gear",
+    "name": "Schwere Hand",
+    "description": "Physischer Schaden plus 4 Prozent pro Punkt.",
+    "maxPoints": 5,
+    "tier": 1,
+    "reqLevel": 1,
+    "reqPointsInTree": 0,
+    "active": false,
+    "cooldown": 0,
+    "locked": false,
+    "modifiers": [
+      {
+        "stat": "meleeBonus",
+        "mode": "percent",
+        "perPoint": 4
+      }
+    ]
+  },
+  "breach": {
+    "id": "breach",
+    "tree": "tree_gear",
+    "name": "Durchbruch",
+    "description": "Ein Angriff, der 40 plus 8 Prozent pro Punkt der gegnerischen Ruestung ignoriert.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": true,
+    "cooldown": 4,
+    "locked": false
+  },
+  "steady_aim": {
+    "id": "steady_aim",
+    "tree": "tree_gear",
+    "name": "Ruhige Hand",
+    "description": "Kritische Trefferchance plus 2 Prozentpunkte pro Punkt.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": false,
+    "cooldown": 0,
+    "locked": false,
+    "modifiers": [
+      {
+        "stat": "critBonus",
+        "mode": "flat",
+        "perPoint": 2
+      }
+    ]
+  },
+  "sweep": {
+    "id": "sweep",
+    "tree": "tree_gear",
+    "name": "Rundschlag",
+    "description": "Trifft alle Gegner in Distanz 1 mit 70 plus 6 Prozent pro Punkt des Waffenschadens.",
+    "maxPoints": 5,
+    "tier": 3,
+    "reqLevel": 12,
+    "reqPointsInTree": 5,
+    "active": true,
+    "cooldown": 6,
+    "locked": false
+  },
+  "execution": {
+    "id": "execution",
+    "tree": "tree_gear",
+    "name": "Abbruch",
+    "description": "Plus 20 plus 5 Prozent pro Punkt Schaden gegen Ziele unter 30 Prozent Leben.",
+    "maxPoints": 5,
+    "tier": 3,
+    "reqLevel": 12,
+    "reqPointsInTree": 5,
+    "active": false,
+    "cooldown": 0,
+    "locked": false
+  },
+  "catalyst": {
+    "id": "catalyst",
+    "tree": "tree_reaction",
+    "name": "Katalysator",
+    "description": "Elementarschaden plus X Prozent pro Punkt. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 1,
+    "reqLevel": 1,
+    "reqPointsInTree": 0,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "contagion": {
+    "id": "contagion",
+    "tree": "tree_reaction",
+    "name": "Ansteckung",
+    "description": "Statuseffekte halten laenger an. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 1,
+    "reqLevel": 1,
+    "reqPointsInTree": 0,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "overload": {
+    "id": "overload",
+    "tree": "tree_reaction",
+    "name": "Ueberladung",
+    "description": "Entlaedt angesammelte Ladung auf ein Ziel. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "cold_snap": {
+    "id": "cold_snap",
+    "tree": "tree_reaction",
+    "name": "Kaelteeinbruch",
+    "description": "Erhoeht die Wirkung von Kaelte. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "chain_reaction": {
+    "id": "chain_reaction",
+    "tree": "tree_reaction",
+    "name": "Kettenreaktion",
+    "description": "Effekte springen auf Nachbarn ueber. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 3,
+    "reqLevel": 12,
+    "reqPointsInTree": 5,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "lingering": {
+    "id": "lingering",
+    "tree": "tree_reaction",
+    "name": "Nachhall",
+    "description": "Abgelaufene Effekte wirken eine Runde nach. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 3,
+    "reqLevel": 12,
+    "reqPointsInTree": 5,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "thick_skin": {
+    "id": "thick_skin",
+    "tree": "tree_endure",
+    "name": "Dicke Haut",
+    "description": "Ruestung plus X pro Punkt. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 1,
+    "reqLevel": 1,
+    "reqPointsInTree": 0,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "second_wind": {
+    "id": "second_wind",
+    "tree": "tree_endure",
+    "name": "Zweiter Atem",
+    "description": "Stellt Leben nach einem Kampf wieder her. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 1,
+    "reqLevel": 1,
+    "reqPointsInTree": 0,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "bulwark": {
+    "id": "bulwark",
+    "tree": "tree_endure",
+    "name": "Bollwerk",
+    "description": "Resistenzen plus X pro Punkt. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "shrug_off": {
+    "id": "shrug_off",
+    "tree": "tree_endure",
+    "name": "Abschuetteln",
+    "description": "Verkuerzt erlittene Statuseffekte. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "last_stand": {
+    "id": "last_stand",
+    "tree": "tree_endure",
+    "name": "Letztes Aufgebot",
+    "description": "Ueberlebt einen toedlichen Treffer. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 3,
+    "reqLevel": 12,
+    "reqPointsInTree": 5,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  },
+  "salvage": {
+    "id": "salvage",
+    "tree": "tree_endure",
+    "name": "Bergung",
+    "description": "Bessere Funde aus Behaeltern. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 3,
+    "reqLevel": 12,
+    "reqPointsInTree": 5,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
+  }
+}

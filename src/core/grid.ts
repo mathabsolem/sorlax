@@ -2,6 +2,7 @@
  * Raster, Sichtbarkeit und Bewegungsrichtungen nach SPEC 3.1 und 3.4.
  */
 import { doorAt, enemyAt, isDoorBlocking } from './entities';
+import { tempWallAt } from './tempWalls';
 import type { Facing, MapDef, MapRuntimeState, TileCoord } from './types';
 
 /** Kacheln ausserhalb der Karte gelten als solide Wand. */
@@ -15,9 +16,10 @@ export function tileAt(map: MapDef, x: number, y: number): number {
   return tile ?? OUTSIDE_TILE;
 }
 
-/** Wand oder nicht offene Tuer. */
+/** Wand, temporaere Wand oder nicht offene Tuer (INTERFACES v1.2.1). */
 export function isSolid(map: MapDef, x: number, y: number, state: MapRuntimeState): boolean {
   if (tileAt(map, x, y) !== 0) return true;
+  if (tempWallAt(state, x, y) !== undefined) return true;
   const door = doorAt(state, x, y);
   return door !== undefined && isDoorBlocking(door);
 }

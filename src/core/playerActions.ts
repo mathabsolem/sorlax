@@ -7,7 +7,7 @@ import type { ActionResult } from './actionResult';
 import { playerActor } from './derived';
 import { applyEffectDefault } from './effects';
 import { doorAt, enemyAt, entitiesAt, removeEntity } from './entities';
-import { stepFrom, tileKey } from './grid';
+import { isSolid, stepFrom, tileKey } from './grid';
 import { addToInventory, groundItemsAt, removeGroundItem } from './items';
 import { spendAttributePoint } from './progression';
 import { fireTriggers, hasUsableTrigger } from './triggers';
@@ -190,15 +190,9 @@ export function moveAction(
   if (enemyAt(here.mapState, target.x, target.y) !== undefined) {
     return { ok: false, reason: 'tile occupied' };
   }
-  const walls = here.map.walls[target.y * here.map.width + target.x];
-  if (
-    target.x < 0 ||
-    target.y < 0 ||
-    target.x >= here.map.width ||
-    target.y >= here.map.height ||
-    walls === undefined ||
-    walls !== 0
-  ) {
+  // isSolid deckt Rand, Wand, Tuer und temporaere Wand gleichermassen ab
+  // (PHASE_3_7 Block 1). Kein direkter Zugriff mehr auf `map.walls`.
+  if (isSolid(here.map, target.x, target.y, here.mapState)) {
     return { ok: false, reason: 'blocked by wall' };
   }
 

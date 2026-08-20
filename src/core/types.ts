@@ -130,9 +130,16 @@ export type MapRuntimeState = {
   takenItems: string[]; // Schluessel "x,y"
   groundItems: GroundItem[];
   firedTriggers: string[];
+  tempWalls: TempWall[];
   rolled: boolean; // true, sobald Ausruestung und Drops gewuerfelt wurden
   visited: boolean;
   explored: string[];
+};
+
+export type TempWall = {
+  pos: TileCoord;
+  tileValue: number; // kodierter Wandwert wie in MapDef.walls
+  expiresAtTurn: number;
 };
 
 export type GroundItem = {

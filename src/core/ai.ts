@@ -2,13 +2,14 @@
  * Gegnerverhalten nach SPEC 5.2 und Aktivierung nach SPEC 3.4.
  * Gegner oeffnen keine Tueren und sammeln keine Items ein.
  */
+import { BOSS_REGISTRY } from './bosses/registry';
 import { resolveAttack } from './combat';
 import { enemyActor, getDerivedStats, playerActor } from './derived';
 import { vitalsOf } from './entities';
 import { chebyshev, hasLineOfSight, isWalkable } from './grid';
 import { findPath } from './pathfinding';
 import { scaleWeapon } from './scaling';
-import { loadRng, saveRng } from './state';
+import { loadRng, saveRng } from './rng';
 import type {
   ContentDb,
   Entity,
@@ -163,6 +164,23 @@ function turretTurn(state: GameState, scene: Scene, entity: Entity, distance: nu
   return [];
 }
 
+/**
+ * Bossverhalten aus BOSS_REGISTRY (INTERFACES Abschnitt 10). Ein fehlender
+ * Eintrag ist ein Datenfehler und wird gemeldet, nicht verschluckt; der Gegner
+ * handelt dann nicht (PHASE_3_7 Block 6).
+ */
+function scriptedTurn(state: GameState, scene: Scene, entity: Entity): GameEvent[] {
+  const scriptId = scene.def.scriptId;
+  if (scriptId === undefined) {
+    return [{ type: 'message', text: `scripted enemy without scriptId: ${scene.def.id}` }];
+  }
+  const handler = BOSS_REGISTRY[scriptId];
+  if (handler === undefined) {
+    return [{ type: 'message', text: `no boss script: ${scriptId}` }];
+  }
+  return handler(state, entity, scene.def, scene.content);
+}
+
 /** Eine einzelne Gegneraktion. Der Aufrufer verwaltet die Aktionspunkte. */
 export function takeEnemyTurn(state: GameState, entity: Entity, content: ContentDb): GameEvent[] {
   if (entity.kind !== 'enemy') return [];
@@ -181,9 +199,6 @@ export function takeEnemyTurn(state: GameState, entity: Entity, content: Content
     case 'turret':
       return turretTurn(state, scene, entity, distance);
     case 'scripted':
-      // Bossskripte liegen laut INTERFACES Abschnitt 10 in src/core/bosses/ und
-      // werden ueber BOSS_REGISTRY aufgeloest. Bis dahin handelt ein solcher
-      // Gegner nicht, statt ersatzweise Nahkampf zu spielen.
-      return [];
+      return scriptedTurn(state, scene, entity);
   }
 }

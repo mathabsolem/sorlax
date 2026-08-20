@@ -6,10 +6,11 @@ import { applySplash, resolveAttack } from './combat';
 import type { SplashTarget } from './combat';
 import { enemyActor, getDerivedStats } from './derived';
 import { applyEffectDefault } from './effects';
-import { isAlive, vitalsOf } from './entities';
+import { isAlive, isGuarded, vitalsOf } from './entities';
 import { chebyshev, hasLineOfSight } from './grid';
 import { grantXp } from './progression';
 import { scaledXpReward } from './scaling';
+import { executionBonus } from './skills/rules';
 import { loadRng, saveRng } from './rng';
 import { playerDerived, reapDead } from './turn';
 import type {
@@ -48,9 +49,9 @@ function autoTarget(
 
 /**
  * Vergibt XP fuer alle in `events` getoeteten Gegner, raeumt sie ab und laesst
- * ihre Ausruestung fallen.
+ * ihre Ausruestung fallen. Wird auch von den aktiven Fertigkeiten benutzt.
  */
-function collectKills(
+export function collectKills(
   state: GameState,
   content: ContentDb,
   mapState: MapRuntimeState,
@@ -98,11 +99,20 @@ function splashTargets(
   return targets;
 }
 
+/**
+ * Stellschrauben eines Angriffs, die nicht aus den abgeleiteten Werten kommen.
+ * `armorPierce` ist der Anteil der Ruestung, den der Angriff ignoriert; er kommt
+ * aus der Fertigkeit `breach` (PHASE_3_7 Block 5) und laesst die Resistenz
+ * ausdruecklich unberuehrt.
+ */
+export type AttackModifiers = { armorPierce?: number };
+
 /** Angriff auf ein Ziel oder auf den naechsten sichtbaren Gegner. */
 export function attackAction(
   state: GameState,
   content: ContentDb,
-  targetId?: EntityId
+  targetId?: EntityId,
+  modifiers: AttackModifiers = {}
 ): ActionResult {
   const here = currentScene(state, content);
   if (here === null) return { ok: false, reason: 'unknown map' };
@@ -143,16 +153,22 @@ export function attackAction(
     }
   }
 
+  // `breach` senkt die Ruestung des Ziels vor der Anwendung, die Resistenz
+  // bleibt unberuehrt (PHASE_3_7 Block 5).
+  const targetStats = getDerivedStats(targetActor, content, state.difficulty);
+  const pierce = modifiers.armorPierce ?? 0;
+  const defenderStats =
+    pierce > 0
+      ? { ...targetStats, armor: Math.floor(targetStats.armor * (1 - pierce)) }
+      : targetStats;
+
   const events = resolveAttack(
     rng,
     { ref: 'player', stats: playerStats, vitals: state.player },
-    {
-      ref: target.id,
-      stats: getDerivedStats(targetActor, content, state.difficulty),
-      vitals: vitalsOf(target),
-    },
+    { ref: target.id, stats: defenderStats, vitals: vitalsOf(target), guarded: isGuarded(target) },
     weapon,
-    distance
+    distance,
+    { executionBonus: executionBonus(state.player, content) }
   );
   saveRng(state, rng);
   target.active = true;

@@ -18,14 +18,12 @@ import {
   switchWeaponAction,
   useConsumableAction,
 } from './playerActions';
+import { spendSkillPointAction, useSkillAction } from './skillActions';
 import { createMapRuntime, pushLog } from './state';
-import { rollMapLoot } from './spawn';
+import { rollMapLoot } from './loot';
 import { fireTriggers } from './triggers';
 import { advanceRound, hasDeath } from './turn';
 import type { Command, ContentDb, GameEvent, GameState } from './types';
-
-/** Kommandos, die erst mit den Fertigkeiten in Phase 3.7 kommen. */
-const NOT_IMPLEMENTED = 'not implemented';
 
 function invalid(reason: string): GameEvent[] {
   return [{ type: 'invalid', reason }];
@@ -192,6 +190,11 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
       events = result.ok ? result.events : invalid(result.reason);
       break;
     }
+    case 'spendSkillPoint': {
+      const result = spendSkillPointAction(state, content, cmd.skillId);
+      events = result.ok ? result.events : invalid(result.reason);
+      break;
+    }
     case 'move':
       events = handleMove(state, content, cmd.dir);
       break;
@@ -204,14 +207,12 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
     case 'useConsumable':
       events = fromResult(state, content, useConsumableAction(state, content, cmd.itemId));
       break;
+    case 'useSkill':
+      // Kostet eine Runde wie ein Angriff (SPEC 3.2).
+      events = fromResult(state, content, useSkillAction(state, content, cmd.skillId, cmd.targetId));
+      break;
     case 'wait':
       events = fromResult(state, content, { ok: true, events: [] });
-      break;
-    // Fertigkeiten kommen in Phase 3.7. Bis dahin melden diese Kommandos
-    // ausdruecklich, dass sie noch nichts tun.
-    case 'useSkill':
-    case 'spendSkillPoint':
-      events = invalid(NOT_IMPLEMENTED);
       break;
   }
 
