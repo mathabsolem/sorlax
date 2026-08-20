@@ -1,11 +1,23 @@
-# Scepter of Sorlax — INTERFACES v1.2.1
+# Scepter of Sorlax — INTERFACES v1.3
 
-Status: eingefroren. Ersetzt v1.2.
-Grundlage: SPEC v1.2, BESTIARY v2, RPG.md.
+Status: eingefroren. Ersetzt v1.2.1.
+Grundlage: SPEC v1.2, BESTIARY v3, RPG.md.
 
-Änderung gegenüber v1.2: `MapRuntimeState.tempWalls` und der Typ `TempWall` kommen dazu,
-`isSolid` berücksichtigt sie. Nötig für Bossverhalten, das Felder vorübergehend
-verschließt. Alles andere ist unverändert.
+Änderung gegenüber v1.2.1: `PlayerState.equippedWeaponId` entfällt. Die getragene Waffe
+ist ausschließlich `equipment.weapon`, eine `ItemInstance`, deren `ItemDef` über
+`weaponId` auf einen `WeaponDef` verweist. Damit tragen Waffen Affixe wie jedes andere
+Ausrüstungsteil, und es gibt nur noch eine Quelle für die Frage, womit der Spieler
+angreift. Zugriff über:
+
+```ts
+export function equippedWeapon(state: GameState, content: ContentDb): WeaponDef | null;
+```
+
+Gibt `null` zurück, wenn der Platz leer ist. In dem Fall greift der Spieler unbewaffnet an,
+mit festen Werten dmg 1 bis 3, crit 0, Reichweite 1, `physical`.
+
+Änderung gegenüber v1.2: `MapRuntimeState.tempWalls` und der Typ `TempWall` kamen dazu,
+`isSolid` berücksichtigt sie.
 
 Änderungen gegenüber v1.1: `PlayerState.stats` entfällt zugunsten von Attributen und
 abgeleiteten Werten, Gegenstände werden Instanzen mit Affixen, Fertigkeiten kommen dazu,
@@ -124,8 +136,7 @@ export type PlayerState = {
   cooldowns: Record<string, number>;   // skillId auf verbleibende Runden
   equipment: Partial<Record<EquipSlot, ItemInstance>>;
   inventory: ItemInstance[];           // maximal 40
-  weapons: string[];                   // Grundwaffen, unabhängig von Instanzen
-  equippedWeaponId: string;
+  weapons: string[];                   // gefundene Grundwaffen für die Waffenleiste
   ammo: Record<string, number>;
   consumables: Record<string, number>;
   keys: string[];
@@ -383,7 +394,8 @@ export type ItemDef = {
   id: string;
   name: string;
   type: 'weapon' | 'ammo' | 'heal' | 'armor' | 'key' | 'keyCard' | 'quest' | 'powerup' | 'equipment';
-  slot?: EquipSlot;                   // Pflicht bei type 'equipment'
+  slot?: EquipSlot;                   // Pflicht bei type 'equipment' und 'weapon'
+  weaponId?: string;                  // Pflicht bei type 'weapon', verweist auf WeaponDef
   amount: number;
   reqLevel: number;
   reqStrength: number;
