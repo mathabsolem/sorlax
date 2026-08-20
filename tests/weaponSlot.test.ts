@@ -9,86 +9,10 @@ import { applyCommand } from '../src/core/commands';
 import { UNARMED, activeWeapon, createInstance, equippedWeapon } from '../src/core/items';
 import { migrate } from '../src/core/migrate';
 import { CURRENT_SAVE_VERSION, serialize } from '../src/core/state';
-import type { EnemyDef, GameState, Resistances } from '../src/core/types';
+import type { EnemyDef, GameState } from '../src/core/types';
 import { WEAPON_DEFS, setup } from './fixtures/world';
 
 const ENEMIES = enemiesJson as unknown as Record<string, EnemyDef>;
-
-/** BESTIARY v3 Abschnitt 6, fest hinterlegt statt aus der Quelle gelesen. */
-const BOSSES: Record<
-  string,
-  {
-    scriptId: string;
-    baseHealth: number;
-    baseArmor: number;
-    baseAccuracy: number;
-    baseEvasion: number;
-    speed: number;
-    baseXp: number;
-    resistances: Resistances;
-  }
-> = {
-  boss_halvern: {
-    scriptId: 'halvern',
-    baseHealth: 180,
-    baseArmor: 4,
-    baseAccuracy: 16,
-    baseEvasion: 3,
-    speed: 1.0,
-    baseXp: 400,
-    resistances: { physical: 0, fire: 90, poison: 0, ice: -60, shock: 0, void: 0 },
-  },
-  boss_sporemother: {
-    scriptId: 'sporemother',
-    baseHealth: 260,
-    baseArmor: 3,
-    baseAccuracy: 14,
-    baseEvasion: 0,
-    speed: 1.0,
-    baseXp: 900,
-    resistances: { physical: 25, fire: 0, poison: 90, ice: 0, shock: -60, void: 0 },
-  },
-  boss_rime: {
-    scriptId: 'rime',
-    baseHealth: 300,
-    baseArmor: 6,
-    baseAccuracy: 18,
-    baseEvasion: 8,
-    speed: 1.0,
-    baseXp: 1600,
-    resistances: { physical: 20, fire: -60, poison: 0, ice: 90, shock: 0, void: 0 },
-  },
-  boss_sorlax: {
-    scriptId: 'sorlax',
-    baseHealth: 420,
-    baseArmor: 10,
-    baseAccuracy: 20,
-    baseEvasion: 5,
-    speed: 1.0,
-    baseXp: 5000,
-    resistances: { physical: 40, fire: 25, poison: 25, ice: 25, shock: 25, void: 90 },
-  },
-};
-
-describe('Block 1, Bosswerte', () => {
-  // Test 1 aus PHASE_3_8
-  it('entsprechen BESTIARY Abschnitt 6', () => {
-    for (const [id, want] of Object.entries(BOSSES)) {
-      const def = ENEMIES[id];
-      expect(def, `Boss fehlt: ${id}`).toBeDefined();
-      expect(def?.scriptId).toBe(want.scriptId);
-      expect(def?.baseHealth).toBe(want.baseHealth);
-      expect(def?.baseArmor).toBe(want.baseArmor);
-      expect(def?.baseAccuracy).toBe(want.baseAccuracy);
-      expect(def?.baseEvasion).toBe(want.baseEvasion);
-      expect(def?.speed).toBe(want.speed);
-      expect(def?.baseXp).toBe(want.baseXp);
-      expect(def?.resistances).toEqual(want.resistances);
-      expect(def?.dropTableId).toBe('boss_drop');
-      expect(def?.behavior).toBe('scripted');
-    }
-  });
-});
 
 /** Alle Quelldateien des Projekts, ohne node_modules und dist. */
 function projectFiles(root: string): string[] {

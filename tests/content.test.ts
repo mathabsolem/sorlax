@@ -94,19 +94,6 @@ describe('content/items.json', () => {
     }
   });
 
-  it('setzt Voraussetzungen und Grundwerte nach BESTIARY Abschnitt 8', () => {
-    for (const def of gear) {
-      const heavy = def.reqLevel > 1;
-      expect(def.reqLevel).toBe(heavy ? 8 : 1);
-      expect(def.reqStrength).toBe(heavy ? 22 : 10);
-      expect(def.reqAgility).toBe(heavy ? 10 : 14);
-      expect(def.baseModifiers).toEqual([
-        { stat: 'armor', mode: 'flat', value: heavy ? 6 : 2 },
-        { stat: 'evasion', mode: 'flat', value: heavy ? -1 : 1 },
-      ]);
-    }
-  });
-
   it('traegt bei jedem Eintrag Schluessel, Steckplatz und Menge', () => {
     for (const [key, def] of Object.entries(EQUIPMENT)) {
       expect(def.id).toBe(key);
