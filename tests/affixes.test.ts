@@ -69,7 +69,7 @@ describe('eligibleAffixes', () => {
       'pre_reinforced'
     );
 
-    for (const item of rollMany(content, state, 'suit_liner', 1, false, 200)) {
+    for (const item of rollMany(content, state, 'suit_overall', 1, false, 200)) {
       for (const rolled of item.affixes) {
         const def = content.affixes[rolled.affixId];
         expect(def?.minItemLevel).toBeLessThanOrEqual(1);
@@ -87,7 +87,7 @@ describe('eligibleAffixes', () => {
       'suf_of_the_lamp'
     );
 
-    const ids = rollMany(content, state, 'helmet_cap', 20, true, 200).flatMap((item) =>
+    const ids = rollMany(content, state, 'helmet_hardhat', 20, true, 200).flatMap((item) =>
       item.affixes.map((affix) => affix.affixId)
     );
     expect(ids).not.toContain('suf_of_the_lamp');
@@ -102,8 +102,8 @@ describe('rollItem', () => {
       const { state, content } = setup();
       const rng = new Rng(31337);
       return [
-        rollItem(rng, 'suit_liner', 20, RARE_ONLY, content, false, state),
-        rollItem(rng, 'suit_liner', 20, RARE_ONLY, content, false, state),
+        rollItem(rng, 'suit_overall', 20, RARE_ONLY, content, false, state),
+        rollItem(rng, 'suit_overall', 20, RARE_ONLY, content, false, state),
       ];
     };
     expect(once()).toEqual(once());
@@ -113,7 +113,7 @@ describe('rollItem', () => {
     const { state, content } = setup();
     const rng = new Rng(5);
     for (let index = 0; index < 20; index++) {
-      expect(rollItem(rng, 'suit_liner', 20, MAGIC_ONLY, content, false, state).rarity).toBe(
+      expect(rollItem(rng, 'suit_overall', 20, MAGIC_ONLY, content, false, state).rarity).toBe(
         'magic'
       );
     }
@@ -125,7 +125,7 @@ describe('rollItem', () => {
     const normals = rollMany(
       content,
       state,
-      'suit_liner',
+      'suit_overall',
       20,
       false,
       20,
@@ -133,7 +133,7 @@ describe('rollItem', () => {
     );
     for (const item of normals) expect(item.affixes).toEqual([]);
 
-    for (const item of rollMany(content, state, 'suit_liner', 20, false, 50, MAGIC_ONLY)) {
+    for (const item of rollMany(content, state, 'suit_overall', 20, false, 50, MAGIC_ONLY)) {
       expect(item.affixes.length).toBeGreaterThanOrEqual(1);
       expect(item.affixes.length).toBeLessThanOrEqual(2);
     }
@@ -142,7 +142,7 @@ describe('rollItem', () => {
   // Test 4 aus PHASE_3_6
   it('vergibt keinen Affix zweimal', () => {
     const { state, content } = setup();
-    for (const item of rollMany(content, state, 'suit_liner', 40, false, 300)) {
+    for (const item of rollMany(content, state, 'suit_overall', 40, false, 300)) {
       const ids = item.affixes.map((affix) => affix.affixId);
       expect(new Set(ids).size).toBe(ids.length);
     }
@@ -152,8 +152,8 @@ describe('rollItem', () => {
   it('haelt hoechstens drei Praefixe und drei Suffixe', () => {
     const { state, content } = setup();
     const items = [
-      ...rollMany(content, state, 'suit_liner', 40, false, 150),
-      ...rollMany(content, state, 'gloves_wrap', 40, false, 150),
+      ...rollMany(content, state, 'suit_overall', 40, false, 150),
+      ...rollMany(content, state, 'gloves_grip', 40, false, 150),
     ];
 
     for (const item of items) {
@@ -171,7 +171,7 @@ describe('rollItem', () => {
 
   it('haelt die Affixwerte in den Grenzen der Definition', () => {
     const { state, content } = setup();
-    for (const item of rollMany(content, state, 'suit_liner', 40, false, 200)) {
+    for (const item of rollMany(content, state, 'suit_overall', 40, false, 200)) {
       for (const rolled of item.affixes) {
         const def = content.affixes[rolled.affixId];
         if (def === undefined) throw new Error(`unbekannter Affix ${rolled.affixId}`);
@@ -183,17 +183,17 @@ describe('rollItem', () => {
 
   it('ersetzt bei einzigartigen Gegenstaenden den Grundtyp und die Affixliste', () => {
     const { state, content } = setup();
-    const item = rollItem(new Rng(11), 'suit_plate', 20, UNIQUE_ONLY, content, false, state);
+    const item = rollItem(new Rng(11), 'suit_plated', 20, UNIQUE_ONLY, content, false, state);
 
     expect(item.rarity).toBe('unique');
-    expect(item.baseId).toBe('suit_liner');
+    expect(item.baseId).toBe('suit_overall');
     expect(item.affixes).toEqual(content.uniques['uniq_ember_shell']?.affixes);
   });
 
   it('faellt auf selten zurueck, wenn kein passender einzigartiger Gegenstand da ist', () => {
     const { state, content } = setup();
     const withoutUniques: ContentDb = { ...content, uniques: {} };
-    const item = rollItem(new Rng(11), 'suit_liner', 20, UNIQUE_ONLY, withoutUniques, false, state);
+    const item = rollItem(new Rng(11), 'suit_overall', 20, UNIQUE_ONLY, withoutUniques, false, state);
 
     expect(item.rarity).toBe('rare');
     expect(item.affixes.length).toBeGreaterThanOrEqual(1);

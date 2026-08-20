@@ -15,6 +15,7 @@ import {
   findItem,
   inventorySpace,
   removeFromInventory,
+  slotsFor,
 } from './items';
 import { invalidatePlayerDerived, playerDerived } from './turn';
 import type { ContentDb, EquipSlot, GameEvent, GameState } from './types';
@@ -54,11 +55,15 @@ export function equipAction(state: GameState, content: ContentDb, uid: number): 
     return { ok: false, reason: `requires agility ${def.reqAgility}` };
   }
 
-  const previous = state.player.equipment[item.slot];
+  // Passt der Gegenstand in mehrere Plaetze, gewinnt der erste freie.
+  const candidates = slotsFor(item);
+  const target = candidates.find((slot) => state.player.equipment[slot] === undefined) ?? item.slot;
+
+  const previous = state.player.equipment[target];
   if (removeFromInventory(state, uid) === null) {
     return { ok: false, reason: 'item not in inventory' };
   }
-  state.player.equipment[item.slot] = item;
+  state.player.equipment[target] = item;
 
   // Der neue Gegenstand hat seinen Inventarplatz gerade frei gemacht, das
   // abgelegte Teil passt deshalb immer hinein. Ein voller Tausch kann nicht
@@ -66,7 +71,7 @@ export function equipAction(state: GameState, content: ContentDb, uid: number): 
   if (previous !== undefined) state.player.inventory.push(previous);
 
   clampHealthToMax(state, content);
-  return { ok: true, events: [{ type: 'equipped', slot: item.slot, uid }] };
+  return { ok: true, events: [{ type: 'equipped', slot: target, uid }] };
 }
 
 /** Nimmt ein Teil ab und legt es ins Inventar. Bei vollem Inventar ungueltig. */

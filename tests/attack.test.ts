@@ -5,15 +5,14 @@ import { describe, expect, it } from 'vitest';
 import { attackAction } from '../src/core/attack';
 import { createInstance } from '../src/core/items';
 import { invalidatePlayerDerived, playerDerived } from '../src/core/turn';
-import { setup } from './fixtures/world';
+import { equipWeapon, setup } from './fixtures/world';
 
 describe('attackAction', () => {
   it('lehnt einen Angriff ohne Munition ab', () => {
     const { state, content } = setup({
       entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } }],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     expect(attackAction(state, content)).toEqual({ ok: false, reason: 'out of ammo' });
   });
 
@@ -21,8 +20,7 @@ describe('attackAction', () => {
     const { state, content } = setup({
       entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } }],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     state.player.ammo['bullets'] = 2;
     const result = attackAction(state, content);
     expect(result.ok).toBe(true);
@@ -45,8 +43,7 @@ describe('attackAction', () => {
         { kind: 'enemy', defId: 'tank', pos: { x: 4, y: 1 } },
       ],
     });
-    blocked.state.player.weapons.push('pistol');
-    blocked.state.player.equippedWeaponId = 'pistol';
+    equipWeapon(blocked.state, blocked.content, 'pistol');
     blocked.state.player.ammo['bullets'] = 5;
     expect(attackAction(blocked.state, blocked.content, 2)).toEqual({
       ok: false,
@@ -62,8 +59,7 @@ describe('attackAction', () => {
         { kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } },
       ],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     state.player.ammo['bullets'] = 5;
     const result = attackAction(state, content);
     // (3,1) liegt auf Distanz 2 und damit naeher als (4,1) und (1,4).
@@ -77,8 +73,7 @@ describe('attackAction', () => {
         { kind: 'enemy', defId: 'tank', pos: { x: 1, y: 3 } },
       ],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     state.player.ammo['bullets'] = 5;
     const result = attackAction(state, content);
     expect(result.ok && result.events[0]).toMatchObject({ type: 'attack', target: 1 });
@@ -115,8 +110,7 @@ describe('Munitionsverbrauch', () => {
       spawn: { pos: { x: 1, y: 1 }, facing: 1 },
       entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } }],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     state.player.ammo['bullets'] = 3;
 
     expect(attackAction(state, content).ok).toBe(true);
@@ -129,13 +123,12 @@ describe('Munitionsverbrauch', () => {
       spawn: { pos: { x: 1, y: 1 }, facing: 1 },
       entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 } }],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     state.player.ammo['bullets'] = 3;
 
     const belt = createInstance(
       state,
-      'belt_strap',
+      'belt_tool',
       20,
       'rare',
       [{ affixId: 'suf_of_thrift', value: 100 }],
@@ -163,8 +156,7 @@ describe('Flaechenschaden ueber attackAction', () => {
         { kind: 'enemy', defId: 'tank', pos: { x: 5, y: 1 } },
       ],
     });
-    state.player.weapons.push('launcher');
-    state.player.equippedWeaponId = 'launcher';
+    equipWeapon(state, content, 'launcher');
     state.player.ammo['rockets'] = 2;
 
     const neighbour = state.maps['test']?.entities[1];

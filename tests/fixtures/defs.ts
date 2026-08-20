@@ -115,24 +115,24 @@ export const ENEMIES: Record<string, EnemyDef> = {
 
   // Bosse und ihre Gefolgschaft, PHASE_3_7. Die Ids der gerufenen Gegner
   // muessen zu SPORE_DEF_ID und SORLAX_MINIONS passen.
-  halvern: enemy({
-    id: 'halvern',
+  boss_halvern: enemy({
+    id: 'boss_halvern',
     behavior: 'scripted',
     scriptId: 'halvern',
     baseHealth: 200,
     aggroRange: 10,
     baseXp: 400,
   }),
-  sporemother: enemy({
-    id: 'sporemother',
+  boss_sporemother: enemy({
+    id: 'boss_sporemother',
     behavior: 'scripted',
     scriptId: 'sporemother',
     baseHealth: 300,
     aggroRange: 10,
     baseXp: 700,
   }),
-  rime: enemy({
-    id: 'rime',
+  boss_rime: enemy({
+    id: 'boss_rime',
     behavior: 'scripted',
     scriptId: 'rime',
     baseHealth: 400,
@@ -141,8 +141,8 @@ export const ENEMIES: Record<string, EnemyDef> = {
     weaponId: 'pistol',
     baseXp: 1100,
   }),
-  sorlax: enemy({
-    id: 'sorlax',
+  boss_sorlax: enemy({
+    id: 'boss_sorlax',
     behavior: 'scripted',
     scriptId: 'sorlax',
     baseHealth: 600,
@@ -150,8 +150,8 @@ export const ENEMIES: Record<string, EnemyDef> = {
     baseXp: 3000,
   }),
   spore_poison: enemy({ id: 'spore_poison', baseHealth: 18, aggroRange: 6, baseXp: 12 }),
-  corvane_rat: enemy({ id: 'corvane_rat', behavior: 'charger', speed: 2, baseXp: 10 }),
-  corvane_miner: enemy({ id: 'corvane_miner', baseHealth: 30, baseXp: 20 }),
+  rat_physical: enemy({ id: 'rat_physical', behavior: 'charger', speed: 2, baseXp: 10 }),
+  miner_physical: enemy({ id: 'miner_physical', baseHealth: 30, baseXp: 20 }),
 
   // Fuer die Fehlerpfade aus PHASE_3_7 Block 6.
   ghost_script: enemy({ id: 'ghost_script', behavior: 'scripted', scriptId: 'gibtsnicht' }),
@@ -171,7 +171,27 @@ function item(overrides: Partial<ItemDef> & { id: string; type: ItemDef['type'] 
   };
 }
 
+/** ItemDef zu einer Testwaffe, damit sie in den Platz `weapon` passt. */
+function weaponItem(weaponId: string, name: string): ItemDef {
+  return {
+    id: `item_${weaponId}`,
+    name,
+    type: 'weapon',
+    slot: 'weapon',
+    weaponId,
+    amount: 1,
+    reqLevel: 1,
+    reqStrength: 0,
+    reqAgility: 0,
+    sprite: `item_${weaponId}`,
+    icon: `item_${weaponId}`,
+  };
+}
+
 export const ITEMS: Record<string, ItemDef> = {
+  item_fists: weaponItem('fists', 'Fists'),
+  item_pistol: weaponItem('pistol', 'Pistol'),
+  item_launcher: weaponItem('launcher', 'Launcher'),
   medkit: item({ id: 'medkit', name: 'Medkit', type: 'heal', amount: 20 }),
   bullets: item({ id: 'bullets', name: 'Bullets', type: 'ammo', amount: 10 }),
   redkey: item({ id: 'redkey', name: 'Red Key', type: 'key' }),

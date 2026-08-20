@@ -203,7 +203,7 @@ describe('freie Aktion mit Ausruestung', () => {
     const { state, content } = setup();
     const boots = createInstance(
       state,
-      'boots_tread',
+      'boots_rubber',
       20,
       'rare',
       [{ affixId: 'suf_of_haste', value: 100 }],
@@ -223,7 +223,7 @@ describe('freie Aktion mit Ausruestung', () => {
     const { state, content } = setup();
     const boots = createInstance(
       state,
-      'boots_tread',
+      'boots_rubber',
       20,
       'rare',
       [{ affixId: 'suf_of_haste', value: 50 }],

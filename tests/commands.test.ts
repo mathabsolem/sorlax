@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
+import { equippedWeapon } from '../src/core/items';
 import { serialize } from '../src/core/state';
-import { makeMap, setup } from './fixtures/world';
+import { equipWeapon, giveWeapon, makeMap, setup } from './fixtures/world';
 
 const EAST_SPAWN = { pos: { x: 1, y: 1 }, facing: 1 } as const;
 
@@ -19,9 +20,11 @@ describe('applyCommand', () => {
 
   it('wechselt die Waffe ohne Rundenkosten', () => {
     const { state, content } = setup();
-    state.player.weapons.push('pistol');
+    giveWeapon(state, content, 'pistol');
+
     applyCommand(state, { type: 'switchWeapon', weaponId: 'pistol' }, content);
-    expect(state.player.equippedWeaponId).toBe('pistol');
+
+    expect(equippedWeapon(state, content)?.id).toBe('pistol');
     expect(state.turnCount).toBe(0);
   });
 
@@ -91,8 +94,7 @@ describe('applyCommand', () => {
     const { state, content } = setup({
       entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } }],
     });
-    state.player.weapons.push('pistol');
-    state.player.equippedWeaponId = 'pistol';
+    equipWeapon(state, content, 'pistol');
     const events = applyCommand(state, { type: 'attack' }, content);
     expect(events).toEqual([{ type: 'invalid', reason: 'out of ammo' }]);
     expect(state.turnCount).toBe(0);

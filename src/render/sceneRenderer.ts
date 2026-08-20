@@ -12,6 +12,7 @@ import type {
   GameState,
   PixelSurface,
 } from '../core/types';
+import { equippedWeapon } from '../core/items';
 import { AnimationState } from './animation';
 import { makeCamera } from './camera';
 import type { DebugView } from './debug';
@@ -191,8 +192,8 @@ export class SceneRenderer {
     state: GameState,
     content: ContentDb
   ): void {
-    const weapon = content.weapons[state.player.equippedWeaponId];
-    if (weapon === undefined) return;
+    const weapon = equippedWeapon(state, content);
+    if (weapon === null) return;
     const surface: PixelSurface | undefined = this.assets.weaponSprites[weapon.sprite];
     if (surface === undefined) return;
 

@@ -47,7 +47,7 @@ describe('sporemother', () => {
       const extra: MapEntityDef[] = withSpore
         ? [{ kind: 'enemy', defId: SPORE_DEF_ID, pos: { x: 5, y: 5 } }]
         : [];
-      const world = bossWorld('sporemother', { x: 2, y: 1 }, extra);
+      const world = bossWorld('boss_sporemother', { x: 2, y: 1 }, extra);
       world.state.player.attributes.agility = 200;
       takeEnemyTurn(world.state, world.boss, world.content);
       return world;
@@ -71,7 +71,7 @@ describe('sporemother', () => {
 
   // Test 14 aus PHASE_3_7
   it('erzeugt nie mehr als sechs lebende Sporentraeger', () => {
-    const { state, content, boss } = bossWorld('sporemother', { x: 3, y: 3 });
+    const { state, content, boss } = bossWorld('boss_sporemother', { x: 3, y: 3 });
 
     for (let round = 0; round < 40; round++) {
       takeEnemyTurn(state, boss, content);
@@ -81,7 +81,7 @@ describe('sporemother', () => {
   });
 
   it('bewegt sich nie', () => {
-    const { state, content, boss } = bossWorld('sporemother', { x: 5, y: 5 });
+    const { state, content, boss } = bossWorld('boss_sporemother', { x: 5, y: 5 });
     const start = { ...boss.pos };
 
     for (let round = 0; round < 12; round++) takeEnemyTurn(state, boss, content);
@@ -93,7 +93,7 @@ describe('sporemother', () => {
 describe('rime', () => {
   // Test 15 aus PHASE_3_7
   it('setzt unter 50 Prozent Leben genau vier Waende und keine auf besetzte Kacheln', () => {
-    const { state, content, boss } = bossWorld('rime', { x: 4, y: 5 }, [
+    const { state, content, boss } = bossWorld('boss_rime', { x: 4, y: 5 }, [
       { kind: 'enemy', defId: 'tank', pos: { x: 3, y: 5 } },
     ]);
     const mapState = state.maps['test'];
@@ -114,7 +114,7 @@ describe('rime', () => {
   });
 
   it('stellt bei vollem Leben keine Waende', () => {
-    const { state, content, boss } = bossWorld('rime', { x: 4, y: 5 });
+    const { state, content, boss } = bossWorld('boss_rime', { x: 4, y: 5 });
     state.turnCount = 10;
 
     takeEnemyTurn(state, boss, content);
@@ -129,7 +129,7 @@ describe('rime', () => {
       seed: 77,
       size: 16,
       spawn: { pos: { x: 8, y: 8 }, facing: 1 },
-      entities: [{ kind: 'enemy', defId: 'rime', pos: { x: 9, y: 8 } }],
+      entities: [{ kind: 'enemy', defId: 'boss_rime', pos: { x: 9, y: 8 } }],
     });
     world.state.player.attributes.vitality = 200;
     world.state.player.health = 620;
@@ -150,7 +150,7 @@ describe('rime', () => {
   });
 
   it('geht auf Abstand, wenn der Spieler zu nah ist', () => {
-    const { state, content, boss } = bossWorld('rime', { x: 3, y: 1 });
+    const { state, content, boss } = bossWorld('boss_rime', { x: 3, y: 1 });
     const before = boss.pos.x;
 
     takeEnemyTurn(state, boss, content);
@@ -162,7 +162,7 @@ describe('rime', () => {
 describe('sorlax', () => {
   // Test 16 aus PHASE_3_7
   it('wechselt bei 66 und 33 Prozent die Phase, hoechstens einmal je Runde', () => {
-    const { state, content, boss } = bossWorld('sorlax', { x: 5, y: 1 });
+    const { state, content, boss } = bossWorld('boss_sorlax', { x: 5, y: 1 });
     const maxHealth = maxHealthOf(state, content, boss);
 
     expect(targetPhase(1)).toBe(0);
@@ -185,7 +185,7 @@ describe('sorlax', () => {
   });
 
   it('springt von voller Gesundheit auf einen Rest nur eine Stufe je Runde', () => {
-    const { state, content, boss } = bossWorld('sorlax', { x: 5, y: 1 });
+    const { state, content, boss } = bossWorld('boss_sorlax', { x: 5, y: 1 });
     boss.health = 1;
 
     takeEnemyTurn(state, boss, content);
@@ -195,7 +195,7 @@ describe('sorlax', () => {
   });
 
   it('warnt in Phase 3 vor dem Strahl', () => {
-    const { state, content, boss } = bossWorld('sorlax', { x: 5, y: 1 });
+    const { state, content, boss } = bossWorld('boss_sorlax', { x: 5, y: 1 });
     boss.scriptState = { phase: 2 };
 
     const warning = takeEnemyTurn(state, boss, content);
@@ -211,10 +211,10 @@ describe('Determinismus des Bosskampfs', () => {
   // Test 17 aus PHASE_3_7, der wichtigste: er deckt Zustand in Modulvariablen auf.
   it('ist nach Serialisieren und Deserialisieren mitten im Kampf identisch', () => {
     const build = () => {
-      const world = bossWorld('sorlax', { x: 5, y: 5 }, [
-        { kind: 'enemy', defId: 'halvern', pos: { x: 2, y: 5 } },
-        { kind: 'enemy', defId: 'sporemother', pos: { x: 6, y: 3 } },
-        { kind: 'enemy', defId: 'rime', pos: { x: 6, y: 6 } },
+      const world = bossWorld('boss_sorlax', { x: 5, y: 5 }, [
+        { kind: 'enemy', defId: 'boss_halvern', pos: { x: 2, y: 5 } },
+        { kind: 'enemy', defId: 'boss_sporemother', pos: { x: 6, y: 3 } },
+        { kind: 'enemy', defId: 'boss_rime', pos: { x: 6, y: 6 } },
       ]);
       const entities = world.state.maps['test']?.entities ?? [];
       for (const entity of entities) entity.active = true;
@@ -226,9 +226,9 @@ describe('Determinismus des Bosskampfs', () => {
         if (entity === undefined) throw new Error(`fehlt: ${defId}`);
         entity.health = Math.floor(maxHealthOf(world.state, world.content, entity) * ratio);
       };
-      wound('sorlax', 0.5);
-      wound('rime', 0.4);
-      wound('halvern', 0.3);
+      wound('boss_sorlax', 0.5);
+      wound('boss_rime', 0.4);
+      wound('boss_halvern', 0.3);
 
       // Der Spieler muss die vollen 40 Runden ueberstehen, sonst laufen die
       // letzten Runden ins Leere und der Test prueft weniger als er soll.

@@ -186,7 +186,7 @@ describe('useSkill', () => {
       if (enemy === undefined) throw new Error('kein Gegner');
       const plate = createInstance(
         world.state,
-        'suit_liner',
+        'suit_overall',
         20,
         'rare',
         [{ affixId: 'pre_reinforced', value: 10 }],

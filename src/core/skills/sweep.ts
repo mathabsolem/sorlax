@@ -10,6 +10,7 @@ import { resolveAttack } from '../combat';
 import { enemyActor, getDerivedStats, playerActor } from '../derived';
 import { isAlive, isGuarded, vitalsOf } from '../entities';
 import { chebyshev } from '../grid';
+import { activeWeapon } from '../items';
 import { loadRng, saveRng } from '../rng';
 import { executionBonus, sweepFactor } from './rules';
 import type {
@@ -41,8 +42,7 @@ export function sweepHandler(
   const here = currentScene(state, content);
   if (here === null) return [{ type: 'invalid', reason: 'unknown map' }];
 
-  const weapon = content.weapons[state.player.equippedWeaponId];
-  if (weapon === undefined) return [{ type: 'invalid', reason: 'no weapon equipped' }];
+  const weapon = activeWeapon(state, content);
 
   const targets = here.mapState.entities
     .filter(

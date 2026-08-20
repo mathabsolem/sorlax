@@ -103,7 +103,7 @@ describe('spawnEnemy und freeTilesAround', () => {
 describe('halvern', () => {
   // Test 12 aus PHASE_3_7
   it('wechselt nach drei Runden Ansturm in die Flammenwand und nach zwei zurueck', () => {
-    const { state, content, boss } = bossWorld('halvern', { x: 5, y: 1 });
+    const { state, content, boss } = bossWorld('boss_halvern', { x: 5, y: 1 });
 
     for (let round = 0; round < 3; round++) takeEnemyTurn(state, boss, content);
     expect(boss.scriptState?.['phase']).toBe(1);
@@ -115,7 +115,7 @@ describe('halvern', () => {
   });
 
   it('stuermt zwei Schritte je Aktion', () => {
-    const { state, content, boss } = bossWorld('halvern', { x: 6, y: 1 });
+    const { state, content, boss } = bossWorld('boss_halvern', { x: 6, y: 1 });
     const before = boss.pos.x;
 
     takeEnemyTurn(state, boss, content);
@@ -124,7 +124,7 @@ describe('halvern', () => {
   });
 
   it('verkuerzt den Ansturm unter 40 Prozent Leben', () => {
-    const { state, content, boss } = bossWorld('halvern', { x: 5, y: 1 });
+    const { state, content, boss } = bossWorld('boss_halvern', { x: 5, y: 1 });
     boss.health = Math.floor(maxHealthOf(state, content, boss) * 0.3);
 
     for (let round = 0; round < 2; round++) takeEnemyTurn(state, boss, content);

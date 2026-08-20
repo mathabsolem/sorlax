@@ -2,6 +2,7 @@
  * Aufbau, Serialisierung und Migration des Spielzustands.
  */
 import { getDerivedStats, playerActor } from './derived';
+import { STARTER_WEAPON_ITEM, createInstance } from './items';
 import { migrate } from './migrate';
 import { tileKey } from './grid';
 import { Rng } from './rng';
@@ -21,7 +22,7 @@ import type {
 } from './types';
 
 /** Version der Savegame-Struktur. Bei Aenderungen erhoehen und migrate erweitern. */
-export const CURRENT_SAVE_VERSION = 3;
+export const CURRENT_SAVE_VERSION = 4;
 
 /** Obergrenze des Logs nach INTERFACES Abschnitt 4. */
 export const MAX_LOG_ENTRIES = 100;
@@ -123,7 +124,7 @@ export function createMapRuntime(
   };
 }
 
-function createPlayer(map: MapDef, equippedWeaponId: string): PlayerState {
+function createPlayer(map: MapDef): PlayerState {
   return {
     pos: { x: map.spawn.pos.x, y: map.spawn.pos.y },
     facing: map.spawn.facing,
@@ -138,8 +139,7 @@ function createPlayer(map: MapDef, equippedWeaponId: string): PlayerState {
     cooldowns: {},
     equipment: {},
     inventory: [],
-    weapons: [equippedWeaponId],
-    equippedWeaponId,
+    weapons: [],
     ammo: {},
     consumables: {},
     keys: [],
@@ -149,8 +149,8 @@ function createPlayer(map: MapDef, equippedWeaponId: string): PlayerState {
 
 /**
  * Neues Spiel auf `startMapId`.
- * Die Startwaffe ist der erste Eintrag in `content.weapons`; INTERFACES sieht
- * kein Feld fuer eine Startwaffe vor, deshalb diese Konvention.
+ * Der Spieler startet mit einer normalen Instanz der Brechstange im Platz
+ * `weapon` (PHASE_3_8 Block 3, BESTIARY Abschnitt 7).
  */
 export function createNewGame(
   seed: number,
@@ -161,10 +161,7 @@ export function createNewGame(
   const map = content.maps[startMapId];
   if (map === undefined) throw new Error(`unknown map: ${startMapId}`);
 
-  const firstWeaponId = Object.keys(content.weapons)[0];
-  if (firstWeaponId === undefined) throw new Error('content has no weapons');
-
-  const player = createPlayer(map, firstWeaponId);
+  const player = createPlayer(map);
   const state: GameState = {
     version: CURRENT_SAVE_VERSION,
     rngState: new Rng(seed).getState(),
@@ -179,6 +176,12 @@ export function createNewGame(
     flags: {},
     log: [],
   };
+
+  const starter = createInstance(state, STARTER_WEAPON_ITEM, 1, 'normal', [], content);
+  if (starter === null) throw new Error(`content has no ${STARTER_WEAPON_ITEM}`);
+  player.equipment['weapon'] = starter;
+  const starterWeaponId = content.items[STARTER_WEAPON_ITEM]?.weaponId;
+  if (starterWeaponId !== undefined) player.weapons.push(starterWeaponId);
 
   const mapState = createMapRuntime(map, content, player.level, difficulty);
   mapState.explored.push(tileKey(map.spawn.pos));

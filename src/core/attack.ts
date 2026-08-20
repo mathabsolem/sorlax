@@ -10,6 +10,7 @@ import { isAlive, isGuarded, vitalsOf } from './entities';
 import { chebyshev, hasLineOfSight } from './grid';
 import { grantXp } from './progression';
 import { scaledXpReward } from './scaling';
+import { activeWeapon } from './items';
 import { executionBonus } from './skills/rules';
 import { loadRng, saveRng } from './rng';
 import { playerDerived, reapDead } from './turn';
@@ -116,8 +117,8 @@ export function attackAction(
 ): ActionResult {
   const here = currentScene(state, content);
   if (here === null) return { ok: false, reason: 'unknown map' };
-  const weapon = content.weapons[state.player.equippedWeaponId];
-  if (weapon === undefined) return { ok: false, reason: 'no weapon equipped' };
+  // Leerer Waffenplatz heisst unbewaffnet, nicht handlungsunfaehig (INTERFACES v1.3).
+  const weapon = activeWeapon(state, content);
 
   const ammoType = weapon.ammoType;
   if (ammoType !== null && (state.player.ammo[ammoType] ?? 0) < weapon.ammoPerShot) {

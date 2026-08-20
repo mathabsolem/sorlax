@@ -115,8 +115,7 @@ export type PlayerState = {
   cooldowns: Record<string, number>; // skillId auf verbleibende Runden
   equipment: Partial<Record<EquipSlot, ItemInstance>>;
   inventory: ItemInstance[]; // maximal 40
-  weapons: string[]; // Grundwaffen, unabhaengig von Instanzen
-  equippedWeaponId: string;
+  weapons: string[]; // gefundene Grundwaffen fuer die Waffenleiste
   ammo: Record<string, number>;
   consumables: Record<string, number>;
   keys: string[];
@@ -363,7 +362,8 @@ export type ItemDef = {
     | 'quest'
     | 'powerup'
     | 'equipment';
-  slot?: EquipSlot; // Pflicht bei type 'equipment'
+  slot?: EquipSlot; // Pflicht bei type 'equipment' und 'weapon'
+  weaponId?: string; // Pflicht bei type 'weapon', verweist auf WeaponDef
   amount: number;
   reqLevel: number;
   reqStrength: number;

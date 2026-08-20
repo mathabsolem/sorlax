@@ -1,304 +1,311 @@
 {
-  "suit_liner": {
-    "id": "suit_liner",
-    "name": "Liner Suit",
+  "suit_overall": {
+    "id": "suit_overall",
+    "name": "Arbeitsoverall",
     "type": "equipment",
     "slot": "suit",
     "amount": 1,
     "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
+    "reqStrength": 10,
+    "reqAgility": 14,
     "baseModifiers": [
       {
         "stat": "armor",
         "mode": "flat",
         "value": 2
-      }
-    ],
-    "sprite": "suit_liner",
-    "icon": "suit_liner"
-  },
-  "suit_plate": {
-    "id": "suit_plate",
-    "name": "Plated Suit",
-    "type": "equipment",
-    "slot": "suit",
-    "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 30,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "armor",
-        "mode": "flat",
-        "value": 7
       },
       {
-        "stat": "maxHealth",
-        "mode": "flat",
-        "value": 10
-      }
-    ],
-    "sprite": "suit_plate",
-    "icon": "suit_plate"
-  },
-  "helmet_cap": {
-    "id": "helmet_cap",
-    "name": "Mining Cap",
-    "type": "equipment",
-    "slot": "helmet",
-    "amount": 1,
-    "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "armor",
+        "stat": "evasion",
         "mode": "flat",
         "value": 1
       }
     ],
-    "sprite": "helmet_cap",
-    "icon": "helmet_cap"
+    "sprite": "suit_overall",
+    "icon": "suit_overall"
   },
-  "helmet_visor": {
-    "id": "helmet_visor",
-    "name": "Sealed Visor",
+  "suit_plated": {
+    "id": "suit_plated",
+    "name": "Panzeranzug",
     "type": "equipment",
-    "slot": "helmet",
+    "slot": "suit",
     "amount": 1,
-    "reqLevel": 12,
+    "reqLevel": 8,
     "reqStrength": 22,
-    "reqAgility": 0,
+    "reqAgility": 10,
     "baseModifiers": [
       {
         "stat": "armor",
         "mode": "flat",
-        "value": 4
+        "value": 6
       },
       {
-        "stat": "accuracy",
+        "stat": "evasion",
+        "mode": "flat",
+        "value": -1
+      }
+    ],
+    "sprite": "suit_plated",
+    "icon": "suit_plated"
+  },
+  "helmet_hardhat": {
+    "id": "helmet_hardhat",
+    "name": "Schutzhelm",
+    "type": "equipment",
+    "slot": "helmet",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 10,
+    "reqAgility": 14,
+    "baseModifiers": [
+      {
+        "stat": "armor",
         "mode": "flat",
         "value": 2
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "helmet_hardhat",
+    "icon": "helmet_hardhat"
+  },
+  "helmet_visor": {
+    "id": "helmet_visor",
+    "name": "Vollvisierhelm",
+    "type": "equipment",
+    "slot": "helmet",
+    "amount": 1,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 6
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": -1
       }
     ],
     "sprite": "helmet_visor",
     "icon": "helmet_visor"
   },
-  "belt_strap": {
-    "id": "belt_strap",
-    "name": "Tool Strap",
+  "belt_tool": {
+    "id": "belt_tool",
+    "name": "Werkzeugguertel",
     "type": "equipment",
     "slot": "belt",
     "amount": 1,
     "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "maxHealth",
-        "mode": "flat",
-        "value": 4
-      }
-    ],
-    "sprite": "belt_strap",
-    "icon": "belt_strap"
-  },
-  "belt_rig": {
-    "id": "belt_rig",
-    "name": "Hauling Rig",
-    "type": "equipment",
-    "slot": "belt",
-    "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 26,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "maxHealth",
-        "mode": "flat",
-        "value": 14
-      }
-    ],
-    "sprite": "belt_rig",
-    "icon": "belt_rig"
-  },
-  "boots_tread": {
-    "id": "boots_tread",
-    "name": "Tread Boots",
-    "type": "equipment",
-    "slot": "boots",
-    "amount": 1,
-    "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "evasion",
-        "mode": "flat",
-        "value": 1
-      }
-    ],
-    "sprite": "boots_tread",
-    "icon": "boots_tread"
-  },
-  "boots_grip": {
-    "id": "boots_grip",
-    "name": "Grip Boots",
-    "type": "equipment",
-    "slot": "boots",
-    "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 0,
-    "reqAgility": 26,
-    "baseModifiers": [
-      {
-        "stat": "evasion",
-        "mode": "flat",
-        "value": 4
-      }
-    ],
-    "sprite": "boots_grip",
-    "icon": "boots_grip"
-  },
-  "gloves_wrap": {
-    "id": "gloves_wrap",
-    "name": "Hand Wraps",
-    "type": "equipment",
-    "slot": "gloves",
-    "amount": 1,
-    "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 1
-      }
-    ],
-    "sprite": "gloves_wrap",
-    "icon": "gloves_wrap"
-  },
-  "gloves_bracer": {
-    "id": "gloves_bracer",
-    "name": "Servo Bracers",
-    "type": "equipment",
-    "slot": "gloves",
-    "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 0,
-    "reqAgility": 24,
-    "baseModifiers": [
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 4
-      },
-      {
-        "stat": "meleeBonus",
-        "mode": "percent",
-        "value": 4
-      }
-    ],
-    "sprite": "gloves_bracer",
-    "icon": "gloves_bracer"
-  },
-  "weapon_rig_light": {
-    "id": "weapon_rig_light",
-    "name": "Light Weapon Rig",
-    "type": "equipment",
-    "slot": "weapon",
-    "amount": 1,
-    "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 1
-      }
-    ],
-    "sprite": "weapon_rig_light",
-    "icon": "weapon_rig_light"
-  },
-  "weapon_rig_heavy": {
-    "id": "weapon_rig_heavy",
-    "name": "Heavy Weapon Rig",
-    "type": "equipment",
-    "slot": "weapon",
-    "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 34,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 3
-      },
-      {
-        "stat": "meleeBonus",
-        "mode": "percent",
-        "value": 6
-      }
-    ],
-    "sprite": "weapon_rig_heavy",
-    "icon": "weapon_rig_heavy"
-  },
-  "guard_buckler": {
-    "id": "guard_buckler",
-    "name": "Bracing Plate",
-    "type": "equipment",
-    "slot": "guard",
-    "amount": 1,
-    "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
+    "reqStrength": 10,
+    "reqAgility": 14,
     "baseModifiers": [
       {
         "stat": "armor",
         "mode": "flat",
         "value": 2
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
       }
     ],
-    "sprite": "guard_buckler",
-    "icon": "guard_buckler"
+    "sprite": "belt_tool",
+    "icon": "belt_tool"
   },
-  "guard_bulwark": {
-    "id": "guard_bulwark",
-    "name": "Bulwark Plate",
+  "belt_harness": {
+    "id": "belt_harness",
+    "name": "Traggeschirr",
     "type": "equipment",
-    "slot": "guard",
+    "slot": "belt",
     "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 32,
-    "reqAgility": 0,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
     "baseModifiers": [
       {
         "stat": "armor",
         "mode": "flat",
         "value": 6
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": -1
       }
     ],
-    "sprite": "guard_bulwark",
-    "icon": "guard_bulwark"
+    "sprite": "belt_harness",
+    "icon": "belt_harness"
+  },
+  "boots_rubber": {
+    "id": "boots_rubber",
+    "name": "Gummistiefel",
+    "type": "equipment",
+    "slot": "boots",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 10,
+    "reqAgility": 14,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 2
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "boots_rubber",
+    "icon": "boots_rubber"
+  },
+  "boots_steel": {
+    "id": "boots_steel",
+    "name": "Stahlkappenstiefel",
+    "type": "equipment",
+    "slot": "boots",
+    "amount": 1,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 6
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": -1
+      }
+    ],
+    "sprite": "boots_steel",
+    "icon": "boots_steel"
+  },
+  "gloves_grip": {
+    "id": "gloves_grip",
+    "name": "Griffhandschuhe",
+    "type": "equipment",
+    "slot": "gloves",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 10,
+    "reqAgility": 14,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 2
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "gloves_grip",
+    "icon": "gloves_grip"
+  },
+  "gloves_armored": {
+    "id": "gloves_armored",
+    "name": "Panzerhandschuhe",
+    "type": "equipment",
+    "slot": "gloves",
+    "amount": 1,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 6
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": -1
+      }
+    ],
+    "sprite": "gloves_armored",
+    "icon": "gloves_armored"
+  },
+  "guard_deflector": {
+    "id": "guard_deflector",
+    "name": "Ablenkmodul",
+    "type": "equipment",
+    "slot": "guard",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 10,
+    "reqAgility": 14,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 2
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
+      }
+    ],
+    "sprite": "guard_deflector",
+    "icon": "guard_deflector"
+  },
+  "guard_plate": {
+    "id": "guard_plate",
+    "name": "Schulterpanzer",
+    "type": "equipment",
+    "slot": "guard",
+    "amount": 1,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
+    "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 6
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": -1
+      }
+    ],
+    "sprite": "guard_plate",
+    "icon": "guard_plate"
   },
   "amulet_tag": {
     "id": "amulet_tag",
-    "name": "Crew Tag",
+    "name": "Erkennungsmarke",
     "type": "equipment",
     "slot": "amulet",
     "amount": 1,
     "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
+    "reqStrength": 10,
+    "reqAgility": 14,
     "baseModifiers": [
       {
-        "stat": "elemBonus",
-        "mode": "percent",
+        "stat": "armor",
+        "mode": "flat",
         "value": 2
+      },
+      {
+        "stat": "evasion",
+        "mode": "flat",
+        "value": 1
       }
     ],
     "sprite": "amulet_tag",
@@ -306,112 +313,204 @@
   },
   "amulet_sigil": {
     "id": "amulet_sigil",
-    "name": "Corvane Sigil",
+    "name": "Fundsiegel",
     "type": "equipment",
     "slot": "amulet",
     "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 0,
-    "reqAgility": 18,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
     "baseModifiers": [
       {
-        "stat": "elemBonus",
-        "mode": "percent",
+        "stat": "armor",
+        "mode": "flat",
         "value": 6
       },
       {
-        "stat": "critBonus",
+        "stat": "evasion",
         "mode": "flat",
-        "value": 2
+        "value": -1
       }
     ],
     "sprite": "amulet_sigil",
     "icon": "amulet_sigil"
   },
-  "gauge_left_basic": {
-    "id": "gauge_left_basic",
-    "name": "Basic Gauge",
+  "gauge_pressure": {
+    "id": "gauge_pressure",
+    "name": "Druckmesser",
     "type": "equipment",
     "slot": "gauge_left",
     "amount": 1,
     "reqLevel": 1,
-    "reqStrength": 0,
-    "reqAgility": 0,
+    "reqStrength": 10,
+    "reqAgility": 14,
     "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 2
+      },
       {
         "stat": "evasion",
         "mode": "flat",
         "value": 1
       }
     ],
-    "sprite": "gauge_left_basic",
-    "icon": "gauge_left_basic"
+    "sprite": "gauge_pressure",
+    "icon": "gauge_pressure"
   },
-  "gauge_left_fine": {
-    "id": "gauge_left_fine",
-    "name": "Fine Gauge",
+  "gauge_seismic": {
+    "id": "gauge_seismic",
+    "name": "Seismograf",
     "type": "equipment",
     "slot": "gauge_left",
     "amount": 1,
-    "reqLevel": 12,
-    "reqStrength": 0,
-    "reqAgility": 20,
+    "reqLevel": 8,
+    "reqStrength": 22,
+    "reqAgility": 10,
     "baseModifiers": [
+      {
+        "stat": "armor",
+        "mode": "flat",
+        "value": 6
+      },
       {
         "stat": "evasion",
         "mode": "flat",
-        "value": 3
-      },
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 2
+        "value": -1
       }
     ],
-    "sprite": "gauge_left_fine",
-    "icon": "gauge_left_fine"
+    "sprite": "gauge_seismic",
+    "icon": "gauge_seismic"
   },
-  "gauge_right_basic": {
-    "id": "gauge_right_basic",
-    "name": "Basic Meter",
-    "type": "equipment",
-    "slot": "gauge_right",
+  "item_w_prybar": {
+    "id": "item_w_prybar",
+    "name": "Brechstange",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_prybar",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 12,
+    "reqAgility": 0,
+    "sprite": "item_w_prybar",
+    "icon": "item_w_prybar"
+  },
+  "item_w_pistol": {
+    "id": "item_w_pistol",
+    "name": "Grubenpistole 9 mm",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_pistol",
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 0,
-    "reqAgility": 0,
-    "baseModifiers": [
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 1
-      }
-    ],
-    "sprite": "gauge_right_basic",
-    "icon": "gauge_right_basic"
+    "reqAgility": 14,
+    "sprite": "item_w_pistol",
+    "icon": "item_w_pistol"
   },
-  "gauge_right_fine": {
-    "id": "gauge_right_fine",
-    "name": "Fine Meter",
-    "type": "equipment",
-    "slot": "gauge_right",
+  "item_w_shotgun": {
+    "id": "item_w_shotgun",
+    "name": "Bolzensetzflinte",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_shotgun",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_shotgun",
+    "icon": "item_w_shotgun"
+  },
+  "item_w_riveter": {
+    "id": "item_w_riveter",
+    "name": "Bolzenkarabiner",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_riveter",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_riveter",
+    "icon": "item_w_riveter"
+  },
+  "item_w_rod": {
+    "id": "item_w_rod",
+    "name": "Induktionsstab",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_rod",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_rod",
+    "icon": "item_w_rod"
+  },
+  "item_w_charger": {
+    "id": "item_w_charger",
+    "name": "Sprengladungswerfer",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_charger",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_charger",
+    "icon": "item_w_charger"
+  },
+  "item_w_lance": {
+    "id": "item_w_lance",
+    "name": "Brennlanze",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_lance",
+    "amount": 1,
+    "reqLevel": 4,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_lance",
+    "icon": "item_w_lance"
+  },
+  "item_w_sprayer": {
+    "id": "item_w_sprayer",
+    "name": "Toxinsprueher",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_sprayer",
+    "amount": 1,
+    "reqLevel": 8,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_sprayer",
+    "icon": "item_w_sprayer"
+  },
+  "item_w_drill": {
+    "id": "item_w_drill",
+    "name": "Frostbohrer",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_drill",
     "amount": 1,
     "reqLevel": 12,
     "reqStrength": 0,
-    "reqAgility": 20,
-    "baseModifiers": [
-      {
-        "stat": "accuracy",
-        "mode": "flat",
-        "value": 3
-      },
-      {
-        "stat": "evasion",
-        "mode": "flat",
-        "value": 2
-      }
-    ],
-    "sprite": "gauge_right_fine",
-    "icon": "gauge_right_fine"
+    "reqAgility": 14,
+    "sprite": "item_w_drill",
+    "icon": "item_w_drill"
+  },
+  "item_w_scepter": {
+    "id": "item_w_scepter",
+    "name": "Zepter von Sorlax",
+    "type": "weapon",
+    "slot": "weapon",
+    "weaponId": "w_scepter",
+    "amount": 1,
+    "reqLevel": 16,
+    "reqStrength": 0,
+    "reqAgility": 14,
+    "sprite": "item_w_scepter",
+    "icon": "item_w_scepter"
   }
 }

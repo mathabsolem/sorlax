@@ -6,7 +6,15 @@ import affixesJson from '../../content/affixes.json';
 import dropTablesJson from '../../content/dropTables.json';
 import equipmentJson from '../../content/items.json';
 import skillsJson from '../../content/skills.json';
-import type { AffixDef, DropTableDef, ItemDef, SkillDef, UniqueDef } from '../../src/core/types';
+import weaponsJson from '../../content/weapons.json';
+import type {
+  AffixDef,
+  DropTableDef,
+  ItemDef,
+  SkillDef,
+  UniqueDef,
+  WeaponDef,
+} from '../../src/core/types';
 
 /**
  * Der echte Startkatalog aus content/. Ein JSON-Import kennt nur die weiten
@@ -20,6 +28,7 @@ export const EQUIPMENT: Record<string, ItemDef> = equipmentJson as unknown as Re
   ItemDef
 >;
 export const SKILLS = skillsJson as unknown as Record<string, SkillDef>;
+export const WEAPON_DEFS = weaponsJson as unknown as Record<string, WeaponDef>;
 
 /**
  * Einzigartige Gegenstaende gibt es in content/ noch nicht, siehe Bericht zu
@@ -28,7 +37,7 @@ export const SKILLS = skillsJson as unknown as Record<string, SkillDef>;
 export const UNIQUES: Record<string, UniqueDef> = {
   uniq_ember_shell: {
     id: 'uniq_ember_shell',
-    baseId: 'suit_liner',
+    baseId: 'suit_overall',
     name: 'Ember Shell',
     minItemLevel: 1,
     affixes: [
@@ -38,7 +47,7 @@ export const UNIQUES: Record<string, UniqueDef> = {
   },
   uniq_lamp_crown: {
     id: 'uniq_lamp_crown',
-    baseId: 'helmet_cap',
+    baseId: 'helmet_hardhat',
     name: 'Lamp Crown',
     minItemLevel: 1,
     affixes: [{ affixId: 'suf_of_the_lamp', value: 3 }],

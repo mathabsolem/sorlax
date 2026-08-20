@@ -8,7 +8,7 @@ import { playerActor } from './derived';
 import { applyEffectDefault } from './effects';
 import { doorAt, enemyAt, entitiesAt, removeEntity } from './entities';
 import { isSolid, stepFrom, tileKey } from './grid';
-import { addToInventory, groundItemsAt, removeGroundItem } from './items';
+import { addToInventory, createInstance, groundItemsAt, removeGroundItem } from './items';
 import { spendAttributePoint } from './progression';
 import { fireTriggers, hasUsableTrigger } from './triggers';
 import { invalidatePlayerDerived, playerDerived } from './turn';
@@ -23,15 +23,23 @@ import type {
 } from './types';
 
 /** Legt ein aufgesammeltes Item in das passende Inventarfach des Spielers. */
-function stow(state: GameState, def: ItemDef): boolean {
+function stow(state: GameState, def: ItemDef, content: ContentDb): boolean {
   const player = state.player;
   switch (def.type) {
     case 'ammo':
       player.ammo[def.id] = (player.ammo[def.id] ?? 0) + def.amount;
       return true;
-    case 'weapon':
-      if (!player.weapons.includes(def.id)) player.weapons.push(def.id);
+    case 'weapon': {
+      // Eine gefundene Waffe wird zur Instanz im Inventar. `weapons` fuehrt
+      // daneben die Grundtypen fuer die Waffenleiste (PHASE_3_8 Block 3).
+      const instance = createInstance(state, def.id, 1, 'normal', [], content);
+      if (instance === null || !addToInventory(state, instance)) return false;
+      const weaponId = def.weaponId;
+      if (weaponId !== undefined && !player.weapons.includes(weaponId)) {
+        player.weapons.push(weaponId);
+      }
       return true;
+    }
     case 'key':
     case 'keyCard':
       if (!player.keys.includes(def.id)) player.keys.push(def.id);
@@ -59,7 +67,7 @@ export function pickupAt(state: GameState, content: ContentDb, pos: TileCoord): 
     if (entity.kind !== 'item') continue;
     const def = content.items[entity.defId];
     if (def === undefined) continue;
-    if (!stow(state, def)) continue;
+    if (!stow(state, def, content)) continue;
 
     removeEntity(here.mapState, entity.id);
     const key = tileKey(pos);
@@ -150,19 +158,36 @@ export function useConsumableAction(
   return { ok: true, events };
 }
 
-/** Waffenwechsel. Kostet keine Runde, SPEC 3.2. */
+/**
+ * Waffenwechsel, PHASE_3_8 Block 3. Sucht im Inventar die erste `ItemInstance`,
+ * deren Grundtyp auf diesen `WeaponDef` verweist, und legt sie in den Platz
+ * `weapon`. Die bisherige Waffe wandert zurueck ins Inventar.
+ * Kostet keine Runde, SPEC 3.2.
+ */
 export function switchWeaponAction(
   state: GameState,
   content: ContentDb,
   weaponId: string
 ): ActionResult {
-  if (!state.player.weapons.includes(weaponId)) return { ok: false, reason: 'weapon not owned' };
   if (content.weapons[weaponId] === undefined) return { ok: false, reason: 'unknown weapon' };
-  if (state.player.equippedWeaponId === weaponId) {
+
+  const current = state.player.equipment['weapon'];
+  if (current !== undefined && content.items[current.baseId]?.weaponId === weaponId) {
     return { ok: false, reason: 'weapon already equipped' };
   }
-  state.player.equippedWeaponId = weaponId;
-  return { ok: true, events: [{ type: 'message', text: `equipped ${weaponId}` }] };
+
+  const index = state.player.inventory.findIndex(
+    (item) => content.items[item.baseId]?.weaponId === weaponId
+  );
+  if (index < 0) return { ok: false, reason: 'weapon not owned' };
+
+  const [next] = state.player.inventory.splice(index, 1);
+  if (next === undefined) return { ok: false, reason: 'weapon not owned' };
+  state.player.equipment['weapon'] = next;
+  // Der Platz im Inventar ist gerade frei geworden, die alte Waffe passt immer.
+  if (current !== undefined) state.player.inventory.push(current);
+
+  return { ok: true, events: [{ type: 'equipped', slot: 'weapon', uid: next.uid }] };
 }
 
 /** Verteilt einen Attributpunkt. Kostet keine Runde, SPEC 3.2. */

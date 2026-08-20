@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_INVENTORY,
+  STARTER_WEAPON_ITEM,
   addGroundItem,
   addToInventory,
   createInstance,
@@ -13,11 +14,14 @@ import {
   inventorySpace,
   removeFromInventory,
   removeGroundItem,
+  slotsFor,
+  slotsForDef,
 } from '../src/core/items';
+import { equipAction } from '../src/core/equipActions';
 import type { ContentDb, GameState, ItemInstance } from '../src/core/types';
 import { setup } from './fixtures/world';
 
-function make(state: GameState, content: ContentDb, baseId = 'suit_liner'): ItemInstance {
+function make(state: GameState, content: ContentDb, baseId = 'suit_overall'): ItemInstance {
   const item = createInstance(state, baseId, 1, 'normal', [], content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   return item;
@@ -28,7 +32,7 @@ describe('createInstance', () => {
     const { state, content } = setup();
     const item = createInstance(
       state,
-      'helmet_cap',
+      'helmet_hardhat',
       7,
       'magic',
       [{ affixId: 'pre_sturdy', value: 9 }],
@@ -37,7 +41,7 @@ describe('createInstance', () => {
 
     expect(item).not.toBeNull();
     expect(item?.slot).toBe('helmet');
-    expect(item?.baseId).toBe('helmet_cap');
+    expect(item?.baseId).toBe('helmet_hardhat');
     expect(item?.itemLevel).toBe(7);
     expect(item?.rarity).toBe('magic');
     expect(item?.affixes).toEqual([{ affixId: 'pre_sturdy', value: 9 }]);
@@ -47,7 +51,7 @@ describe('createInstance', () => {
   it('kopiert die Affixliste, statt sie zu teilen', () => {
     const { state, content } = setup();
     const affixes = [{ affixId: 'pre_sturdy', value: 9 }];
-    const item = createInstance(state, 'helmet_cap', 1, 'magic', affixes, content);
+    const item = createInstance(state, 'helmet_hardhat', 1, 'magic', affixes, content);
     affixes[0] = { affixId: 'pre_plated', value: 2 };
     expect(item?.affixes).toEqual([{ affixId: 'pre_sturdy', value: 9 }]);
   });
@@ -116,7 +120,7 @@ describe('Inventar', () => {
   it('findItem sucht im Inventar und in der Ausruestung', () => {
     const { state, content } = setup();
     const carried = make(state, content);
-    const worn = make(state, content, 'boots_tread');
+    const worn = make(state, content, 'boots_rubber');
     addToInventory(state, carried);
     state.player.equipment['boots'] = worn;
 
@@ -127,7 +131,7 @@ describe('Inventar', () => {
 
   it('equippedSlotOf nennt den Steckplatz nur fuer getragene Teile', () => {
     const { state, content } = setup();
-    const worn = make(state, content, 'boots_tread');
+    const worn = make(state, content, 'boots_rubber');
     const carried = make(state, content);
     addToInventory(state, carried);
     state.player.equipment['boots'] = worn;
@@ -144,8 +148,8 @@ describe('Bodengegenstaende', () => {
     if (mapState === undefined) throw new Error('kein Kartenzustand');
 
     const here = make(state, content);
-    const alsoHere = make(state, content, 'belt_strap');
-    const elsewhere = make(state, content, 'gloves_wrap');
+    const alsoHere = make(state, content, 'belt_tool');
+    const elsewhere = make(state, content, 'gloves_grip');
     addGroundItem(mapState, { x: 2, y: 3 }, here);
     addGroundItem(mapState, { x: 2, y: 3 }, alsoHere);
     addGroundItem(mapState, { x: 5, y: 5 }, elsewhere);
@@ -169,5 +173,53 @@ describe('Bodengegenstaende', () => {
     const entry = addGroundItem(mapState, state.player.pos, make(state, content));
     state.player.pos = { x: 6, y: 6 };
     expect(entry.pos).toEqual({ x: 1, y: 1 });
+  });
+});
+
+describe('Waffenplatz und Steckplatzwahl', () => {
+  it('STARTER_WEAPON_ITEM ist der Grundtyp der Brechstange', () => {
+    const { state, content } = setup();
+    expect(STARTER_WEAPON_ITEM).toBe('item_w_prybar');
+    expect(content.items[STARTER_WEAPON_ITEM]?.weaponId).toBe('w_prybar');
+    expect(state.player.equipment['weapon']?.baseId).toBe(STARTER_WEAPON_ITEM);
+  });
+
+  it('slotsFor gibt Messgeraeten beide Plaetze und allem anderen genau einen', () => {
+    const { state, content } = setup();
+    const gauge = createInstance(state, 'gauge_pressure', 1, 'normal', [], content);
+    const suit = createInstance(state, 'suit_overall', 1, 'normal', [], content);
+    if (gauge === null || suit === null) throw new Error('kein Grundtyp');
+
+    expect(slotsFor(gauge)).toEqual(['gauge_left', 'gauge_right']);
+    expect(slotsFor(suit)).toEqual(['suit']);
+  });
+
+  it('slotsForDef arbeitet auf dem Grundtyp und liefert ohne Steckplatz nichts', () => {
+    const { content } = setup();
+    const gauge = content.items['gauge_pressure'];
+    const medkit = content.items['medkit'];
+    if (gauge === undefined || medkit === undefined) throw new Error('kein Grundtyp');
+
+    expect(slotsForDef(gauge)).toEqual(['gauge_left', 'gauge_right']);
+    expect(slotsForDef(medkit)).toEqual([]);
+  });
+
+  it('legt ein Messgeraet in den freien der beiden Plaetze', () => {
+    const { state, content } = setup();
+    state.player.attributes.agility = 14;
+    const first = make(state, content, 'gauge_pressure');
+    const second = make(state, content, 'gauge_seismic');
+    second.itemLevel = 1;
+    addToInventory(state, first);
+    addToInventory(state, second);
+
+    expect(equipAction(state, content, first.uid).ok).toBe(true);
+    expect(state.player.equipment['gauge_left']).toBe(first);
+
+    // gauge_seismic ist schwer und verlangt Stufe 8.
+    state.player.level = 10;
+    state.player.attributes.strength = 22;
+    expect(equipAction(state, content, second.uid).ok).toBe(true);
+    expect(state.player.equipment['gauge_right']).toBe(second);
   });
 });

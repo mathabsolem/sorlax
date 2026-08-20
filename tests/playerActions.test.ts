@@ -9,7 +9,8 @@ import {
   useConsumableAction,
 } from '../src/core/playerActions';
 import { playerDerived } from '../src/core/turn';
-import { setup } from './fixtures/world';
+import { equippedWeapon } from '../src/core/items';
+import { giveWeapon, setup } from './fixtures/world';
 
 const EAST_SPAWN = { pos: { x: 1, y: 1 }, facing: 1 } as const;
 
@@ -193,21 +194,45 @@ describe('useConsumableAction', () => {
 });
 
 describe('switchWeaponAction', () => {
-  it('wechselt auf eine besessene Waffe', () => {
+  // Test 5 aus PHASE_3_8
+  it('legt die Waffe in den Platz und die vorherige zurueck ins Inventar', () => {
     const { state, content } = setup();
-    state.player.weapons.push('pistol');
+    const starter = state.player.equipment['weapon'];
+    const pistol = giveWeapon(state, content, 'pistol');
+
     const result = switchWeaponAction(state, content, 'pistol');
+
     expect(result.ok).toBe(true);
-    expect(state.player.equippedWeaponId).toBe('pistol');
+    expect(state.player.equipment['weapon']).toBe(pistol);
+    expect(equippedWeapon(state, content)?.id).toBe('pistol');
+    expect(state.player.inventory).toEqual([starter]);
   });
 
-  it('lehnt fremde und bereits gefuehrte Waffen ab', () => {
+  // Test 4 aus PHASE_3_8
+  it('lehnt eine nicht besessene Waffe ab', () => {
     const { state, content } = setup();
+
     expect(switchWeaponAction(state, content, 'pistol')).toEqual({
       ok: false,
       reason: 'weapon not owned',
     });
-    expect(switchWeaponAction(state, content, 'fists')).toEqual({
+    // Die Waffenleiste allein reicht nicht, es braucht die Instanz.
+    state.player.weapons.push('pistol');
+    expect(switchWeaponAction(state, content, 'pistol')).toEqual({
+      ok: false,
+      reason: 'weapon not owned',
+    });
+    expect(state.player.equipment['weapon']?.baseId).toBe('item_w_prybar');
+  });
+
+  it('lehnt unbekannte und bereits gefuehrte Waffen ab', () => {
+    const { state, content } = setup();
+
+    expect(switchWeaponAction(state, content, 'gibtsnicht')).toEqual({
+      ok: false,
+      reason: 'unknown weapon',
+    });
+    expect(switchWeaponAction(state, content, 'w_prybar')).toEqual({
       ok: false,
       reason: 'weapon already equipped',
     });

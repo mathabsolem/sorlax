@@ -2,13 +2,15 @@
  * Kleine Testwelt: 8 x 8 Kacheln, dazu ein Minimalsatz an Inhalten.
  * Nur fuer Tests, gehoert bewusst nicht nach content/.
  */
-import { AFFIXES, DROP_TABLES, EQUIPMENT, SKILLS, UNIQUES } from './catalog';
+import { AFFIXES, DROP_TABLES, EQUIPMENT, SKILLS, UNIQUES, WEAPON_DEFS } from './catalog';
 import { ENEMIES, ITEMS, WEAPONS } from './defs';
+import { createInstance } from '../../src/core/items';
 import { createNewGame } from '../../src/core/state';
 import { encodeTile } from '../../src/core/tiles';
 import type {
   ContentDb,
   Difficulty,
+  ItemInstance,
   Facing,
   GameState,
   LampDef,
@@ -18,7 +20,7 @@ import type {
   TriggerDef,
 } from '../../src/core/types';
 
-export { AFFIXES, DROP_TABLES, EQUIPMENT, SKILLS, UNIQUES } from './catalog';
+export { AFFIXES, DROP_TABLES, EQUIPMENT, SKILLS, UNIQUES, WEAPON_DEFS } from './catalog';
 export { ENEMIES, ITEMS, WEAPONS, noResistances } from './defs';
 
 /** Sechzig Schwellen wie im Vertrag, aber klein genug zum Nachrechnen. */
@@ -116,7 +118,7 @@ export function makeContent(maps: MapDef[], loot = false): ContentDb {
   for (const map of maps) byId[map.id] = map;
   return {
     enemies: ENEMIES,
-    weapons: WEAPONS,
+    weapons: { ...WEAPON_DEFS, ...WEAPONS },
     items: { ...ITEMS, ...EQUIPMENT },
     affixes: AFFIXES,
     uniques: UNIQUES,
@@ -147,4 +149,32 @@ export function setup(
     options.difficulty ?? 'normal'
   );
   return { state, content, map };
+}
+
+/**
+ * Legt eine Waffe in den Platz `weapon`. Seit INTERFACES v1.3 ist die getragene
+ * Waffe eine `ItemInstance`, deshalb reicht das Setzen einer Id nicht mehr.
+ */
+export function equipWeapon(state: GameState, content: ContentDb, weaponId: string): void {
+  const def = Object.values(content.items).find((candidate) => candidate.weaponId === weaponId);
+  if (def === undefined) throw new Error(`kein ItemDef fuer Waffe ${weaponId}`);
+  const instance = createInstance(state, def.id, 1, 'normal', [], content);
+  if (instance === null) throw new Error(`Instanz fehlgeschlagen: ${def.id}`);
+  state.player.equipment['weapon'] = instance;
+  if (!state.player.weapons.includes(weaponId)) state.player.weapons.push(weaponId);
+}
+
+/** Legt eine Waffeninstanz ins Inventar, ohne sie anzulegen. */
+export function giveWeapon(
+  state: GameState,
+  content: ContentDb,
+  weaponId: string
+): ItemInstance {
+  const def = Object.values(content.items).find((candidate) => candidate.weaponId === weaponId);
+  if (def === undefined) throw new Error(`kein ItemDef fuer Waffe ${weaponId}`);
+  const instance = createInstance(state, def.id, 1, 'normal', [], content);
+  if (instance === null) throw new Error(`Instanz fehlgeschlagen: ${def.id}`);
+  state.player.inventory.push(instance);
+  if (!state.player.weapons.includes(weaponId)) state.player.weapons.push(weaponId);
+  return instance;
 }

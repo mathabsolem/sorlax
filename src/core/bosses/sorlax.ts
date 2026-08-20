@@ -31,7 +31,7 @@ export const PHASE_TWO_RATIO = 0.66;
 export const PHASE_THREE_RATIO = 0.33;
 
 /** Feste Liste der Archetypen, die Sorlax in Phase 2 ruft. */
-export const SORLAX_MINIONS: readonly string[] = ['corvane_rat', 'corvane_miner'];
+export const SORLAX_MINIONS: readonly string[] = ['rat_physical', 'miner_physical'];
 
 const SUMMON_INTERVAL = 3;
 const SUMMON_COUNT = 2;

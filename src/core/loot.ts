@@ -10,7 +10,7 @@
  */
 import { rollItem } from './affixes';
 import { DIFFICULTY_ORDER } from './difficulty';
-import { addGroundItem } from './items';
+import { addGroundItem, slotsFor, slotsForDef } from './items';
 import { loadRng, saveRng } from './rng';
 import type { Rng } from './rng';
 import { EQUIP_SLOTS } from './types';
@@ -99,7 +99,10 @@ function limitSlots(table: DropTableDef, allowed: Set<EquipSlot>): DropTableDef 
 /** Grundtypen eines Steckplatzes, die auf dieser Stufe erlaubt sind. */
 function basesFor(slot: EquipSlot, itemLevel: number, content: ContentDb): ItemDef[] {
   return Object.values(content.items)
-    .filter((def) => def.type === 'equipment' && def.slot === slot && def.reqLevel <= itemLevel)
+    .filter(
+      (def) =>
+        def.type === 'equipment' && slotsForDef(def).includes(slot) && def.reqLevel <= itemLevel
+    )
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
@@ -151,9 +154,11 @@ function equipEnemy(
       continue;
     }
     const item = rollItem(rng, base.id, itemLevel, pieceTable, content, true, state);
+    // Messgeraete passen in beide Plaetze, sie bleiben im gewuerfelten.
+    const target = slotsFor(item).includes(slot) ? slot : item.slot;
     taken.add(slot);
-    taken.add(item.slot);
-    equipment[item.slot] = item;
+    taken.add(target);
+    equipment[target] = item;
   }
 
   if (Object.keys(equipment).length > 0) entity.equipment = equipment;

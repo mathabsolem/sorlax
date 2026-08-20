@@ -86,17 +86,17 @@ describe('content/skills.json', () => {
 
 describe('content/enemies.json', () => {
   it('fuehrt die vier Bosse mit passendem scriptId', () => {
-    for (const id of ['halvern', 'sporemother', 'rime', 'sorlax']) {
-      const def = ENEMIES[id];
+    for (const script of ['halvern', 'sporemother', 'rime', 'sorlax']) {
+      const def = ENEMIES[`boss_${script}`];
       expect(def?.behavior).toBe('scripted');
-      expect(def?.scriptId).toBe(id);
+      expect(def?.scriptId).toBe(script);
       expect(BOSS_REGISTRY[def?.scriptId ?? '']).toBeTypeOf('function');
       expect(def?.dropTableId).toBe('boss_drop');
     }
   });
 
   it('bringt die von den Skripten gerufenen Gegner mit', () => {
-    for (const id of ['spore_poison', 'corvane_rat', 'corvane_miner']) {
+    for (const id of ['spore_poison', 'rat_physical', 'miner_physical']) {
       expect(ENEMIES[id]?.behavior).not.toBe('scripted');
     }
   });

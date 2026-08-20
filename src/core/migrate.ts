@@ -4,11 +4,14 @@
  * Version 1 kannte `PlayerState.stats` als Wahrheit. Ab Version 2 sind nur noch
  * Attribute und `health` gespeichert, alles andere entsteht in getDerivedStats.
  * Version 3 ergaenzt `MapRuntimeState.tempWalls` (INTERFACES v1.2.1).
+ * Version 4 loest `PlayerState.equippedWeaponId` zugunsten des Ausruestungs-
+ * platzes `weapon` auf (INTERFACES v1.3).
  *
  * Die Kette laeuft in Stufen: 1 auf 2, dann 2 auf 3. Jede Stufe kennt nur ihren
  * eigenen Schritt.
  */
 import { EFFECT_DEFS, isEffectId } from './effectDefs';
+import { STARTER_WEAPON_ITEM } from './items';
 import { CURRENT_SAVE_VERSION, START_ATTRIBUTE } from './state';
 import type {
   ActiveEffect,
@@ -106,12 +109,65 @@ type V2MapRuntime = Omit<MapRuntimeState, 'tempWalls'>;
 
 type V2State = Omit<GameState, 'maps'> & { maps: Record<string, V2MapRuntime> };
 
-function migrateV2(old: V2State): GameState {
+function migrateV2(old: V2State): V3State {
   const maps: Record<string, MapRuntimeState> = {};
   for (const [id, runtime] of Object.entries(old.maps)) {
     maps[id] = { ...runtime, tempWalls: [] };
   }
-  return { ...old, version: CURRENT_SAVE_VERSION, maps };
+  return { ...old, version: 3, maps };
+}
+
+// --- Migration von Version 3 --------------------------------------------------
+
+/** Version 3 fuehrte die getragene Waffe noch als Id neben dem Platz `weapon`. */
+type V3Player = PlayerState & { equippedWeaponId?: string };
+
+type V3State = Omit<GameState, 'player'> & { player: V3Player };
+
+/**
+ * Waffen-Grundtypen aus BESTIARY Abschnitt 7. Eine Migration darf den
+ * Zielkatalog kennen; `migrate` bekommt keine ContentDb und koennte sonst nicht
+ * pruefen, ob eine alte Waffen-Id noch existiert.
+ */
+const WEAPON_ITEM_IDS: readonly string[] = [
+  'item_w_prybar',
+  'item_w_pistol',
+  'item_w_shotgun',
+  'item_w_riveter',
+  'item_w_rod',
+  'item_w_charger',
+  'item_w_lance',
+  'item_w_sprayer',
+  'item_w_drill',
+  'item_w_scepter',
+];
+
+function migrateV3(old: V3State): GameState {
+  const { equippedWeaponId, ...player } = old.player;
+
+  let nextItemUid = old.nextItemUid;
+  if (player.equipment['weapon'] === undefined) {
+    // Version 3 fuehrte dort die Id des WeaponDef, der Grundtyp heisst
+    // `item_` plus diese Id (PHASE_3_8 Block 3).
+    const candidate = `item_${equippedWeaponId ?? ''}`;
+    // Leer oder unbekannt heisst Brechstange, PHASE_3_8 Block 4.
+    const baseId = WEAPON_ITEM_IDS.includes(candidate) ? candidate : STARTER_WEAPON_ITEM;
+    player.equipment = {
+      ...player.equipment,
+      weapon: {
+        uid: nextItemUid,
+        baseId,
+        slot: 'weapon',
+        rarity: 'normal',
+        itemLevel: 1,
+        affixes: [],
+        identified: true,
+      },
+    };
+    nextItemUid += 1;
+  }
+
+  return { ...old, version: CURRENT_SAVE_VERSION, nextItemUid, player };
 }
 
 function migrateV1(old: LegacyState): V2State {
@@ -165,10 +221,13 @@ export function migrate(raw: unknown): GameState {
     throw new Error('savegame has no version');
   }
   if (version === 1) {
-    return migrateV2(migrateV1(raw as LegacyState));
+    return migrateV3(migrateV2(migrateV1(raw as LegacyState)));
   }
   if (version === 2) {
-    return migrateV2(raw as V2State);
+    return migrateV3(migrateV2(raw as V2State));
+  }
+  if (version === 3) {
+    return migrateV3(raw as V3State);
   }
   if (version === CURRENT_SAVE_VERSION) {
     return raw as GameState;

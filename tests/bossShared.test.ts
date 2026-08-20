@@ -24,7 +24,7 @@ import { addTempWall } from '../src/core/tempWalls';
 import type { ContentDb, Entity, GameState, MapEntityDef } from '../src/core/types';
 import { setup } from './fixtures/world';
 
-function world(defId = 'halvern', pos = { x: 4, y: 1 }, extra: MapEntityDef[] = []) {
+function world(defId = 'boss_halvern', pos = { x: 4, y: 1 }, extra: MapEntityDef[] = []) {
   const built = setup({
     seed: 5,
     spawn: { pos: { x: 1, y: 1 }, facing: 1 },
@@ -93,7 +93,7 @@ describe('healthRatio', () => {
 
 describe('Bewegung', () => {
   it('stepOnto geht auf freie Kacheln und nicht auf den Spieler', () => {
-    const { state, content, boss } = world('halvern', { x: 3, y: 1 });
+    const { state, content, boss } = world('boss_halvern', { x: 3, y: 1 });
     const scene = sceneOf(state, boss, content);
 
     expect(stepOnto(state, scene, boss, { x: 1, y: 1 })).toEqual([]);
@@ -106,7 +106,7 @@ describe('Bewegung', () => {
   });
 
   it('stepToward geht auf den Spieler zu und away von ihm weg', () => {
-    const { state, content, boss } = world('halvern', { x: 4, y: 1 });
+    const { state, content, boss } = world('boss_halvern', { x: 4, y: 1 });
 
     stepToward(state, sceneOf(state, boss, content), boss);
     expect(boss.pos.x).toBe(3);
@@ -116,7 +116,7 @@ describe('Bewegung', () => {
   });
 
   it('facePlayer dreht auf den Spieler', () => {
-    const { state, boss } = world('halvern', { x: 4, y: 1 });
+    const { state, boss } = world('boss_halvern', { x: 4, y: 1 });
     boss.facing = 0;
     facePlayer(state, boss);
     expect(boss.facing).toBe(3);
@@ -125,7 +125,7 @@ describe('Bewegung', () => {
 
 describe('tilesAhead und actorsOn', () => {
   it('haelt an soliden Kacheln an, temporaere Waende eingeschlossen', () => {
-    const { state, content, boss } = world('halvern', { x: 4, y: 1 });
+    const { state, content, boss } = world('boss_halvern', { x: 4, y: 1 });
     boss.facing = 3;
     const scene = sceneOf(state, boss, content);
 
@@ -140,7 +140,7 @@ describe('tilesAhead und actorsOn', () => {
   });
 
   it('actorsOn findet Spieler und lebende Gegner auf den Kacheln', () => {
-    const { state, content, boss } = world('halvern', { x: 4, y: 1 }, [
+    const { state, content, boss } = world('boss_halvern', { x: 4, y: 1 }, [
       { kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } },
     ]);
     const scene = sceneOf(state, boss, content);
@@ -158,7 +158,7 @@ describe('tilesAhead und actorsOn', () => {
 
 describe('areaStrike', () => {
   it('trifft Spieler und Gegner, achtet auf Resistenz und ueberspringt sich selbst', () => {
-    const { state, content, boss } = world('halvern', { x: 4, y: 1 }, [
+    const { state, content, boss } = world('boss_halvern', { x: 4, y: 1 }, [
       { kind: 'enemy', defId: 'tank', pos: { x: 3, y: 1 } },
     ]);
     const scene = sceneOf(state, boss, content);
@@ -205,8 +205,8 @@ describe('areaStrike', () => {
 
 describe('bossAttack, effectOnHit und seesPlayer', () => {
   it('greift an und legt bei einem Treffer den Effekt', () => {
-    const { state, content, boss } = world('halvern', { x: 2, y: 1 });
-    const def = content.enemies['halvern'];
+    const { state, content, boss } = world('boss_halvern', { x: 2, y: 1 });
+    const def = content.enemies['boss_halvern'];
     if (def === undefined) throw new Error('keine Definition');
 
     // Ausweichen auf 0, damit der Treffer sitzt.
@@ -229,7 +229,7 @@ describe('bossAttack, effectOnHit und seesPlayer', () => {
   });
 
   it('seesPlayer folgt der Sichtlinie', () => {
-    const { state, content, boss } = world('halvern', { x: 4, y: 1 });
+    const { state, content, boss } = world('boss_halvern', { x: 4, y: 1 });
     const scene = sceneOf(state, boss, content);
     expect(seesPlayer(state, scene, boss)).toBe(true);
 

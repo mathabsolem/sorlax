@@ -252,16 +252,17 @@ describe('8. Kommandos aus INTERFACES v1.2', () => {
 
   it('lehnt Ausruestungskommandos ohne passenden Gegenstand ab', () => {
     const { state, content } = setup();
+    // uid 1 ist seit INTERFACES v1.3 die Startwaffe, deshalb eine freie uid.
     const rejected: Command[] = [
-      { type: 'equip', uid: 1 },
-      { type: 'dropItem', uid: 1 },
+      { type: 'equip', uid: 9999 },
+      { type: 'dropItem', uid: 9999 },
     ];
     for (const cmd of rejected) {
       expect(applyCommand(state, cmd, content)).toEqual([
         { type: 'invalid', reason: 'unknown item' },
       ]);
     }
-    expect(applyCommand(state, { type: 'unequip', slot: 'weapon' }, content)).toEqual([
+    expect(applyCommand(state, { type: 'unequip', slot: 'suit' }, content)).toEqual([
       { type: 'invalid', reason: 'slot is empty' },
     ]);
     expect(state.turnCount).toBe(0);

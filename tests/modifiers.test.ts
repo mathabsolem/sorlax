@@ -43,35 +43,37 @@ describe('resistanceTypeOf', () => {
 describe('collectEquipmentModifiers', () => {
   it('summiert Grundwerte und Affixe ueber alle Steckplaetze', () => {
     const { state, content } = setup();
-    // suit_liner traegt armor +2, guard_buckler ebenfalls armor +2.
-    state.player.equipment['suit'] = craft(state, content, 'suit_liner', [
+    // Leichte Teile tragen laut BESTIARY Abschnitt 8 armor 2 und evasion 1.
+    state.player.equipment['suit'] = craft(state, content, 'suit_overall', [
       { affixId: 'pre_sturdy', value: 10 },
     ]);
-    state.player.equipment['guard'] = craft(state, content, 'guard_buckler', [
+    state.player.equipment['guard'] = craft(state, content, 'guard_deflector', [
       { affixId: 'pre_plated', value: 3 },
     ]);
 
     const sums = collectEquipmentModifiers(state.player.equipment, content);
     expect(flatOf(sums, 'armor')).toBe(7);
     expect(flatOf(sums, 'maxHealth')).toBe(10);
-    expect(flatOf(sums, 'evasion')).toBe(0);
+    expect(flatOf(sums, 'evasion')).toBe(2);
   });
 
   it('trennt flache von prozentualen Beitraegen', () => {
     const { state, content } = setup();
-    state.player.equipment['weapon'] = craft(state, content, 'weapon_rig_light', [
+    // Waffen haben keine baseModifiers, der Beitrag kommt allein aus dem Affix.
+    state.player.equipment['weapon'] = craft(state, content, 'item_w_prybar', [
       { affixId: 'pre_brutal', value: 8 },
+      { affixId: 'pre_honed', value: 5 },
     ]);
 
     const sums = collectEquipmentModifiers(state.player.equipment, content);
     expect(percentOf(sums, 'meleeBonus')).toBe(8);
     expect(flatOf(sums, 'meleeBonus')).toBe(0);
-    expect(flatOf(sums, 'accuracy')).toBe(1);
+    expect(flatOf(sums, 'accuracy')).toBe(5);
   });
 
   it('ueberspringt unbekannte Affixe und Grundtypen', () => {
     const { state, content } = setup();
-    const item = craft(state, content, 'suit_liner', [{ affixId: 'gibtsnicht', value: 99 }]);
+    const item = craft(state, content, 'suit_overall', [{ affixId: 'gibtsnicht', value: 99 }]);
     item.baseId = 'auchnicht';
     state.player.equipment['suit'] = item;
 

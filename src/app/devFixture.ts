@@ -6,6 +6,7 @@
  * Verhaltensmustern, ein Item, zwei Deckenlampen, gedrehte Bodenkacheln.
  */
 import progression from '../../content/progression.json';
+import { STARTER_WEAPON_ITEM } from '../core/items';
 import { generateLightMap } from '../core/lighting';
 import { encodeTile } from '../core/tiles';
 import type { ContentDb, EnemyDef, ItemDef, MapDef, WeaponDef } from '../core/types';
@@ -214,6 +215,23 @@ const ENEMIES: Record<string, EnemyDef> = {
   },
 };
 
+/** ItemDef zu einer Waffe der Entwicklungskarte. */
+function weaponItem(id: string, name: string, weaponId: string): ItemDef {
+  return {
+    id,
+    name,
+    type: 'weapon',
+    slot: 'weapon',
+    weaponId,
+    amount: 1,
+    reqLevel: 1,
+    reqStrength: 0,
+    reqAgility: 0,
+    sprite: id,
+    icon: id,
+  };
+}
+
 export function createDevContent(): ContentDb {
   const map = createDevMap();
   return {
@@ -222,6 +240,10 @@ export function createDevContent(): ContentDb {
     items: {
       medkit: consumable('medkit', 'Verbandpack', 'heal', 20),
       bolts: consumable('bolts', 'Bolzen', 'ammo', 12),
+      // Seit INTERFACES v1.3 haelt der Platz `weapon` eine ItemInstance.
+      // createNewGame braucht dafuer den Grundtyp der Startwaffe.
+      [STARTER_WEAPON_ITEM]: weaponItem(STARTER_WEAPON_ITEM, 'Schneidbrenner', 'cutter'),
+      item_bolter: weaponItem('item_bolter', 'Bolzenwerfer', 'bolter'),
     },
     affixes: {},
     uniques: {},

@@ -9,15 +9,79 @@ import type {
   EquipSlot,
   GameState,
   GroundItem,
+  ItemDef,
   ItemInstance,
   MapRuntimeState,
   Rarity,
   RolledAffix,
   TileCoord,
+  WeaponDef,
 } from './types';
 
 /** Obergrenze des Inventars, RPG.md Abschnitt 4. Ein Gegenstand belegt einen Platz. */
 export const MAX_INVENTORY = 40;
+
+/** Grundtyp der Startwaffe, BESTIARY Abschnitt 7. */
+export const STARTER_WEAPON_ITEM = 'item_w_prybar';
+
+/**
+ * Werte des unbewaffneten Angriffs, INTERFACES v1.3. Sie gelten, wenn der Platz
+ * `weapon` leer ist.
+ */
+export const UNARMED: WeaponDef = {
+  id: 'unarmed',
+  name: 'Unarmed',
+  dmgMin: 1,
+  dmgMax: 3,
+  damageType: 'physical',
+  critChance: 0,
+  optimalRange: 1,
+  maxRange: 1,
+  ammoType: null,
+  ammoPerShot: 0,
+  sprite: 'unarmed',
+  sound: 'unarmed',
+};
+
+/**
+ * Die getragene Waffe, INTERFACES v1.3. Der Platz `weapon` ist die einzige
+ * Quelle: seine `ItemInstance` verweist ueber `ItemDef.weaponId` auf den
+ * `WeaponDef`. Null heisst leerer Platz, der Aufrufer nimmt dann `UNARMED`.
+ */
+export function equippedWeapon(state: GameState, content: ContentDb): WeaponDef | null {
+  const instance = state.player.equipment['weapon'];
+  if (instance === undefined) return null;
+  const weaponId = content.items[instance.baseId]?.weaponId;
+  if (weaponId === undefined) return null;
+  return content.weapons[weaponId] ?? null;
+}
+
+/** Die Waffe, mit der tatsaechlich angegriffen wird. Nie null. */
+export function activeWeapon(state: GameState, content: ContentDb): WeaponDef {
+  return equippedWeapon(state, content) ?? UNARMED;
+}
+
+/**
+ * Steckplaetze, in die ein Gegenstand passt.
+ *
+ * Gemeldete Vertragsluecke: BESTIARY Abschnitt 8 gibt fuer `gauge_right`
+ * ausdruecklich "dieselben wie links" an, `ItemDef.slot` kennt aber nur einen
+ * Steckplatz. Ein Messgeraet traegt deshalb `gauge_left` und darf ersatzweise
+ * nach rechts, sonst waere `gauge_right` nie zu belegen.
+ */
+export function slotsFor(item: ItemInstance): EquipSlot[] {
+  return slotsForSlot(item.slot);
+}
+
+/** Dasselbe fuer einen Grundtyp, bevor eine Instanz existiert. */
+export function slotsForDef(def: ItemDef): EquipSlot[] {
+  return def.slot === undefined ? [] : slotsForSlot(def.slot);
+}
+
+function slotsForSlot(slot: EquipSlot): EquipSlot[] {
+  if (slot === 'gauge_left') return ['gauge_left', 'gauge_right'];
+  return [slot];
+}
 
 /**
  * Neue Instanz eines Grundtyps.

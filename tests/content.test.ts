@@ -74,29 +74,63 @@ describe('content/affixes.json', () => {
 });
 
 describe('content/items.json', () => {
-  it('bietet je Steckplatz einen einfachen und einen schweren Grundtyp', () => {
-    for (const slot of EQUIP_SLOTS) {
-      const bases = Object.values(EQUIPMENT).filter((def) => def.slot === slot);
+  const gear = Object.values(EQUIPMENT).filter((def) => def.type === 'equipment');
+  const weapons = Object.values(EQUIPMENT).filter((def) => def.type === 'weapon');
+
+  it('bietet je Steckplatz einen leichten und einen schweren Grundtyp', () => {
+    // BESTIARY Abschnitt 8: gauge_right nutzt dieselben Grundtypen wie links,
+    // der Platz weapon wird durch die Waffen aus Abschnitt 7 belegt.
+    const gearSlots = EQUIP_SLOTS.filter(
+      (slot) => slot !== 'weapon' && slot !== 'gauge_right'
+    );
+    for (const slot of gearSlots) {
+      const bases = gear.filter((def) => def.slot === slot);
       expect(bases).toHaveLength(2);
 
-      const simple = bases.filter((def) => def.reqLevel === 1);
+      const light = bases.filter((def) => def.reqLevel === 1);
       const heavy = bases.filter((def) => def.reqLevel > 1);
-      expect(simple).toHaveLength(1);
+      expect(light).toHaveLength(1);
       expect(heavy).toHaveLength(1);
-      // Der schwere Grundtyp verlangt mehr als der einfache.
-      const heavyDef = heavy[0];
-      expect((heavyDef?.reqStrength ?? 0) + (heavyDef?.reqAgility ?? 0)).toBeGreaterThan(0);
     }
   });
 
-  it('ist durchgehend vom Typ equipment und traegt einen Steckplatz', () => {
+  it('setzt Voraussetzungen und Grundwerte nach BESTIARY Abschnitt 8', () => {
+    for (const def of gear) {
+      const heavy = def.reqLevel > 1;
+      expect(def.reqLevel).toBe(heavy ? 8 : 1);
+      expect(def.reqStrength).toBe(heavy ? 22 : 10);
+      expect(def.reqAgility).toBe(heavy ? 10 : 14);
+      expect(def.baseModifiers).toEqual([
+        { stat: 'armor', mode: 'flat', value: heavy ? 6 : 2 },
+        { stat: 'evasion', mode: 'flat', value: heavy ? -1 : 1 },
+      ]);
+    }
+  });
+
+  it('traegt bei jedem Eintrag Schluessel, Steckplatz und Menge', () => {
     for (const [key, def] of Object.entries(EQUIPMENT)) {
       expect(def.id).toBe(key);
-      expect(def.type).toBe('equipment');
+      expect(['equipment', 'weapon']).toContain(def.type);
       expect(EQUIP_SLOTS).toContain(def.slot as EquipSlot);
       expect(def.amount).toBe(1);
       for (const mod of def.baseModifiers ?? []) expect(MODES).toContain(mod.mode);
     }
+  });
+
+  it('fuehrt die zehn Waffen aus BESTIARY Abschnitt 7', () => {
+    expect(weapons).toHaveLength(10);
+    for (const def of weapons) {
+      expect(def.slot).toBe('weapon');
+      expect(def.weaponId).toBe(def.id.replace(/^item_/, ''));
+      // Nahkampf verlangt Kraft, Fernkampf Geschick (PHASE_3_8 Block 3).
+      const melee = def.reqStrength > 0;
+      expect(melee ? def.reqStrength : def.reqAgility).toBe(melee ? 12 : 14);
+    }
+    // Bosswaffen verlangen zusaetzlich die Sohle ihres Bosses.
+    expect(EQUIPMENT['item_w_lance']?.reqLevel).toBe(4);
+    expect(EQUIPMENT['item_w_sprayer']?.reqLevel).toBe(8);
+    expect(EQUIPMENT['item_w_drill']?.reqLevel).toBe(12);
+    expect(EQUIPMENT['item_w_scepter']?.reqLevel).toBe(16);
   });
 });
 
@@ -107,7 +141,11 @@ describe('content/dropTables.json', () => {
     for (const [key, table] of Object.entries(DROP_TABLES)) {
       expect(table.id).toBe(key);
       for (const rarity of RARITIES) expect(table.rarityWeights[rarity]).toBeGreaterThanOrEqual(0);
-      for (const slot of EQUIP_SLOTS) expect(table.slotWeights[slot]).toBeGreaterThan(0);
+      // Der Waffenplatz wird nicht gewuerfelt, dort liegen keine Grundtypen.
+      for (const slot of EQUIP_SLOTS) {
+        if (slot === 'weapon') continue;
+        expect(table.slotWeights[slot]).toBeGreaterThan(0);
+      }
     }
   });
 
