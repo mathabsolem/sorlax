@@ -1,7 +1,11 @@
-# Scepter of Sorlax — INTERFACES v1.2
+# Scepter of Sorlax — INTERFACES v1.2.1
 
-Status: eingefroren. Ersetzt v1.1 vollständig.
+Status: eingefroren. Ersetzt v1.2.
 Grundlage: SPEC v1.2, BESTIARY v2, RPG.md.
+
+Änderung gegenüber v1.2: `MapRuntimeState.tempWalls` und der Typ `TempWall` kommen dazu,
+`isSolid` berücksichtigt sie. Nötig für Bossverhalten, das Felder vorübergehend
+verschließt. Alles andere ist unverändert.
 
 Änderungen gegenüber v1.1: `PlayerState.stats` entfällt zugunsten von Attributen und
 abgeleiteten Werten, Gegenstände werden Instanzen mit Affixen, Fertigkeiten kommen dazu,
@@ -135,9 +139,16 @@ export type MapRuntimeState = {
   takenItems: string[];     // Schlüssel "x,y"
   groundItems: GroundItem[];
   firedTriggers: string[];
+  tempWalls: TempWall[];
   rolled: boolean;          // true, sobald Ausrüstung und Drops gewürfelt wurden
   visited: boolean;
   explored: string[];
+};
+
+export type TempWall = {
+  pos: TileCoord;
+  tileValue: number;        // kodierter Wandwert wie in MapDef.walls
+  expiresAtTurn: number;
 };
 
 export type GroundItem = {
