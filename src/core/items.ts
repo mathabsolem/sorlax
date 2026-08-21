@@ -30,7 +30,7 @@ export const STARTER_WEAPON_ITEM = 'item_w_prybar';
  */
 export const UNARMED: WeaponDef = {
   id: 'unarmed',
-  name: 'Unarmed',
+  name: 'Unbewaffnet',
   dmgMin: 1,
   dmgMax: 3,
   damageType: 'physical',

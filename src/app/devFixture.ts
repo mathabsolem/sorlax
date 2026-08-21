@@ -5,7 +5,9 @@
  * 16 x 16 Kacheln, eine verriegelbare Tuer, zwei Gegner mit verschiedenen
  * Verhaltensmustern, ein Item, zwei Deckenlampen, gedrehte Bodenkacheln.
  */
+import affixes from '../../content/affixes.json';
 import progression from '../../content/progression.json';
+import skills from '../../content/skills.json';
 import { STARTER_WEAPON_ITEM } from '../core/items';
 import { generateLightMap } from '../core/lighting';
 import { encodeTile } from '../core/tiles';
@@ -245,10 +247,10 @@ export function createDevContent(): ContentDb {
       [STARTER_WEAPON_ITEM]: weaponItem(STARTER_WEAPON_ITEM, 'Schneidbrenner', 'cutter'),
       item_bolter: weaponItem('item_bolter', 'Bolzenwerfer', 'bolter'),
     },
-    affixes: {},
+    affixes: affixes as unknown as ContentDb['affixes'],
     uniques: {},
     dropTables: {},
-    skills: {},
+    skills: skills as unknown as ContentDb['skills'],
     maps: { [map.id]: map },
     progression,
   };

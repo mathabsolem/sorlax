@@ -28,6 +28,7 @@ type Parts = {
   skills: HTMLElement;
   status: HTMLElement;
   target: HTMLElement;
+  points: HTMLElement;
 };
 
 function element(doc: Document, tag: string, className: string, text = ''): HTMLElement {
@@ -73,8 +74,9 @@ function build(host: HTMLElement): Parts {
   const skills = element(doc, 'div', 'sx-hud__skills');
   const target = element(doc, 'div', 'sx-target');
   target.hidden = true;
+  const points = element(doc, 'div', 'sx-hud__points');
 
-  root.append(vitals, status, skills, target);
+  root.append(vitals, status, skills, target, points);
   host.appendChild(root);
 
   return {
@@ -90,6 +92,7 @@ function build(host: HTMLElement): Parts {
     skills,
     status,
     target,
+    points,
   };
 }
 
@@ -160,6 +163,21 @@ export class Hud {
 
     this.renderEffects(model);
     this.renderSkills(model);
+  }
+
+  /**
+   * Roter Punkt an Charakterbogen und Fertigkeiten, solange Punkte offen sind
+   * (PHASE_4_5 Block 7).
+   */
+  setOpenPoints(attributePoints: number, skillPoints: number): void {
+    const doc = this.parts.points.ownerDocument;
+    this.parts.points.replaceChildren();
+    if (attributePoints > 0) {
+      this.parts.points.appendChild(element(doc, 'span', 'sx-dot', `C  ${attributePoints}`));
+    }
+    if (skillPoints > 0) {
+      this.parts.points.appendChild(element(doc, 'span', 'sx-dot', `K  ${skillPoints}`));
+    }
   }
 
   /** Zeigt den angewaehlten Gegner oben mittig, oder blendet die Anzeige aus. */

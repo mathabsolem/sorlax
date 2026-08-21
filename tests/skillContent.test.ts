@@ -14,11 +14,16 @@ const ENEMIES = enemiesJson as unknown as Record<string, EnemyDef>;
 const TREES = ['tree_gear', 'tree_reaction', 'tree_endure'];
 
 describe('content/skills.json', () => {
-  it('fuehrt drei Baeume mit je sechs Eintraegen', () => {
-    expect(Object.keys(SKILLS)).toHaveLength(18);
+  it('fuehrt drei Baeume mit mindestens sechs Eintraegen', () => {
     for (const tree of TREES) {
-      expect(Object.values(SKILLS).filter((def) => def.tree === tree)).toHaveLength(6);
+      expect(Object.values(SKILLS).filter((def) => def.tree === tree).length)
+        .toBeGreaterThanOrEqual(6);
     }
+    // PHASE_4_5 Block 4 ergaenzt field_analysis als gesperrten Platzhalter,
+    // weil RPG.md Abschnitt 4 ihn nennt, kein Baum ihn aber fuehrte.
+    expect(SKILLS['field_analysis']?.tree).toBe('tree_endure');
+    expect(SKILLS['field_analysis']?.locked).toBe(true);
+    expect(Object.keys(SKILLS)).toHaveLength(19);
   });
 
   it('haelt Schluessel, Stufen und Grenzen ein', () => {

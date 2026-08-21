@@ -97,11 +97,23 @@ describe('content/items.json', () => {
   it('traegt bei jedem Eintrag Schluessel, Steckplatz und Menge', () => {
     for (const [key, def] of Object.entries(EQUIPMENT)) {
       expect(def.id).toBe(key);
-      expect(['equipment', 'weapon']).toContain(def.type);
-      expect(EQUIP_SLOTS).toContain(def.slot as EquipSlot);
       expect(def.amount).toBe(1);
       for (const mod of def.baseModifiers ?? []) expect(MODES).toContain(mod.mode);
+
+      // Stapelware wie scanner_charge hat keinen Steckplatz.
+      if (def.type === 'equipment' || def.type === 'weapon') {
+        expect(EQUIP_SLOTS).toContain(def.slot as EquipSlot);
+      } else {
+        expect(def.slot).toBeUndefined();
+      }
     }
+  });
+
+  it('fuehrt scanner_charge als Verbrauchsgut, PHASE_4_5 Block 4', () => {
+    const scanner = EQUIPMENT['scanner_charge'];
+    expect(scanner?.type).toBe('powerup');
+    expect(scanner?.amount).toBe(1);
+    expect(scanner?.slot).toBeUndefined();
   });
 
   it('fuehrt die zehn Waffen aus BESTIARY Abschnitt 7', () => {

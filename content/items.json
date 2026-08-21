@@ -512,5 +512,16 @@
     "reqAgility": 14,
     "sprite": "item_w_scepter",
     "icon": "item_w_scepter"
+  },
+  "scanner_charge": {
+    "id": "scanner_charge",
+    "name": "Scannerladung",
+    "type": "powerup",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "scanner_charge",
+    "icon": "scanner_charge"
   }
 }

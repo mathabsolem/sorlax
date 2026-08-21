@@ -18,7 +18,14 @@ import { createPlaceholderAssets, USE_PLACEHOLDERS } from '../render/placeholder
 import { loadAssets } from '../render/assetLoader';
 import { SoftwareRenderer } from '../render/renderer';
 import { Automap } from '../ui/automap';
+import { CharacterView } from '../ui/character';
 import { Hud } from '../ui/hud';
+import { InventoryView } from '../ui/inventory';
+import { SkillsView } from '../ui/skills';
+import { isUpgrade } from '../ui/itemModel';
+import { skillbarKey, skillbarSlots, skillbarValue } from '../ui/progressModel';
+import { VIEW_TITLES, tabs } from '../ui/views';
+import type { ViewId } from '../ui/views';
 import { MessageLog } from '../ui/log';
 import { Menu } from '../ui/menu';
 import { Overlay } from '../ui/overlay';
@@ -74,10 +81,34 @@ export async function start(host: HTMLElement): Promise<void> {
 
   let targetId: number | null = null;
   let lastAutosaveTurn = 0;
+  let openView: ViewId | null = null;
+
+  const showView = (view: ViewId): void => {
+    openView = view;
+    const doc = host.ownerDocument;
+    const parts =
+      view === 'inventory'
+        ? inventory.render(doc, state, content)
+        : view === 'character'
+          ? character.render(doc, state, content)
+          : skills.render(doc, state, content);
+    overlay.show(VIEW_TITLES[view], ...parts, tabs(doc, view, showView));
+  };
+
+  const closeView = (): void => {
+    openView = null;
+    overlay.close();
+    refresh();
+  };
+
+  const redraw = (): void => {
+    if (openView !== null) showView(openView);
+  };
 
   const refresh = (): void => {
     renderer.setState(state, content);
     hud.update(state, content);
+    hud.setOpenPoints(state.player.unspentAttributePoints, state.player.unspentSkillPoints);
     automap.update(state, content);
     const target =
       targetId === null
@@ -87,13 +118,19 @@ export async function start(host: HTMLElement): Promise<void> {
     hud.setTarget(state, content, target);
   };
 
+  /** Eine Meldung ins Protokoll, ohne den Spielzustand anzufassen. */
+  const pushMessage = (text: string): void => {
+    log.push([...state.log, { turn: state.turnCount, kind: 'system', text }]);
+  };
+
   const autosave = (): void => {
     if (state.turnCount - lastAutosaveTurn < AUTOSAVE_EVERY_TURNS) return;
     lastAutosaveTurn = state.turnCount;
     void store.write(state.difficulty, AUTOSAVE_SLOT, state).catch((error: unknown) => {
       // Ein voller oder zu grosser Stand darf das Spiel nie anhalten.
-      const text = error instanceof SaveTooLargeError ? 'Spielstand zu groß' : 'Autosave fehlgeschlagen';
-      log.push([...state.log, { turn: state.turnCount, kind: 'system', text }]);
+      pushMessage(
+        error instanceof SaveTooLargeError ? 'Spielstand zu groß' : 'Autosave fehlgeschlagen'
+      );
     });
   };
 
@@ -110,10 +147,46 @@ export async function start(host: HTMLElement): Promise<void> {
     refresh();
     log.push(state.log);
 
+    // Ein aufgenommenes Teil, das besser ist als das Getragene, wird gemeldet.
+    for (const event of events) {
+      if (event.type !== 'itemPickedUp') continue;
+      const picked = state.player.inventory.find((item) => item.uid === event.uid);
+      if (picked === undefined || !isUpgrade(state, picked, content)) continue;
+      const name = content.items[picked.baseId]?.name ?? picked.baseId;
+      pushMessage(`${name} ist besser als das Getragene`);
+    }
+
     const changedMap = events.some((event) => event.type === 'mapChange');
     if (changedMap) lastAutosaveTurn = state.turnCount - AUTOSAVE_EVERY_TURNS;
     autosave();
   };
+
+  const fromView = (cmd: Command): void => {
+    // Die Ansicht erzeugt nur Kommandos, angewendet werden sie hier.
+    const events = applyCommand(state, cmd, content);
+    renderer.consumeEvents(events);
+    log.push(state.log);
+    hud.update(state, content);
+    hud.setOpenPoints(state.player.unspentAttributePoints, state.player.unspentSkillPoints);
+    inventory.clearSelection();
+    redraw();
+  };
+
+  const inventory = new InventoryView({ onCommand: fromView, onChanged: redraw });
+  const character = new CharacterView({ onCommand: fromView, onChanged: redraw });
+  const skills = new SkillsView({
+    onCommand: fromView,
+    onAssign: (index, skillId) => {
+      const value = skillbarValue(content, skillId);
+      if (value === null) return;
+      // Gemeldete Vertragsluecke: fuer die Leistenbelegung gibt es kein
+      // Command, und `flags` traegt keine Zeichenketten. Deshalb schreibt der
+      // Bootstrap den Index, nicht die Oberflaeche.
+      state.flags[skillbarKey(index)] = value;
+      redraw();
+    },
+    onChanged: redraw,
+  });
 
   const gate = new InputGate(() => renderer.isAnimating() || overlay.isOpen(), run);
 
@@ -157,13 +230,17 @@ export async function start(host: HTMLElement): Promise<void> {
   attachKeyboard(host.ownerDocument, {
     onCommand: (cmd) => gate.submit(cmd),
     onMap: toggleMap,
-    onMenu: () => (overlay.isOpen() ? overlay.close() : menu.open(state)),
+    onMenu: () => (overlay.isOpen() ? closeView() : menu.open(state)),
+    onInventory: () => (openView === 'inventory' ? closeView() : showView('inventory')),
+    onSkills: () => (openView === 'skills' ? closeView() : showView('skills')),
+    onCharacter: () => (openView === 'character' ? closeView() : showView('character')),
     onLog: () => {
       if (overlay.isOpen()) overlay.close();
       else overlay.show('Protokoll', MessageLog.fullView(host.ownerDocument, state.log));
     },
     resolveWeapon: (slot) => state.player.weapons[slot - 1] ?? null,
-    resolveSkill: (slot) => skillBar(state, content)[slot - 1]?.skillId ?? null,
+    resolveSkill: (slot) =>
+      skillbarSlots(state, content)[slot - 1]?.id ?? skillBar(state, content)[slot - 1]?.skillId ?? null,
     ...(import.meta.env.DEV
       ? {
           onToggleDebug: (view: 'light' | 'rotation') => {

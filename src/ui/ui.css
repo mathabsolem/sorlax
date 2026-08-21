@@ -353,3 +353,207 @@
   background: #000;
   touch-action: none;
 }
+
+/* --- Ebene 4, Inventar, Charakterbogen, Fertigkeiten ---------------------- */
+
+.sx-rarity--normal { color: var(--sx-normal); }
+.sx-rarity--magic { color: var(--sx-magic); }
+.sx-rarity--rare { color: var(--sx-rare); }
+.sx-rarity--unique { color: var(--sx-unique); }
+
+.sx-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+}
+
+/* Die Baumreiter stehen im Inhalt, nicht am unteren Rand. */
+.sx-tabs--trees {
+  margin-top: 0;
+}
+
+.sx-tabs__item--tree {
+  min-width: 140px;
+  font-size: 13px;
+}
+
+.sx-tabs__item {
+  min-width: 96px;
+  min-height: var(--sx-touch);
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius);
+  background: var(--sx-panel);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sx-tabs__item[aria-current='true'] {
+  background: rgba(90, 143, 212, 0.28);
+  border-color: var(--sx-magic);
+}
+
+.sx-doll {
+  display: grid;
+  grid-template-columns: repeat(3, var(--sx-touch));
+  gap: 4px;
+  justify-content: center;
+}
+
+.sx-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--sx-touch));
+  gap: 4px;
+  max-height: 34vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.sx-cell {
+  width: var(--sx-touch);
+  height: var(--sx-touch);
+  border: 2px solid var(--sx-border);
+  border-radius: var(--sx-radius);
+  background: var(--sx-panel);
+  color: inherit;
+  font: 600 10px/1.1 system-ui, sans-serif;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 2px;
+}
+
+.sx-cell--empty {
+  border-style: dashed;
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sx-cell--selected {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.sx-cell--normal { border-color: var(--sx-normal); }
+.sx-cell--magic { border-color: var(--sx-magic); }
+.sx-cell--rare { border-color: var(--sx-rare); }
+.sx-cell--unique { border-color: var(--sx-unique); }
+
+.sx-cell__unknown {
+  float: right;
+  color: var(--sx-rare);
+}
+
+.sx-count {
+  font-size: 12px;
+  color: var(--sx-dim);
+}
+
+.sx-count--full {
+  color: var(--sx-health);
+  font-weight: 700;
+}
+
+.sx-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--sx-dim);
+}
+
+.sx-detail {
+  width: min(560px, 92vw);
+  padding: 8px 10px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius);
+  background: var(--sx-panel);
+  font-size: 13px;
+}
+
+.sx-detail__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sx-gap);
+}
+
+.sx-detail__name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sx-up { color: var(--sx-xp); }
+.sx-down { color: var(--sx-health); }
+.sx-unmet { color: var(--sx-health); }
+
+.sx-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sx-actions__item {
+  min-height: var(--sx-touch);
+  min-width: var(--sx-touch);
+  padding: 0 12px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius);
+  background: var(--sx-panel);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sx-actions__item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sx-columns {
+  display: flex;
+  gap: var(--sx-gap);
+  align-items: flex-start;
+  width: min(680px, 94vw);
+}
+
+.sx-columns > * {
+  flex: 1;
+}
+
+.sx-node {
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius);
+  background: var(--sx-panel);
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.sx-node--locked {
+  opacity: 0.4;
+}
+
+.sx-node--blocked {
+  border-color: var(--sx-health);
+}
+
+.sx-node__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sx-gap);
+  font-weight: 700;
+}
+
+/* Roter Punkt am HUD, solange Punkte unvergeben sind. */
+.sx-hud__points {
+  position: absolute;
+  left: calc(var(--sx-gap) + var(--sx-safe-left));
+  top: calc(var(--sx-gap) + 96px + var(--sx-safe-top));
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.sx-dot::before {
+  content: '●';
+  color: var(--sx-health);
+  margin-right: 3px;
+}

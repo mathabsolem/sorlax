@@ -13,9 +13,10 @@ export type KeyboardHandlers = {
   onMenu?: () => void;
   /** Vollstaendiges Meldungsprotokoll. */
   onLog?: () => void;
-  /** Inventar und Fertigkeitenbaum kommen in Phase 4.5. */
+  /** Vollbildansichten: I Inventar, K Fertigkeiten, C Charakterbogen. */
   onInventory?: () => void;
   onSkills?: () => void;
+  onCharacter?: () => void;
   /** Liefert die Waffen-Id fuer die Zifferntasten 1 bis 9, sonst null. */
   resolveWeapon?: (slot: number) => string | null;
   /** Liefert die Fertigkeit fuer F1 bis F6, sonst null. */
@@ -95,6 +96,11 @@ export function attachKeyboard(target: EventTarget, handlers: KeyboardHandlers):
     if (event.key === 'k' || event.key === 'K') {
       event.preventDefault();
       handlers.onSkills?.();
+      return;
+    }
+    if (event.key === 'c' || event.key === 'C') {
+      event.preventDefault();
+      handlers.onCharacter?.();
       return;
     }
     if (event.key === 'l' || event.key === 'L') {

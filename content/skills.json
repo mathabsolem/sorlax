@@ -253,5 +253,18 @@
     "active": false,
     "cooldown": 0,
     "locked": true
+  },
+  "field_analysis": {
+    "id": "field_analysis",
+    "tree": "tree_endure",
+    "name": "Feldanalyse",
+    "description": "Identifiziert Funde ab Stufe 3 selbst. Noch nicht umgesetzt.",
+    "maxPoints": 5,
+    "tier": 2,
+    "reqLevel": 6,
+    "reqPointsInTree": 2,
+    "active": false,
+    "cooldown": 0,
+    "locked": true
   }
 }
