@@ -3,6 +3,7 @@
  * Erzeugt nur Command-Objekte, kein Zugriff auf core.
  *
  * Flaechen mindestens 56 x 56 CSS-Pixel, Positionierung mit den Safe-Area-Insets.
+ * Die Stile stehen seit Phase 4 in src/ui/ui.css, nicht mehr hier.
  */
 import type { Command } from '../core/types';
 
@@ -11,30 +12,6 @@ export type TouchHandlers = {
   /** Tippen in das Bild, etwa zum Setzen eines Ziels. */
   onPick?: (clientX: number, clientY: number) => void;
 };
-
-const STYLE_ID = 'sorlax-touch-style';
-
-const CSS = `
-.sx-pad { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-.sx-btn {
-  position: absolute;
-  min-width: 56px;
-  min-height: 56px;
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #6a6a72;
-  border-radius: 8px;
-  background: rgba(20, 20, 26, 0.55);
-  color: #d8d8de;
-  font: 600 18px/1 system-ui, sans-serif;
-}
-.sx-btn:active { background: rgba(90, 90, 110, 0.75); }
-`;
 
 type ButtonSpec = { label: string; left?: string; right?: string; bottom: string; cmd: Command };
 
@@ -56,21 +33,12 @@ const BUTTONS: ButtonSpec[] = [
   { label: 'U', right: ACTION_RIGHT, bottom: BOTTOM_0, cmd: { type: 'interact' } },
 ];
 
-function ensureStyle(doc: Document): void {
-  if (doc.getElementById(STYLE_ID) !== null) return;
-  const style = doc.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = CSS;
-  doc.head.appendChild(style);
-}
-
 /**
  * Baut das Bedienfeld in `host` und liefert die Abbaufunktion.
  * Halten wiederholt nicht, jedes Kommando braucht eine neue Beruehrung.
  */
 export function attachTouch(host: HTMLElement, handlers: TouchHandlers): () => void {
   const doc = host.ownerDocument;
-  ensureStyle(doc);
 
   const pad = doc.createElement('div');
   pad.className = 'sx-pad';

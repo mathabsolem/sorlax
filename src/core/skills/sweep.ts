@@ -11,6 +11,7 @@ import { enemyActor, getDerivedStats, playerActor } from '../derived';
 import { isAlive, isGuarded, vitalsOf } from '../entities';
 import { chebyshev } from '../grid';
 import { activeWeapon } from '../items';
+import { learnResistance } from '../knowledge';
 import { loadRng, saveRng } from '../rng';
 import { executionBonus, sweepFactor } from './rules';
 import type {
@@ -63,6 +64,7 @@ export function sweepHandler(
   for (const target of targets) {
     const actor = enemyActor(target, content);
     if (actor === null) continue;
+    const before = events.length;
     events.push(
       ...resolveAttack(
         rng,
@@ -79,6 +81,9 @@ export function sweepHandler(
       )
     );
     target.active = true;
+    if (events.slice(before).some((event) => event.type === 'attack' && event.hit)) {
+      learnResistance(state, target.defId, scaled.damageType);
+    }
   }
 
   saveRng(state, rng);

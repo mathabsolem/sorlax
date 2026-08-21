@@ -1,5 +1,5 @@
 /**
- * Tastatursteuerung nach SPEC v1.1 Abschnitt 11.
+ * Tastatursteuerung nach SPEC v1.2 Abschnitt 12.
  * Erzeugt nur Command-Objekte und reicht sie an einen Callback, kein Zugriff auf core.
  *
  * Karte und Menue sind laut SPEC kostenlose Ansichten und haben in INTERFACES
@@ -11,11 +11,24 @@ export type KeyboardHandlers = {
   onCommand: (cmd: Command) => void;
   onMap?: () => void;
   onMenu?: () => void;
+  /** Vollstaendiges Meldungsprotokoll. */
+  onLog?: () => void;
+  /** Inventar und Fertigkeitenbaum kommen in Phase 4.5. */
+  onInventory?: () => void;
+  onSkills?: () => void;
   /** Liefert die Waffen-Id fuer die Zifferntasten 1 bis 9, sonst null. */
   resolveWeapon?: (slot: number) => string | null;
+  /** Liefert die Fertigkeit fuer F1 bis F6, sonst null. */
+  resolveSkill?: (slot: number) => string | null;
   /** F7 schaltet die Helligkeitsansicht, F8 die Kacheldrehung. */
   onToggleDebug?: (view: 'light' | 'rotation') => void;
 };
+
+/** F1 bis F6 belegen die Fertigkeitsleiste, SPEC Abschnitt 12. */
+function skillSlotFor(key: string): number | null {
+  if (!/^F[1-6]$/.test(key)) return null;
+  return Number.parseInt(key.slice(1), 10);
+}
 
 function commandFor(key: string, handlers: KeyboardHandlers): Command | null {
   switch (key) {
@@ -49,6 +62,12 @@ function commandFor(key: string, handlers: KeyboardHandlers): Command | null {
       return { type: 'switchWeapon', weaponId };
     }
   }
+
+  const slot = skillSlotFor(key);
+  if (slot !== null) {
+    const skillId = handlers.resolveSkill?.(slot);
+    if (skillId !== null && skillId !== undefined) return { type: 'useSkill', skillId };
+  }
   return null;
 }
 
@@ -66,6 +85,21 @@ export function attachKeyboard(target: EventTarget, handlers: KeyboardHandlers):
     if (event.key === 'Escape') {
       event.preventDefault();
       handlers.onMenu?.();
+      return;
+    }
+    if (event.key === 'i' || event.key === 'I') {
+      event.preventDefault();
+      handlers.onInventory?.();
+      return;
+    }
+    if (event.key === 'k' || event.key === 'K') {
+      event.preventDefault();
+      handlers.onSkills?.();
+      return;
+    }
+    if (event.key === 'l' || event.key === 'L') {
+      event.preventDefault();
+      handlers.onLog?.();
       return;
     }
     if (event.key === 'F7' || event.key === 'F8') {

@@ -11,6 +11,7 @@ import { rotate, tileKey } from './grid';
 import { attackAction } from './attack';
 import type { ActionResult } from './actionResult';
 import { dropItemAction, equipAction, unequipAction } from './equipActions';
+import { updateExplored } from './explore';
 import {
   interactAction,
   moveAction,
@@ -116,6 +117,7 @@ function changeMap(state: GameState, content: ContentDb, targetMapId: string): G
   state.player.facing = target.spawn.facing;
   const key = tileKey(state.player.pos);
   if (!runtime.explored.includes(key)) runtime.explored.push(key);
+  updateExplored(state, content);
 
   return [{ type: 'mapChange', mapId: targetMapId }];
 }
@@ -129,6 +131,9 @@ function handleMove(
   if (!result.ok) return invalid(result.reason);
 
   const events = result.events;
+  // Nach jedem Schritt wird die Umgebung fuer die Automap aufgedeckt
+  // (PHASE_4 Block 5).
+  updateExplored(state, content);
   events.push(...fireTriggers(state, content, state.player.pos, 'enter'));
 
   const map = content.maps[state.currentMapId];

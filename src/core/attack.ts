@@ -11,6 +11,7 @@ import { chebyshev, hasLineOfSight } from './grid';
 import { grantXp } from './progression';
 import { scaledXpReward } from './scaling';
 import { activeWeapon } from './items';
+import { learnResistance } from './knowledge';
 import { executionBonus } from './skills/rules';
 import { loadRng, saveRng } from './rng';
 import { playerDerived, reapDead } from './turn';
@@ -175,6 +176,8 @@ export function attackAction(
   target.active = true;
 
   const hit = events.some((event) => event.type === 'attack' && event.hit);
+  // Ein eigener Treffer macht die Resistenz des Ziels sichtbar (PHASE_4 Block 3).
+  if (hit) learnResistance(state, target.defId, weapon.damageType);
   const effectId = weapon.appliesEffect;
   if (hit && effectId !== undefined && isAlive(target)) {
     events.push(...applyEffectDefault(targetActor, effectId, content, state.difficulty));
