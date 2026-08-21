@@ -92,7 +92,7 @@ export async function start(host: HTMLElement): Promise<void> {
     lastAutosaveTurn = state.turnCount;
     void store.write(state.difficulty, AUTOSAVE_SLOT, state).catch((error: unknown) => {
       // Ein voller oder zu grosser Stand darf das Spiel nie anhalten.
-      const text = error instanceof SaveTooLargeError ? 'savegame too large' : 'autosave failed';
+      const text = error instanceof SaveTooLargeError ? 'Spielstand zu groß' : 'Autosave fehlgeschlagen';
       log.push([...state.log, { turn: state.turnCount, kind: 'system', text }]);
     });
   };

@@ -59,7 +59,7 @@ function build(host: HTMLElement): Parts {
 
   const vitals = element(doc, 'div', 'sx-hud__vitals');
   const health = bar(doc);
-  const armor = labelled(doc, 'Ruestung');
+  const armor = labelled(doc, 'Rüstung');
   const weapon = labelled(doc, 'Waffe');
   const ammo = labelled(doc, 'Munition');
   const xp = bar(doc, ' sx-bar--xp');

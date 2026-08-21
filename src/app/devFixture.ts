@@ -198,7 +198,7 @@ const ENEMIES: Record<string, EnemyDef> = {
     id: 'sentry',
     archetype: 'turret',
     element: 'shock',
-    name: 'Wachgeschuetz',
+    name: 'Wachgeschütz',
     baseHealth: 20,
     baseArmor: 2,
     baseAccuracy: 9,

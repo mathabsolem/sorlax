@@ -67,7 +67,7 @@ export class Menu {
   open(state: GameState): void {
     const doc = this.overlay.element().ownerDocument;
     this.overlay.show(
-      'Menue',
+      'Menü',
       overlayButton(doc, 'Fortsetzen', '', () => this.handlers.onResume()),
       overlayButton(doc, 'Speichern', '', () => void this.openSlots(state.difficulty, 'save')),
       overlayButton(doc, 'Laden', '', () => void this.openSlots(state.difficulty, 'load')),
@@ -101,7 +101,7 @@ export class Menu {
     this.overlay.show(
       mode === 'save' ? 'Speichern' : 'Laden',
       ...rows,
-      overlayButton(doc, 'Zurueck', '', () => this.handlers.onResume())
+      overlayButton(doc, 'Zurück', '', () => this.handlers.onResume())
     );
   }
 
@@ -115,7 +115,7 @@ export class Menu {
 
     this.overlay.show(
       'Einstellungen',
-      overlayButton(doc, 'Lautstaerke', `${Math.round(this.settings.volume * 100)} %`, () =>
+      overlayButton(doc, 'Lautstärke', `${Math.round(this.settings.volume * 100)} %`, () =>
         apply({ volume: this.settings.volume >= 1 ? 0 : Math.round((this.settings.volume + 0.2) * 10) / 10 })
       ),
       overlayButton(doc, 'Empfindlichkeit', this.settings.sensitivity.toFixed(1), () =>
@@ -126,7 +126,7 @@ export class Menu {
       ),
       // Sprache ist vorbereitet, hat aber noch keine Auswahl.
       overlayButton(doc, 'Sprache', 'Deutsch', () => undefined, true),
-      overlayButton(doc, 'Zurueck', '', () => this.handlers.onResume())
+      overlayButton(doc, 'Zurück', '', () => this.handlers.onResume())
     );
   }
 }

@@ -164,25 +164,56 @@ const BOSSES: Record<
   },
 };
 
-/** Abschnitt 8, die Grundtypen je Steckplatz. */
-const GEAR: Record<string, { slot: string; heavy: boolean }> = {
-  suit_overall: { slot: 'suit', heavy: false },
-  suit_plated: { slot: 'suit', heavy: true },
-  helmet_hardhat: { slot: 'helmet', heavy: false },
-  helmet_visor: { slot: 'helmet', heavy: true },
-  belt_tool: { slot: 'belt', heavy: false },
-  belt_harness: { slot: 'belt', heavy: true },
-  boots_rubber: { slot: 'boots', heavy: false },
-  boots_steel: { slot: 'boots', heavy: true },
-  gloves_grip: { slot: 'gloves', heavy: false },
-  gloves_armored: { slot: 'gloves', heavy: true },
-  guard_deflector: { slot: 'guard', heavy: false },
-  guard_plate: { slot: 'guard', heavy: true },
-  amulet_tag: { slot: 'amulet', heavy: false },
-  amulet_sigil: { slot: 'amulet', heavy: true },
+/** Abschnitt 8, die Grundtypen je Steckplatz, mit den Namen aus der Tabelle. */
+const GEAR: Record<string, { slot: string; heavy: boolean; name: string }> = {
+  suit_overall: { slot: 'suit', heavy: false, name: 'Arbeitsoverall' },
+  suit_plated: { slot: 'suit', heavy: true, name: 'Panzeranzug' },
+  helmet_hardhat: { slot: 'helmet', heavy: false, name: 'Schutzhelm' },
+  helmet_visor: { slot: 'helmet', heavy: true, name: 'Vollvisierhelm' },
+  belt_tool: { slot: 'belt', heavy: false, name: 'Werkzeuggürtel' },
+  belt_harness: { slot: 'belt', heavy: true, name: 'Traggeschirr' },
+  boots_rubber: { slot: 'boots', heavy: false, name: 'Gummistiefel' },
+  boots_steel: { slot: 'boots', heavy: true, name: 'Stahlkappenstiefel' },
+  gloves_grip: { slot: 'gloves', heavy: false, name: 'Griffhandschuhe' },
+  gloves_armored: { slot: 'gloves', heavy: true, name: 'Panzerhandschuhe' },
+  guard_deflector: { slot: 'guard', heavy: false, name: 'Ablenkmodul' },
+  guard_plate: { slot: 'guard', heavy: true, name: 'Schulterpanzer' },
+  amulet_tag: { slot: 'amulet', heavy: false, name: 'Erkennungsmarke' },
+  amulet_sigil: { slot: 'amulet', heavy: true, name: 'Fundsiegel' },
   // gauge_right nutzt laut Tabelle dieselben Grundtypen wie gauge_left.
-  gauge_pressure: { slot: 'gauge_left', heavy: false },
-  gauge_seismic: { slot: 'gauge_left', heavy: true },
+  gauge_pressure: { slot: 'gauge_left', heavy: false, name: 'Druckmesser' },
+  gauge_seismic: { slot: 'gauge_left', heavy: true, name: 'Seismograf' },
+};
+
+/** Abschnitt 7, die Namen der Spielerwaffen. */
+const PLAYER_WEAPON_NAMES: Record<string, string> = {
+  w_prybar: 'Brechstange',
+  w_pistol: 'Grubenpistole 9 mm',
+  w_shotgun: 'Bolzensetzflinte',
+  w_riveter: 'Bolzenkarabiner',
+  w_rod: 'Induktionsstab',
+  w_charger: 'Sprengladungswerfer',
+  w_lance: 'Brennlanze',
+  w_sprayer: 'Toxinsprüher',
+  w_drill: 'Frostbohrer',
+  w_scepter: 'Zepter von Sorlax',
+};
+
+/** Abschnitt 4 und 6, die Namen der Gegner. */
+const ENEMY_NAMES: Record<string, string> = {
+  rat: 'Grubenratte',
+  crawler: 'Deckenkriecher',
+  miner: 'Verschütteter',
+  drone: 'Schürfdrohne SK-3',
+  spore: 'Sporenträger',
+  chainrunner: 'Kettenläufer',
+  cultist: 'Tiefenkultist',
+  hauler: 'Lastenläufer',
+  warden: 'Grabungswächter',
+  boss_halvern: 'Steiger Halvern',
+  boss_sporemother: 'Mutter der Sporen',
+  boss_rime: 'Der Erkaltete',
+  boss_sorlax: 'Sorlax, der Angeschnittene',
 };
 
 /** Abschnitt 8, Voraussetzungen und Grundwerte je Gewichtsklasse. */
@@ -244,6 +275,7 @@ describe('Abschnitt 4, Archetypen', () => {
       check(problems, def.id, 'spriteWidth', def.spriteWidth, base.width);
       check(problems, def.id, 'resistances', def.resistances, RESIST_PROFILES[def.element]);
       check(problems, def.id, 'dropTableId', def.dropTableId, 'common_drop');
+      check(problems, def.id, 'name', def.name, ENEMY_NAMES[def.archetype]);
 
       // Abschnitt 4 laesst preferredRange bei melee und charger offen ("—"),
       // weil beide Verhalten den Wert nie lesen. Erwartet wird dort die 1.
@@ -316,6 +348,7 @@ describe('Abschnitt 6, Bosse', () => {
       check(problems, id, 'baseXp', def.baseXp, want.xp);
       check(problems, id, 'resistances', def.resistances, want.resistances);
       check(problems, id, 'dropTableId', def.dropTableId, 'boss_drop');
+      check(problems, id, 'name', def.name, ENEMY_NAMES[id]);
     }
 
     expect(problems).toEqual([]);
@@ -350,7 +383,10 @@ describe('Abschnitt 6, Bosse', () => {
 describe('Abschnitt 7, Spielerwaffen', () => {
   it('fuehrt alle zehn mit den Werten der Tabelle', () => {
     const problems: string[] = [];
-    for (const [id, want] of Object.entries(PLAYER_WEAPONS)) weaponRow(problems, id, want);
+    for (const [id, want] of Object.entries(PLAYER_WEAPONS)) {
+      weaponRow(problems, id, want);
+      check(problems, id, 'name', WEAPONS[id]?.name, PLAYER_WEAPON_NAMES[id]);
+    }
     expect(problems).toEqual([]);
   });
 
@@ -406,6 +442,7 @@ describe('Abschnitt 8, Ausruestungs-Grundtypen', () => {
       check(problems, id, 'reqLevel', def.reqLevel, rule.reqLevel);
       check(problems, id, 'reqStrength', def.reqStrength, rule.reqStrength);
       check(problems, id, 'reqAgility', def.reqAgility, rule.reqAgility);
+      check(problems, id, 'name', def.name, want.name);
       check(problems, id, 'baseModifiers', def.baseModifiers, [
         { stat: 'armor', mode: 'flat', value: rule.armor },
         { stat: 'evasion', mode: 'flat', value: rule.evasion },

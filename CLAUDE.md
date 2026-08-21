@@ -17,4 +17,6 @@ Lies vor jeder Aufgabe docs/SPEC.md und docs/INTERFACES.md.
 
 ## Stil
 - Deutsche Kommentare, englische Bezeichner.
+- Deutsche Ausgabe in der Oberflaeche und in content/ nutzt echte Umlaute und Eszett,
+  also ae, oe, ue, ss nur dort, wo das Wort sie wirklich hat.
 - Kleine Dateien. Ueber 300 Zeilen aufteilen.

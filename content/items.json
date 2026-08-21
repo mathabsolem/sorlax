@@ -97,7 +97,7 @@
   },
   "belt_tool": {
     "id": "belt_tool",
-    "name": "Werkzeugguertel",
+    "name": "Werkzeuggürtel",
     "type": "equipment",
     "slot": "belt",
     "amount": 1,
@@ -476,7 +476,7 @@
   },
   "item_w_sprayer": {
     "id": "item_w_sprayer",
-    "name": "Toxinsprueher",
+    "name": "Toxinsprüher",
     "type": "weapon",
     "slot": "weapon",
     "weaponId": "w_sprayer",

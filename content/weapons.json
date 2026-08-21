@@ -105,7 +105,7 @@
   },
   "w_sprayer": {
     "id": "w_sprayer",
-    "name": "Toxinsprueher",
+    "name": "Toxinsprüher",
     "dmgMin": 10,
     "dmgMax": 16,
     "damageType": "poison",
@@ -206,7 +206,7 @@
   },
   "nw_sporeburst": {
     "id": "nw_sporeburst",
-    "name": "Sporenstoss",
+    "name": "Sporenstoß",
     "dmgMin": 6,
     "dmgMax": 11,
     "damageType": "poison",
