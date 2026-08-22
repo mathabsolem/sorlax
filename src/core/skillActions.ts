@@ -63,3 +63,49 @@ export function useSkillAction(
   const events: GameEvent[] = [{ type: 'skillUsed', skillId, by: 'player' }, ...result];
   return { ok: true, events };
 }
+
+/** Hoechstzahl Plaetze der Fertigkeitsleiste, SPEC Abschnitt 12 (F1 bis F6). */
+export const SKILLBAR_SLOTS = 6;
+
+/** Schluessel eines Platzes der Leiste in `state.flags`. */
+export function skillbarKey(index: number): string {
+  return `skillbar_${index}`;
+}
+
+/**
+ * Belegt einen Platz der Fertigkeitsleiste, INTERFACES v1.4.
+ * Ein leerer `skillId` raeumt den Platz. Kostet keine Runde.
+ */
+export function assignSkillSlotAction(
+  state: GameState,
+  content: ContentDb,
+  index: number,
+  skillId: string
+): ActionResult {
+  if (!Number.isInteger(index) || index < 0 || index >= SKILLBAR_SLOTS) {
+    return { ok: false, reason: `no such skill slot: ${index}` };
+  }
+
+  if (skillId === '') {
+    delete state.flags[skillbarKey(index)];
+    return { ok: true, events: [{ type: 'message', text: `cleared skill slot ${index + 1}` }] };
+  }
+
+  const def = content.skills[skillId];
+  if (def === undefined) return { ok: false, reason: `unknown skill: ${skillId}` };
+  if (def.locked) return { ok: false, reason: `skill is locked: ${skillId}` };
+  if (!def.active) return { ok: false, reason: `skill is passive: ${skillId}` };
+  if (skillPoints(state.player, skillId) <= 0) {
+    return { ok: false, reason: `skill not learned: ${skillId}` };
+  }
+
+  // Eine Fertigkeit liegt hoechstens auf einem Platz.
+  for (let other = 0; other < SKILLBAR_SLOTS; other++) {
+    if (other !== index && state.flags[skillbarKey(other)] === skillId) {
+      delete state.flags[skillbarKey(other)];
+    }
+  }
+  state.flags[skillbarKey(index)] = skillId;
+
+  return { ok: true, events: [{ type: 'message', text: `assigned ${skillId} to slot ${index + 1}` }] };
+}

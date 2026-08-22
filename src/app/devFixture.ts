@@ -6,6 +6,7 @@
  * Verhaltensmustern, ein Item, zwei Deckenlampen, gedrehte Bodenkacheln.
  */
 import affixes from '../../content/affixes.json';
+import equipment from '../../content/items.json';
 import progression from '../../content/progression.json';
 import skills from '../../content/skills.json';
 import { STARTER_WEAPON_ITEM } from '../core/items';
@@ -240,6 +241,7 @@ export function createDevContent(): ContentDb {
     enemies: ENEMIES,
     weapons: WEAPONS,
     items: {
+      ...(equipment as unknown as ContentDb['items']),
       medkit: consumable('medkit', 'Verbandpack', 'heal', 20),
       bolts: consumable('bolts', 'Bolzen', 'ammo', 12),
       // Seit INTERFACES v1.3 haelt der Platz `weapon` eine ItemInstance.

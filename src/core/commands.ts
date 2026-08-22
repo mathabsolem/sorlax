@@ -19,7 +19,7 @@ import {
   switchWeaponAction,
   useConsumableAction,
 } from './playerActions';
-import { spendSkillPointAction, useSkillAction } from './skillActions';
+import { assignSkillSlotAction, spendSkillPointAction, useSkillAction } from './skillActions';
 import { createMapRuntime, pushLog } from './state';
 import { rollMapLoot } from './loot';
 import { fireTriggers } from './triggers';
@@ -200,6 +200,11 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
       events = result.ok ? result.events : invalid(result.reason);
       break;
     }
+    case 'assignSkillSlot': {
+      const result = assignSkillSlotAction(state, content, cmd.index, cmd.skillId);
+      events = result.ok ? result.events : invalid(result.reason);
+      break;
+    }
     case 'move':
       events = handleMove(state, content, cmd.dir);
       break;
@@ -210,7 +215,11 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
       events = fromResult(state, content, interactAction(state, content));
       break;
     case 'useConsumable':
-      events = fromResult(state, content, useConsumableAction(state, content, cmd.itemId));
+      events = fromResult(
+        state,
+        content,
+        useConsumableAction(state, content, cmd.itemId, cmd.targetUid)
+      );
       break;
     case 'useSkill':
       // Kostet eine Runde wie ein Angriff (SPEC 3.2).

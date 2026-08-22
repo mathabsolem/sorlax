@@ -4,6 +4,7 @@
  */
 import { getDerivedStats } from '../core/derived';
 import { collectEquipmentModifiers, collectSkillModifiers, flatOf, percentOf } from '../core/modifiers';
+import { skillbarKey } from '../core/skillActions';
 import { pointsInTree, skillPoints } from '../core/skills/rules';
 import { SKILL_SLOTS } from './hudModel';
 import type { ContentDb, GameState, SkillDef, SkillTreeId } from '../core/types';
@@ -122,34 +123,26 @@ export function treeNodes(content: ContentDb, tree: SkillTreeId): SkillDef[] {
     .sort((a, b) => a.tier - b.tier || (a.id < b.id ? -1 : 1));
 }
 
-/** Schluessel eines Platzes der Fertigkeitsleiste in `state.flags`. */
-export function skillbarKey(index: number): string {
-  return `skillbar_${index}`;
-}
-
-/**
- * Alle belegbaren Fertigkeiten in fester Reihenfolge.
- *
- * Gemeldete Vertragsluecke: `GameState.flags` traegt laut INTERFACES
- * Abschnitt 4 nur `boolean | number`, also keine Fertigkeits-Id. Gespeichert
- * wird deshalb der Index in dieser Liste. Sie haengt allein an `content` und
- * ist damit stabil, solange der Katalog gleich bleibt.
- */
+/** Alle Fertigkeiten, die auf die Leiste duerfen. */
 export function assignableSkills(content: ContentDb): SkillDef[] {
   return Object.values(content.skills)
     .filter((def) => def.active && !def.locked)
     .sort((a, b) => (a.id < b.id ? -1 : 1));
 }
 
-/** Die Fertigkeit auf einem Platz der Leiste, oder null. */
+/**
+ * Die Fertigkeit auf einem Platz der Leiste, oder null.
+ * Seit INTERFACES v1.4 traegt `flags` Zeichenketten, gespeichert wird die
+ * `skillId` selbst.
+ */
 export function skillbarAssignment(
   state: GameState,
   content: ContentDb,
   index: number
 ): SkillDef | null {
   const value = state.flags[skillbarKey(index)];
-  if (typeof value !== 'number') return null;
-  return assignableSkills(content)[value] ?? null;
+  if (typeof value !== 'string') return null;
+  return content.skills[value] ?? null;
 }
 
 /** Alle sechs Plaetze der Leiste. */
@@ -157,10 +150,4 @@ export function skillbarSlots(state: GameState, content: ContentDb): (SkillDef |
   return Array.from({ length: SKILL_SLOTS }, (_unused, index) =>
     skillbarAssignment(state, content, index)
   );
-}
-
-/** Der Wert, der fuer eine Fertigkeit in `flags` landet, oder null. */
-export function skillbarValue(content: ContentDb, skillId: string): number | null {
-  const index = assignableSkills(content).findIndex((def) => def.id === skillId);
-  return index < 0 ? null : index;
 }

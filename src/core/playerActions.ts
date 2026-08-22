@@ -8,7 +8,14 @@ import { playerActor } from './derived';
 import { applyEffectDefault } from './effects';
 import { doorAt, enemyAt, entitiesAt, removeEntity } from './entities';
 import { isSolid, stepFrom, tileKey } from './grid';
-import { addToInventory, createInstance, groundItemsAt, removeGroundItem } from './items';
+import {
+  IDENTIFY_ITEM_ID,
+  addToInventory,
+  createInstance,
+  findItem,
+  groundItemsAt,
+  removeGroundItem,
+} from './items';
 import { spendAttributePoint } from './progression';
 import { fireTriggers, hasUsableTrigger } from './triggers';
 import { invalidatePlayerDerived, playerDerived } from './turn';
@@ -128,17 +135,25 @@ export function interactAction(state: GameState, content: ContentDb): ActionResu
   return { ok: false, reason: 'nothing to interact with' };
 }
 
-/** Benutzt ein Verbrauchsgut. Questgegenstaende sind nicht benutzbar. */
+/**
+ * Benutzt ein Verbrauchsgut. Questgegenstaende sind nicht benutzbar.
+ *
+ * `targetUid` kommt aus INTERFACES v1.4 und benennt den Gegenstand, auf den
+ * sich das Verbrauchsgut bezieht. Bisher braucht das nur `scanner_charge`.
+ */
 export function useConsumableAction(
   state: GameState,
   content: ContentDb,
-  itemId: string
+  itemId: string,
+  targetUid?: number
 ): ActionResult {
   const player = state.player;
   if ((player.consumables[itemId] ?? 0) <= 0) return { ok: false, reason: 'item not in inventory' };
   const def = content.items[itemId];
   if (def === undefined) return { ok: false, reason: 'unknown item' };
   if (def.type === 'quest') return { ok: false, reason: 'quest item cannot be used' };
+
+  if (itemId === IDENTIFY_ITEM_ID) return identifyAction(state, targetUid);
 
   const events: GameEvent[] = [];
   if (def.type === 'heal') {
@@ -156,6 +171,22 @@ export function useConsumableAction(
   player.consumables[itemId] = (player.consumables[itemId] ?? 0) - 1;
   events.push({ type: 'message', text: `used ${def.id}` });
   return { ok: true, events };
+}
+
+/**
+ * Identifiziert einen Gegenstand, RPG.md Abschnitt 4. Kostet eine Runde wie
+ * jedes andere Verbrauchsgut.
+ */
+function identifyAction(state: GameState, targetUid?: number): ActionResult {
+  if (targetUid === undefined) return { ok: false, reason: 'no target for identify' };
+  const target = findItem(state, targetUid);
+  if (target === null) return { ok: false, reason: 'unknown item' };
+  if (target.identified) return { ok: false, reason: 'item already identified' };
+
+  target.identified = true;
+  state.player.consumables[IDENTIFY_ITEM_ID] =
+    (state.player.consumables[IDENTIFY_ITEM_ID] ?? 0) - 1;
+  return { ok: true, events: [{ type: 'message', text: `identified ${target.baseId}` }] };
 }
 
 /**

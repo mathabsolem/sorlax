@@ -97,7 +97,7 @@ export type GameState = {
   player: PlayerState;
   currentMapId: string;
   maps: Record<string, MapRuntimeState>;
-  flags: Record<string, boolean | number>;
+  flags: Record<string, boolean | number | string>;
   log: LogEntry[]; // maximal 100 Eintraege, aeltere werden vorne verworfen
 };
 
@@ -258,13 +258,14 @@ export type Command =
   | { type: 'attack'; targetId?: EntityId }
   | { type: 'useSkill'; skillId: string; targetId?: EntityId }
   | { type: 'interact' }
-  | { type: 'useConsumable'; itemId: string }
+  | { type: 'useConsumable'; itemId: string; targetUid?: number }
   | { type: 'switchWeapon'; weaponId: string }
   | { type: 'equip'; uid: number }
   | { type: 'unequip'; slot: EquipSlot }
   | { type: 'dropItem'; uid: number }
   | { type: 'spendAttribute'; attr: keyof Attributes }
   | { type: 'spendSkillPoint'; skillId: string }
+  | { type: 'assignSkillSlot'; index: number; skillId: string }
   | { type: 'wait' };
 
 export type GameEvent =

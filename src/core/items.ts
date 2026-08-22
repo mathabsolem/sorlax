@@ -25,6 +25,13 @@ export const MAX_INVENTORY = 40;
 export const STARTER_WEAPON_ITEM = 'item_w_prybar';
 
 /**
+ * Verbrauchsgut, das einen Gegenstand identifiziert, RPG.md Abschnitt 4.
+ * Der zweite Weg ueber die Fertigkeit `field_analysis` ist dort genannt, aber
+ * noch nicht umgesetzt; sie liegt als gesperrter Platzhalter im Katalog.
+ */
+export const IDENTIFY_ITEM_ID = 'scanner_charge';
+
+/**
  * Werte des unbewaffneten Angriffs, INTERFACES v1.3. Sie gelten, wenn der Platz
  * `weapon` leer ist.
  */

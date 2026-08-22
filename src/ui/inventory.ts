@@ -4,7 +4,7 @@
  *
  * Liest den Zustand und erzeugt Command-Objekte, mutiert nie selbst.
  */
-import { MAX_INVENTORY } from '../core/items';
+import { IDENTIFY_ITEM_ID, MAX_INVENTORY } from '../core/items';
 import { canEquip, compareItems, wornFor } from './itemModel';
 import { affixLines, baseLines, itemDetail } from './itemText';
 import { EQUIP_SLOTS } from '../core/types';
@@ -252,6 +252,24 @@ export class InventoryView {
           'Anlegen',
           () => this.equip(state, content, item),
           !check.ok
+        )
+      );
+    }
+    // Untersuchen: seit INTERFACES v1.4 traegt useConsumable ein Ziel.
+    if (!item.identified) {
+      const charges = state.player.consumables[IDENTIFY_ITEM_ID] ?? 0;
+      bar.appendChild(
+        button(
+          doc,
+          'sx-actions__item',
+          `Untersuchen (${charges})`,
+          () =>
+            this.handlers.onCommand({
+              type: 'useConsumable',
+              itemId: IDENTIFY_ITEM_ID,
+              targetUid: item.uid,
+            }),
+          charges <= 0
         )
       );
     }

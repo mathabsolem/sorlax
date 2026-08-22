@@ -1,7 +1,32 @@
-# Scepter of Sorlax — INTERFACES v1.3
+# Scepter of Sorlax — INTERFACES v1.4
 
-Status: eingefroren. Ersetzt v1.2.1.
+Status: eingefroren. Ersetzt v1.3.
 Grundlage: SPEC v1.2, BESTIARY v3, RPG.md.
+
+Änderungen gegenüber v1.3: zwei Lücken, die in Phase 4.5 aufgefallen sind, werden
+geschlossen.
+
+`useConsumable` bekommt ein optionales Ziel. Ohne das lässt sich `scanner_charge` aus
+RPG.md Abschnitt 4 nicht anwenden, weil nicht feststeht, welcher Gegenstand identifiziert
+werden soll:
+
+```ts
+| { type: 'useConsumable'; itemId: string; targetUid?: number }
+```
+
+`GameState.flags` trägt zusätzlich Zeichenketten, und die Belegung der Fertigkeitsleiste
+bekommt ein eigenes Kommando. Vorher konnte die Leiste ihre Belegung nicht speichern: eine
+`skillId` ist eine Zeichenkette, und ohne Kommando hätte die Oberfläche den Zustand selbst
+anfassen müssen.
+
+```ts
+flags: Record<string, boolean | number | string>;
+
+| { type: 'assignSkillSlot'; index: number; skillId: string }
+```
+
+`assignSkillSlot` schreibt `flags['skillbar_<index>']`. Ein leerer `skillId` räumt den
+Platz. Das Kommando kostet keine Runde.
 
 Änderung gegenüber v1.2.1: `PlayerState.equippedWeaponId` entfällt. Die getragene Waffe
 ist ausschließlich `equipment.weapon`, eine `ItemInstance`, deren `ItemDef` über
@@ -118,7 +143,7 @@ export type GameState = {
   player: PlayerState;
   currentMapId: string;
   maps: Record<string, MapRuntimeState>;
-  flags: Record<string, boolean | number>;
+  flags: Record<string, boolean | number | string>;
   log: LogEntry[];          // maximal 100 Einträge, ältere werden vorne verworfen
 };
 
@@ -300,13 +325,14 @@ export type Command =
   | { type: 'attack'; targetId?: EntityId }
   | { type: 'useSkill'; skillId: string; targetId?: EntityId }
   | { type: 'interact' }
-  | { type: 'useConsumable'; itemId: string }
+  | { type: 'useConsumable'; itemId: string; targetUid?: number }
   | { type: 'switchWeapon'; weaponId: string }
   | { type: 'equip'; uid: number }
   | { type: 'unequip'; slot: EquipSlot }
   | { type: 'dropItem'; uid: number }
   | { type: 'spendAttribute'; attr: keyof Attributes }
   | { type: 'spendSkillPoint'; skillId: string }
+  | { type: 'assignSkillSlot'; index: number; skillId: string }
   | { type: 'wait' };
 
 export type GameEvent =
@@ -333,7 +359,8 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
 ```
 
 Ein `invalid`-Ereignis bedeutet: keine Runde vergangen, Zustand unverändert.
-`equip`, `unequip`, `dropItem`, `spendAttribute` und `spendSkillPoint` kosten keine Runde.
+`equip`, `unequip`, `dropItem`, `spendAttribute`, `spendSkillPoint` und `assignSkillSlot`
+kosten keine Runde.
 
 ## 8. Inhalte
 

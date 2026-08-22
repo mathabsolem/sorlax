@@ -19,8 +19,6 @@ const TREE_TITLES: Record<SkillTreeId, string> = {
 
 export type SkillsHandlers = {
   onCommand: (cmd: Command) => void;
-  /** Belegt einen Platz der Leiste. Der Aufrufer schreibt das Flag. */
-  onAssign: (index: number, skillId: string) => void;
   onChanged: () => void;
 };
 
@@ -129,9 +127,10 @@ export class SkillsView {
           label,
           () => {
             if (this.picked === null) return;
-            this.handlers.onAssign(index, this.picked);
+            // Seit INTERFACES v1.4 gibt es dafuer ein Kommando; die
+            // Oberflaeche fasst den Zustand nicht mehr selbst an.
+            this.handlers.onCommand({ type: 'assignSkillSlot', index, skillId: this.picked });
             this.picked = null;
-            this.handlers.onChanged();
           },
           this.picked === null
         )

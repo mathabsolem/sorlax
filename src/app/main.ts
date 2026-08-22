@@ -8,12 +8,13 @@
 import '../ui/ui.css';
 import { applyCommand } from '../core/commands';
 import { createNewGame, deserialize, serialize } from '../core/state';
-import type { Command, GameState } from '../core/types';
+import type { Command, ContentDb, GameState } from '../core/types';
 import { attachKeyboard } from '../input/keyboard';
 import { InputGate } from '../input/gate';
 import { attachTouch } from '../input/touch';
 import { createIndexedBackend } from '../net/indexedBackend';
 import { AUTOSAVE_SLOT, SaveTooLargeError, createLocalStore } from '../net/localStore';
+import { IDENTIFY_ITEM_ID, addToInventory, createInstance } from '../core/items';
 import { createPlaceholderAssets, USE_PLACEHOLDERS } from '../render/placeholders';
 import { loadAssets } from '../render/assetLoader';
 import { SoftwareRenderer } from '../render/renderer';
@@ -23,7 +24,7 @@ import { Hud } from '../ui/hud';
 import { InventoryView } from '../ui/inventory';
 import { SkillsView } from '../ui/skills';
 import { isUpgrade } from '../ui/itemModel';
-import { skillbarKey, skillbarSlots, skillbarValue } from '../ui/progressModel';
+import { skillbarSlots } from '../ui/progressModel';
 import { VIEW_TITLES, tabs } from '../ui/views';
 import type { ViewId } from '../ui/views';
 import { MessageLog } from '../ui/log';
@@ -40,6 +41,29 @@ const AUTOSAVE_EVERY_TURNS = 50;
 
 /** Kantenlaenge der Vollbildkarte in CSS-Pixeln. */
 const FULL_MAP_SIZE = 560;
+
+/** Ausstattung fuer den Entwicklungsbetrieb. Im Build faellt sie weg. */
+function grantDevKit(state: GameState, content: ContentDb): void {
+  state.player.level = 12;
+  state.player.unspentAttributePoints = 5;
+  state.player.unspentSkillPoints = 3;
+  state.player.consumables[IDENTIFY_ITEM_ID] = 2;
+
+  const found = createInstance(
+    state,
+    'suit_overall',
+    12,
+    'rare',
+    [
+      { affixId: 'suf_of_vigor', value: 24 },
+      { affixId: 'suf_of_embers', value: 16 },
+    ],
+    content
+  );
+  if (found === null) return;
+  found.identified = false;
+  addToInventory(state, found);
+}
 
 function mountCanvas(host: HTMLElement): HTMLCanvasElement {
   host.style.position = 'relative';
@@ -67,6 +91,11 @@ export async function start(host: HTMLElement): Promise<void> {
         weaponNames: names.weaponNames,
         uiNames: [],
       });
+
+  // Nur im Entwicklungsbetrieb: offene Punkte, eine Scannerladung und ein
+  // unidentifizierter Fund, damit sich Charakterbogen, Fertigkeitenbaum und
+  // das Untersuchen ohne vorheriges Spielen ausprobieren lassen.
+  if (import.meta.env.DEV) grantDevKit(state, content);
 
   const canvas = mountCanvas(host);
   const renderer = new SoftwareRenderer();
@@ -174,19 +203,7 @@ export async function start(host: HTMLElement): Promise<void> {
 
   const inventory = new InventoryView({ onCommand: fromView, onChanged: redraw });
   const character = new CharacterView({ onCommand: fromView, onChanged: redraw });
-  const skills = new SkillsView({
-    onCommand: fromView,
-    onAssign: (index, skillId) => {
-      const value = skillbarValue(content, skillId);
-      if (value === null) return;
-      // Gemeldete Vertragsluecke: fuer die Leistenbelegung gibt es kein
-      // Command, und `flags` traegt keine Zeichenketten. Deshalb schreibt der
-      // Bootstrap den Index, nicht die Oberflaeche.
-      state.flags[skillbarKey(index)] = value;
-      redraw();
-    },
-    onChanged: redraw,
-  });
+  const skills = new SkillsView({ onCommand: fromView, onChanged: redraw });
 
   const gate = new InputGate(() => renderer.isAnimating() || overlay.isOpen(), run);
 

@@ -10,12 +10,11 @@ import {
   nextPointPreview,
   skillNodeState,
   skillbarAssignment,
-  skillbarKey,
   skillbarSlots,
-  skillbarValue,
   statBreakdown,
   treeNodes,
 } from '../src/ui/progressModel';
+import { skillbarKey } from '../src/core/skillActions';
 import type { ContentDb, GameState } from '../src/core/types';
 import { setup } from './fixtures/world';
 
@@ -181,17 +180,12 @@ describe('Fertigkeitsleiste', () => {
   it('kennt nur aktive, nicht gesperrte Fertigkeiten', () => {
     const { content } = setup();
     expect(assignableSkills(content).map((def) => def.id)).toEqual(['breach', 'sweep']);
-    expect(skillbarValue(content, 'breach')).toBe(0);
-    expect(skillbarValue(content, 'sweep')).toBe(1);
-    expect(skillbarValue(content, 'precise_strike')).toBeNull();
   });
 
   // Test 12 aus PHASE_4_5
   it('ueberlebt Serialisieren und Deserialisieren', () => {
     const { state, content } = setup();
-    const value = skillbarValue(content, 'sweep');
-    if (value === null) throw new Error('kein Wert');
-    state.flags[skillbarKey(2)] = value;
+    state.flags[skillbarKey(2)] = 'sweep';
 
     const restored = deserialize(serialize(state));
 
@@ -210,10 +204,13 @@ describe('Fertigkeitsleiste', () => {
     const { state, content } = setup();
     expect(skillbarAssignment(state, content, 0)).toBeNull();
 
-    state.flags[skillbarKey(0)] = 99;
+    state.flags[skillbarKey(0)] = 'gibtsnicht';
     expect(skillbarAssignment(state, content, 0)).toBeNull();
-    // Ein boolescher Wert ist keine Belegung.
-    state.flags[skillbarKey(1)] = true;
+    // Zahl und Wahrheitswert sind keine Belegung; alte Staende laufen so
+    // folgenlos ins Leere.
+    state.flags[skillbarKey(1)] = 3;
     expect(skillbarAssignment(state, content, 1)).toBeNull();
+    state.flags[skillbarKey(3)] = true;
+    expect(skillbarAssignment(state, content, 3)).toBeNull();
   });
 });
