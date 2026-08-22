@@ -141,7 +141,7 @@ describe('unequip', () => {
 
     const events = applyCommand(state, { type: 'unequip', slot: 'suit' }, content);
 
-    expect(events).toEqual([{ type: 'message', text: 'unequipped suit' }]);
+    expect(events).toEqual([{ type: 'message', text: 'Anzug abgelegt' }]);
     expect(state.player.equipment['suit']).toBeUndefined();
     expect(state.player.inventory).toEqual([item]);
     expect(state.turnCount).toBe(0);

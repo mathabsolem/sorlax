@@ -96,7 +96,7 @@ describe('dropItem und Aufnahme', () => {
 
     const events = pickupGroundItems(state, mapState, { x: 1, y: 1 });
 
-    expect(events).toEqual([{ type: 'message', text: 'inventory full' }]);
+    expect(events).toEqual([{ type: 'message', text: 'Das Inventar ist voll' }]);
     expect(mapState.groundItems).toHaveLength(2);
   });
 

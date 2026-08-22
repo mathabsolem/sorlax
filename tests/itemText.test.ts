@@ -37,7 +37,7 @@ describe('formatAffix und affixLines', () => {
     const affix = content.affixes['suf_of_embers'];
     if (affix === undefined) throw new Error('kein Affix');
 
-    expect(formatAffix(affix, 14)).toBe('+14 Widerstand fire');
+    expect(formatAffix(affix, 14)).toBe('+14 Widerstand Feuer');
   });
 
   it('kennzeichnet prozentuale Affixe und negative Werte', () => {
@@ -112,7 +112,7 @@ describe('Hilfsfunktionen', () => {
   it('statLabel, baseLines und rarityClass liefern die Anzeigetexte', () => {
     const { content } = setup();
     expect(statLabel('maxHealth')).toBe('Leben');
-    expect(statLabel('res_fire')).toBe('Widerstand fire');
+    expect(statLabel('res_fire')).toBe('Widerstand Feuer');
     expect(statLabel('gibtsnicht')).toBe('gibtsnicht');
 
     const def = content.items['guard_plate'];

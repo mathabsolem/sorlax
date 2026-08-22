@@ -62,7 +62,7 @@ function liveMinions(state: GameState): Entity[] {
 function summon(state: GameState, entity: Entity, content: ContentDb): GameEvent[] {
   let alive = liveMinions(state).length;
   if (alive >= MAX_MINIONS) {
-    return [{ type: 'message', text: 'the shaft answers sorlax, but nothing comes' }];
+    return [{ type: 'message', text: 'Der Schacht antwortet Sorlax, doch nichts kommt' }];
   }
 
   const events: GameEvent[] = [];
@@ -76,7 +76,7 @@ function summon(state: GameState, entity: Entity, content: ContentDb): GameEvent
     if (spawned === null) continue;
     index += 1;
     alive += 1;
-    events.push({ type: 'message', text: `sorlax calls ${defId} (${spawned.id})` });
+    events.push({ type: 'message', text: `Sorlax ruft ${defId} (${spawned.id})` });
   }
   return events;
 }
@@ -92,12 +92,12 @@ function beamTurn(state: GameState, entity: Entity, content: ContentDb): GameEve
   // Ungerade Schritte warnen, gerade feuern. Damit liegt vor jedem Strahl genau
   // eine Warnrunde.
   if (step % 2 === 1) {
-    return [{ type: 'message', text: 'sorlax gathers a void beam' }];
+    return [{ type: 'message', text: 'Sorlax sammelt einen Strahl aus der Leere' }];
   }
 
   const tiles = tilesAhead(scene, entity, BEAM_LENGTH);
   return [
-    { type: 'message', text: 'the void beam lashes out' },
+    { type: 'message', text: 'Der Strahl aus der Leere schlägt aus' },
     ...areaStrike(state, scene, entity, content, tiles, BEAM_DAMAGE, 'void', 'drain'),
   ];
 }
@@ -118,7 +118,7 @@ export function sorlaxHandler(
   const active = wanted > phase ? phase + 1 : phase;
   setCounter(entity, 'phase', active);
   if (active !== phase) {
-    events.push({ type: 'message', text: `sorlax shifts into phase ${active + 1}` });
+    events.push({ type: 'message', text: `Sorlax geht in Phase ${active + 1}` });
   }
 
   if (active === 0) {

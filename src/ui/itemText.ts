@@ -4,6 +4,7 @@
  */
 import { getDerivedStats } from '../core/derived';
 import { DAMAGE_TYPES } from '../core/types';
+import { ATTRIBUTE_NAMES, DAMAGE_TYPE_NAMES } from '../core/text';
 import { canEquip } from './itemModel';
 import type {
   AffixDef,
@@ -30,13 +31,13 @@ export function statLabel(stat: string): string {
     lightRadius: 'Sichtweite',
     freeActionChance: 'Freie Aktion',
     ammoSaveChance: 'Munitionsersparnis',
-    strength: 'Kraft',
-    agility: 'Geschick',
-    vitality: 'Konstitution',
-    focus: 'Fokus',
+    ...ATTRIBUTE_NAMES,
   };
   const resist = /^res_(\w+)$/.exec(stat);
-  if (resist !== null) return `Widerstand ${resist[1] ?? ''}`;
+  if (resist !== null) {
+    const type = DAMAGE_TYPES.find((candidate) => candidate === resist[1]);
+    return `Widerstand ${type === undefined ? (resist[1] ?? '') : DAMAGE_TYPE_NAMES[type]}`;
+  }
   return labels[stat] ?? stat;
 }
 

@@ -56,7 +56,7 @@ describe('Bossgeruest', () => {
 
     const events = takeEnemyTurn(state, boss, content);
 
-    expect(events).toEqual([{ type: 'message', text: 'no boss script: gibtsnicht' }]);
+    expect(events).toEqual([{ type: 'message', text: 'Kein Bossskript: gibtsnicht' }]);
     expect(state.player.health).toBe(620);
   });
 
@@ -64,7 +64,7 @@ describe('Bossgeruest', () => {
     const { state, content, boss } = bossWorld('no_script', { x: 4, y: 1 });
 
     expect(takeEnemyTurn(state, boss, content)).toEqual([
-      { type: 'message', text: 'scripted enemy without scriptId: no_script' },
+      { type: 'message', text: 'Gegner ohne scriptId: no_script' },
     ]);
   });
 });

@@ -21,7 +21,9 @@ import {
 } from './playerActions';
 import { assignSkillSlotAction, spendSkillPointAction, useSkillAction } from './skillActions';
 import { createMapRuntime, pushLog } from './state';
+import { findItem } from './items';
 import { rollMapLoot } from './loot';
+import { SLOT_NAMES, damageTypeName, effectName } from './text';
 import { fireTriggers } from './triggers';
 import { advanceRound, hasDeath } from './turn';
 import type { Command, ContentDb, GameEvent, GameState } from './types';
@@ -30,8 +32,21 @@ function invalid(reason: string): GameEvent[] {
   return [{ type: 'invalid', reason }];
 }
 
-/** Schreibt die spielrelevanten Ereignisse in das gekuerzte Log. */
-function logEvents(state: GameState, events: GameEvent[]): void {
+/** Name eines Gegenstands, egal ob getragen, im Inventar oder auf dem Boden. */
+function itemNameOf(state: GameState, content: ContentDb, uid: number): string {
+  const carried = findItem(state, uid);
+  if (carried !== null) return content.items[carried.baseId]?.name ?? carried.baseId;
+
+  const mapState = state.maps[state.currentMapId];
+  const dropped = mapState?.groundItems.find((entry) => entry.item.uid === uid);
+  if (dropped !== undefined) {
+    return content.items[dropped.item.baseId]?.name ?? dropped.item.baseId;
+  }
+  return `Gegenstand ${uid}`;
+}
+
+/** Schreibt die spielrelevanten Ereignisse in das gekuerzte Log, auf Deutsch. */
+function logEvents(state: GameState, content: ContentDb, events: GameEvent[]): void {
   for (const event of events) {
     switch (event.type) {
       case 'attack':
@@ -39,36 +54,54 @@ function logEvents(state: GameState, events: GameEvent[]): void {
           state,
           'combat',
           event.hit
-            ? `${event.damageType} hit for ${event.damage}${event.crit ? ' (crit)' : ''}`
-            : 'missed'
+            ? `${damageTypeName(event.damageType)} trifft für ${event.damage}${
+                event.crit ? ' (kritisch)' : ''
+              }`
+            : 'Daneben'
         );
         break;
       case 'effectApplied':
-        pushLog(state, 'combat', `${event.effectId} for ${event.turns} turns`);
+        pushLog(state, 'combat', `${effectName(event.effectId)} für ${event.turns} Runden`);
         break;
       case 'effectTick':
-        pushLog(state, 'combat', `${event.effectId} deals ${event.damage}`);
+        pushLog(state, 'combat', `${effectName(event.effectId)} verursacht ${event.damage}`);
         break;
       case 'died':
-        pushLog(state, 'combat', `${event.who === 'player' ? 'player' : `entity ${event.who}`} died`);
+        pushLog(
+          state,
+          'combat',
+          event.who === 'player' ? 'Der Spieler ist gefallen' : `Gegner ${event.who} ist gefallen`
+        );
         break;
       case 'pickup':
-        pushLog(state, 'pickup', `picked up ${event.defId} x${event.amount}`);
+        pushLog(
+          state,
+          'pickup',
+          `${content.items[event.defId]?.name ?? event.defId} aufgenommen (${event.amount})`
+        );
         break;
       case 'itemPickedUp':
-        pushLog(state, 'pickup', `picked up item ${event.uid}`);
+        pushLog(state, 'pickup', `${itemNameOf(state, content, event.uid)} aufgenommen`);
         break;
       case 'itemDropped':
-        pushLog(state, 'pickup', `dropped item ${event.uid}`);
+        pushLog(state, 'pickup', `${itemNameOf(state, content, event.uid)} fallen gelassen`);
         break;
       case 'equipped':
-        pushLog(state, 'pickup', `equipped item ${event.uid} in ${event.slot}`);
+        pushLog(
+          state,
+          'pickup',
+          `${itemNameOf(state, content, event.uid)} angelegt (${SLOT_NAMES[event.slot]})`
+        );
         break;
       case 'levelUp':
-        pushLog(state, 'system', `reached level ${event.newLevel}`);
+        pushLog(state, 'system', `Stufe ${event.newLevel} erreicht`);
         break;
       case 'skillUsed':
-        pushLog(state, 'skill', `used ${event.skillId}`);
+        pushLog(
+          state,
+          'skill',
+          `${content.skills[event.skillId]?.name ?? event.skillId} eingesetzt`
+        );
         break;
       case 'message':
         pushLog(state, 'story', event.text);
@@ -230,6 +263,6 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
       break;
   }
 
-  logEvents(state, events);
+  logEvents(state, content, events);
   return events;
 }

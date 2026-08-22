@@ -17,6 +17,7 @@ import {
   removeFromInventory,
   slotsFor,
 } from './items';
+import { SLOT_NAMES } from './text';
 import { invalidatePlayerDerived, playerDerived } from './turn';
 import type { ContentDb, EquipSlot, GameEvent, GameState } from './types';
 
@@ -89,7 +90,7 @@ export function unequipAction(
   clampHealthToMax(state, content);
 
   // INTERFACES Abschnitt 7 kennt kein `unequipped`-Ereignis, deshalb eine Meldung.
-  return { ok: true, events: [{ type: 'message', text: `unequipped ${slot}` }] };
+  return { ok: true, events: [{ type: 'message', text: `${SLOT_NAMES[slot]} abgelegt` }] };
 }
 
 /** Wirft ein Teil aus Inventar oder Ausruestung auf die Kachel des Spielers. */

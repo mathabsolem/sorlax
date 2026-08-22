@@ -43,7 +43,7 @@ function poisonCloud(state: GameState, entity: Entity, content: ContentDb): Game
   const stats = getDerivedStats(playerActor(state), content, state.difficulty);
   const damage = applyResistance(CLOUD_DAMAGE, stats.resistances.poison);
   const events: GameEvent[] = [
-    { type: 'message', text: 'a cloud of spores bursts' },
+    { type: 'message', text: 'Eine Sporenwolke platzt auf' },
     {
       type: 'attack',
       attacker: entity.id,
@@ -70,7 +70,7 @@ function poisonCloud(state: GameState, entity: Entity, content: ContentDb): Game
 function sprout(state: GameState, entity: Entity, content: ContentDb): GameEvent[] {
   let alive = liveSpores(state).length;
   if (alive >= MAX_SPORES) {
-    return [{ type: 'message', text: 'the sporemother strains, but nothing grows' }];
+    return [{ type: 'message', text: 'Die Sporenmutter presst, doch nichts wächst nach' }];
   }
 
   const events: GameEvent[] = [];
@@ -79,7 +79,7 @@ function sprout(state: GameState, entity: Entity, content: ContentDb): GameEvent
     const spawned = spawnEnemy(state, SPORE_DEF_ID, tile, content);
     if (spawned === null) continue;
     alive += 1;
-    events.push({ type: 'message', text: `a spore carrier rises (${spawned.id})` });
+    events.push({ type: 'message', text: `Ein Sporenträger richtet sich auf (${spawned.id})` });
   }
   return events;
 }

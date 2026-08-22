@@ -8,6 +8,7 @@
  * Die Oberflaeche liest den GameState und mutiert ihn nie.
  */
 import { getDerivedStats, enemyActor } from '../core/derived';
+import { damageTypeName, effectName } from '../core/text';
 import { hudModel, targetModel } from './hudModel';
 import type { HudModel, TargetModel } from './hudModel';
 import type { ContentDb, Entity, GameState } from '../core/types';
@@ -130,7 +131,7 @@ export class Hud {
     this.parts.effects.replaceChildren();
     for (const chip of model.effects) {
       const node = element(doc, 'span', `sx-chip sx-chip--${chip.sourceType}`);
-      node.textContent = `${chip.id} ${chip.remaining}`;
+      node.textContent = `${effectName(chip.id)} ${chip.remaining}`;
       this.parts.effects.appendChild(node);
     }
   }
@@ -209,7 +210,9 @@ export class Hud {
     const doc = node.ownerDocument;
     const head = element(doc, 'div', 'sx-line');
     head.appendChild(element(doc, 'span', 'sx-line__value', model.name));
-    head.appendChild(element(doc, 'span', `sx-chip sx-chip--${model.element}`, model.element));
+    head.appendChild(
+      element(doc, 'span', `sx-chip sx-chip--${model.element}`, damageTypeName(model.element))
+    );
     node.appendChild(head);
 
     const health = bar(doc);
@@ -220,7 +223,7 @@ export class Hud {
     // Resistenzen erscheinen erst, wenn der Spieler sie selbst erlebt hat.
     if (model.knownResistances.length > 0) {
       const text = model.knownResistances
-        .map((entry) => `${entry.type} ${entry.value}`)
+        .map((entry) => `${damageTypeName(entry.type)} ${entry.value}`)
         .join('  ');
       node.appendChild(element(doc, 'div', 'sx-target__resists', text));
     }

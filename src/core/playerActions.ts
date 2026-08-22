@@ -17,6 +17,7 @@ import {
   removeGroundItem,
 } from './items';
 import { spendAttributePoint } from './progression';
+import { ATTRIBUTE_NAMES } from './text';
 import { fireTriggers, hasUsableTrigger } from './triggers';
 import { invalidatePlayerDerived, playerDerived } from './turn';
 import type {
@@ -97,7 +98,7 @@ export function pickupGroundItems(
   const events: GameEvent[] = [];
   for (const entry of groundItemsAt(mapState, pos)) {
     if (!addToInventory(state, entry.item)) {
-      events.push({ type: 'message', text: 'inventory full' });
+      events.push({ type: 'message', text: 'Das Inventar ist voll' });
       break;
     }
     removeGroundItem(mapState, entry.item.uid);
@@ -153,7 +154,7 @@ export function useConsumableAction(
   if (def === undefined) return { ok: false, reason: 'unknown item' };
   if (def.type === 'quest') return { ok: false, reason: 'quest item cannot be used' };
 
-  if (itemId === IDENTIFY_ITEM_ID) return identifyAction(state, targetUid);
+  if (itemId === IDENTIFY_ITEM_ID) return identifyAction(state, content, targetUid);
 
   const events: GameEvent[] = [];
   if (def.type === 'heal') {
@@ -169,7 +170,7 @@ export function useConsumableAction(
   }
 
   player.consumables[itemId] = (player.consumables[itemId] ?? 0) - 1;
-  events.push({ type: 'message', text: `used ${def.id}` });
+  events.push({ type: 'message', text: `${def.name} benutzt` });
   return { ok: true, events };
 }
 
@@ -177,7 +178,11 @@ export function useConsumableAction(
  * Identifiziert einen Gegenstand, RPG.md Abschnitt 4. Kostet eine Runde wie
  * jedes andere Verbrauchsgut.
  */
-function identifyAction(state: GameState, targetUid?: number): ActionResult {
+function identifyAction(
+  state: GameState,
+  content: ContentDb,
+  targetUid?: number
+): ActionResult {
   if (targetUid === undefined) return { ok: false, reason: 'no target for identify' };
   const target = findItem(state, targetUid);
   if (target === null) return { ok: false, reason: 'unknown item' };
@@ -186,7 +191,8 @@ function identifyAction(state: GameState, targetUid?: number): ActionResult {
   target.identified = true;
   state.player.consumables[IDENTIFY_ITEM_ID] =
     (state.player.consumables[IDENTIFY_ITEM_ID] ?? 0) - 1;
-  return { ok: true, events: [{ type: 'message', text: `identified ${target.baseId}` }] };
+  const name = content.items[target.baseId]?.name ?? target.baseId;
+  return { ok: true, events: [{ type: 'message', text: `${name} untersucht` }] };
 }
 
 /**
@@ -228,7 +234,10 @@ export function spendAttributeAction(state: GameState, attr: keyof Attributes): 
   }
   // Der Rundencache haelt sonst die alten abgeleiteten Werte fest.
   invalidatePlayerDerived(state);
-  return { ok: true, events: [{ type: 'message', text: `spent point on ${attr}` }] };
+  return {
+    ok: true,
+    events: [{ type: 'message', text: `Punkt auf ${ATTRIBUTE_NAMES[attr]}` }],
+  };
 }
 
 /** Bewegungsziel pruefen und den Spieler versetzen. */

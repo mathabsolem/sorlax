@@ -7,7 +7,7 @@
 import { AUTOSAVE_SLOT, MANUAL_SLOTS } from '../net/localStore';
 import type { LocalStore } from '../net/localStore';
 import { Overlay, overlayButton } from './overlay';
-import type { Difficulty, GameState, SaveMeta } from '../core/types';
+import type { ContentDb, Difficulty, GameState, SaveMeta } from '../core/types';
 
 export type Settings = {
   volume: number;
@@ -34,12 +34,18 @@ export type MenuHandlers = {
 };
 
 /** Menschenlesbare Kopfzeile eines Speicherplatzes. */
-export function describeSlot(meta: SaveMeta | undefined, slot: number): string {
+export function describeSlot(
+  meta: SaveMeta | undefined,
+  slot: number,
+  content?: ContentDb
+): string {
   if (meta === undefined) return 'leer';
   const minutes = Math.floor(meta.playTimeMs / 60000);
   const stamp = meta.updatedAt.replace('T', ' ').slice(0, 16);
   const label = slot === AUTOSAVE_SLOT ? 'Autosave' : `Platz ${slot + 1}`;
-  return `${label} · Stufe ${meta.level} · ${meta.mapId} · ${minutes} min · ${stamp}`;
+  // Die Sohle mit Namen, nicht mit ihrer technischen Id.
+  const map = content?.maps[meta.mapId]?.name ?? meta.mapId;
+  return `${label} · Stufe ${meta.level} · ${map} · ${minutes} min · ${stamp}`;
 }
 
 export class Menu {
@@ -48,7 +54,8 @@ export class Menu {
   constructor(
     private readonly overlay: Overlay,
     private readonly store: LocalStore,
-    private readonly handlers: MenuHandlers
+    private readonly handlers: MenuHandlers,
+    private readonly content?: ContentDb
   ) {}
 
   isOpen(): boolean {
@@ -92,7 +99,7 @@ export class Menu {
       return overlayButton(
         doc,
         isAutosave ? 'Autosave' : `Platz ${slot + 1}`,
-        describeSlot(meta, slot),
+        describeSlot(meta, slot, this.content),
         () => (mode === 'save' ? this.handlers.onSave(slot) : this.handlers.onLoad(slot)),
         disabled
       );

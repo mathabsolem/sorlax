@@ -54,7 +54,7 @@ function runAction(
       return [];
     case 'damage':
       state.player.health -= action.amount;
-      return [{ type: 'message', text: `took ${action.amount} damage` }];
+      return [{ type: 'message', text: `${action.amount} Schaden erlitten` }];
   }
 }
 

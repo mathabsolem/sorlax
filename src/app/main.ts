@@ -229,7 +229,7 @@ export async function start(host: HTMLElement): Promise<void> {
       overlay.show('Beendet');
     },
     onSettingsChanged: () => undefined,
-  });
+  }, content);
 
   const toggleMap = (): void => {
     if (overlay.isOpen()) {

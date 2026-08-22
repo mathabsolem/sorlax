@@ -52,7 +52,7 @@ function blink(state: GameState, entity: Entity, content: ContentDb): GameEvent[
   entity.pos = { x: target.x, y: target.y };
   facePlayer(state, entity);
   return [
-    { type: 'message', text: 'rime slips away in a breath of frost' },
+    { type: 'message', text: 'Der Erkaltete entweicht in einem Frosthauch' },
     { type: 'moved', who: entity.id, from, to: { x: target.x, y: target.y } },
   ];
 }
@@ -72,7 +72,7 @@ function raiseWalls(state: GameState, entity: Entity, content: ContentDb): GameE
   }
 
   if (placed.length === 0) return [];
-  return [{ type: 'message', text: `rime raises ${placed.length} walls of ice` }];
+  return [{ type: 'message', text: `Der Erkaltete stellt ${placed.length} Eiswände` }];
 }
 
 export function rimeHandler(

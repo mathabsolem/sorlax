@@ -172,11 +172,11 @@ function turretTurn(state: GameState, scene: Scene, entity: Entity, distance: nu
 function scriptedTurn(state: GameState, scene: Scene, entity: Entity): GameEvent[] {
   const scriptId = scene.def.scriptId;
   if (scriptId === undefined) {
-    return [{ type: 'message', text: `scripted enemy without scriptId: ${scene.def.id}` }];
+    return [{ type: 'message', text: `Gegner ohne scriptId: ${scene.def.id}` }];
   }
   const handler = BOSS_REGISTRY[scriptId];
   if (handler === undefined) {
-    return [{ type: 'message', text: `no boss script: ${scriptId}` }];
+    return [{ type: 'message', text: `Kein Bossskript: ${scriptId}` }];
   }
   return handler(state, entity, scene.def, scene.content);
 }

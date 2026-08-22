@@ -25,7 +25,10 @@ export function spendSkillPointAction(
   addSkillPoint(state.player, skillId);
   // Passive Fertigkeiten wirken in getDerivedStats, der Rundencache muss fallen.
   invalidatePlayerDerived(state);
-  return { ok: true, events: [{ type: 'message', text: `spent point on ${skillId}` }] };
+  return {
+    ok: true,
+    events: [{ type: 'message', text: `Punkt auf ${def.name}` }],
+  };
 }
 
 /**
@@ -88,7 +91,7 @@ export function assignSkillSlotAction(
 
   if (skillId === '') {
     delete state.flags[skillbarKey(index)];
-    return { ok: true, events: [{ type: 'message', text: `cleared skill slot ${index + 1}` }] };
+    return { ok: true, events: [{ type: 'message', text: `Platz ${index + 1} geräumt` }] };
   }
 
   const def = content.skills[skillId];
@@ -107,5 +110,8 @@ export function assignSkillSlotAction(
   }
   state.flags[skillbarKey(index)] = skillId;
 
-  return { ok: true, events: [{ type: 'message', text: `assigned ${skillId} to slot ${index + 1}` }] };
+  return {
+    ok: true,
+    events: [{ type: 'message', text: `${def.name} auf Platz ${index + 1} gelegt` }],
+  };
 }

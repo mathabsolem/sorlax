@@ -49,7 +49,7 @@ function flameWall(state: GameState, entity: Entity, content: ContentDb): GameEv
 
   const tiles = tilesAhead(scene, entity, WALL_LENGTH);
   return [
-    { type: 'message', text: 'halvern raises a wall of flame' },
+    { type: 'message', text: 'Halvern entfacht eine Flammenwand' },
     ...areaStrike(state, scene, entity, content, tiles, WALL_DAMAGE, 'fire', 'burn'),
   ];
 }

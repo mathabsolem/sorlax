@@ -3,16 +3,12 @@
  * Links die Attribute mit Plusknopf, rechts die abgeleiteten Werte.
  */
 import { playerStats, resistanceList, statLabel } from './itemText';
+import { ATTRIBUTE_NAMES, DAMAGE_TYPE_NAMES, DIFFICULTY_NAMES } from '../core/text';
 import { statBreakdown } from './progressModel';
 import { node, button } from './views';
 import type { Attributes, Command, ContentDb, GameState } from '../core/types';
 
-const ATTRIBUTES: { key: keyof Attributes; label: string }[] = [
-  { key: 'strength', label: 'Kraft' },
-  { key: 'agility', label: 'Geschick' },
-  { key: 'vitality', label: 'Konstitution' },
-  { key: 'focus', label: 'Fokus' },
-];
+const ATTRIBUTES: (keyof Attributes)[] = ['strength', 'agility', 'vitality', 'focus'];
 
 /** Werte, die eine Aufschluesselung bei Beruehrung bekommen. */
 const BREAKDOWN_STATS = ['maxHealth', 'armor', 'accuracy', 'evasion', 'meleeBonus', 'elemBonus', 'critBonus'];
@@ -45,7 +41,7 @@ export class CharacterView {
         doc,
         'div',
         '',
-        `Stufe ${state.player.level} · ${state.player.xp} Erfahrung · ${state.difficulty}`
+        `Stufe ${state.player.level} · ${state.player.xp} Erfahrung · ${DIFFICULTY_NAMES[state.difficulty]}`
       )
     );
     footer.appendChild(
@@ -74,9 +70,9 @@ export class CharacterView {
       panel.appendChild(node(doc, 'div', 'sx-count--full', `${open} Punkte offen`));
     }
 
-    for (const { key, label } of ATTRIBUTES) {
+    for (const key of ATTRIBUTES) {
       const row = node(doc, 'div', 'sx-detail__row');
-      row.appendChild(node(doc, 'span', '', label));
+      row.appendChild(node(doc, 'span', '', ATTRIBUTE_NAMES[key]));
       const right = node(doc, 'span', '', String(state.player.attributes[key]));
       if (open > 0) {
         right.appendChild(
@@ -127,7 +123,7 @@ export class CharacterView {
     panel.appendChild(node(doc, 'div', 'sx-overlay__meta', 'Widerstände'));
     for (const entry of resistanceList(stats)) {
       const row = node(doc, 'div', 'sx-detail__row');
-      row.appendChild(node(doc, 'span', `sx-chip--${entry.type}`, entry.type));
+      row.appendChild(node(doc, 'span', `sx-chip--${entry.type}`, DAMAGE_TYPE_NAMES[entry.type]));
       row.appendChild(node(doc, 'span', entry.value < 0 ? 'sx-down' : '', `${entry.value} %`));
       panel.appendChild(row);
     }

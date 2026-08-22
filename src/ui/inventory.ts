@@ -6,7 +6,8 @@
  */
 import { IDENTIFY_ITEM_ID, MAX_INVENTORY } from '../core/items';
 import { canEquip, compareItems, wornFor } from './itemModel';
-import { affixLines, baseLines, itemDetail } from './itemText';
+import { affixLines, baseLines, itemDetail, statLabel } from './itemText';
+import { SLOT_NAMES } from '../core/text';
 import { EQUIP_SLOTS } from '../core/types';
 import { deltaSpan, button, node } from './views';
 import type { Command, ContentDb, EquipSlot, GameState, ItemInstance } from '../core/types';
@@ -18,19 +19,6 @@ const DOLL_LAYOUT: (EquipSlot | null)[] = [
   'gauge_left', 'gloves', 'gauge_right',
   'belt', null, 'boots',
 ];
-
-const SLOT_LABELS: Record<EquipSlot, string> = {
-  suit: 'Anzug',
-  helmet: 'Helm',
-  belt: 'Gürtel',
-  boots: 'Stiefel',
-  gloves: 'Handschuhe',
-  weapon: 'Waffe',
-  guard: 'Schutz',
-  amulet: 'Amulett',
-  gauge_left: 'Messgerät L',
-  gauge_right: 'Messgerät R',
-};
 
 export type InventoryHandlers = {
   onCommand: (cmd: Command) => void;
@@ -110,8 +98,8 @@ export class InventoryView {
       }
       const item = state.player.equipment[slot];
       if (item === undefined) {
-        const empty = node(doc, 'div', 'sx-cell sx-cell--empty', SLOT_LABELS[slot].slice(0, 8));
-        empty.title = SLOT_LABELS[slot];
+        const empty = node(doc, 'div', 'sx-cell sx-cell--empty', SLOT_NAMES[slot].slice(0, 8));
+        empty.title = SLOT_NAMES[slot];
         doll.appendChild(empty);
         continue;
       }
@@ -181,7 +169,7 @@ export class InventoryView {
     const panel = node(doc, 'div', 'sx-detail');
     panel.appendChild(node(doc, 'div', `sx-detail__name sx-rarity--${detail.rarity}`, detail.name));
     panel.appendChild(
-      node(doc, 'div', 'sx-overlay__meta', `${SLOT_LABELS[detail.slot]} · Stufe ${detail.itemLevel}`)
+      node(doc, 'div', 'sx-overlay__meta', `${SLOT_NAMES[detail.slot]} · Stufe ${detail.itemLevel}`)
     );
 
     for (const line of detail.base) panel.appendChild(node(doc, 'div', '', line));
@@ -219,7 +207,7 @@ export class InventoryView {
     for (const entry of comparison.derived) {
       if (entry.delta === 0) continue;
       const row = node(doc, 'div', 'sx-detail__row');
-      row.appendChild(node(doc, 'span', '', entry.stat));
+      row.appendChild(node(doc, 'span', '', statLabel(entry.stat)));
       const value = node(doc, 'span', '', `${entry.before} → ${entry.after}`);
       const delta = deltaSpan(doc, entry.delta);
       if (delta !== null) value.appendChild(delta);

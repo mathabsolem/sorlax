@@ -46,7 +46,7 @@ describe('useConsumable mit Ziel', () => {
     expect(item.identified).toBe(true);
     expect(state.player.consumables[IDENTIFY_ITEM_ID]).toBe(1);
     expect(state.turnCount).toBe(1);
-    expect(events).toContainEqual({ type: 'message', text: 'identified suit_overall' });
+    expect(events).toContainEqual({ type: 'message', text: 'Arbeitsoverall untersucht' });
   });
 
   it('identifiziert auch ein getragenes Teil', () => {
@@ -126,7 +126,7 @@ describe('assignSkillSlot', () => {
     expect(state.flags[skillbarKey(0)]).toBe('breach');
     expect(skillbarAssignment(state, content, 0)?.id).toBe('breach');
     expect(state.turnCount).toBe(0);
-    expect(events).toContainEqual({ type: 'message', text: 'assigned breach to slot 1' });
+    expect(events).toContainEqual({ type: 'message', text: 'Durchbruch auf Platz 1 gelegt' });
   });
 
   it('raeumt einen Platz mit leerem skillId', () => {
