@@ -198,7 +198,7 @@ export class InventoryView {
     content: ContentDb,
     item: ItemInstance
   ): void {
-    const worn = wornFor(state.player, item);
+    const worn = wornFor(state.player, item, content);
     // Gegen sich selbst gibt es nichts zu vergleichen.
     if (worn === null || worn === item) return;
     const comparison = compareItems(state, item, content);
@@ -223,7 +223,7 @@ export class InventoryView {
     item: ItemInstance
   ): HTMLElement {
     const bar = node(doc, 'div', 'sx-actions');
-    const worn = wornFor(state.player, item) === item;
+    const worn = wornFor(state.player, item, content) === item;
     const check = canEquip(state.player, item, content);
 
     if (worn) {

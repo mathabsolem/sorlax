@@ -4,7 +4,8 @@
  */
 import { AFFIXES, DROP_TABLES, EQUIPMENT, SKILLS, UNIQUES, WEAPON_DEFS } from './catalog';
 import { ENEMIES, ITEMS, WEAPONS } from './defs';
-import { createInstance } from '../../src/core/items';
+import { createInstance,
+  takeItemUid } from '../../src/core/items';
 import { createNewGame } from '../../src/core/state';
 import { encodeTile } from '../../src/core/tiles';
 import type {
@@ -158,7 +159,7 @@ export function setup(
 export function equipWeapon(state: GameState, content: ContentDb, weaponId: string): void {
   const def = Object.values(content.items).find((candidate) => candidate.weaponId === weaponId);
   if (def === undefined) throw new Error(`kein ItemDef fuer Waffe ${weaponId}`);
-  const instance = createInstance(state, def.id, 1, 'normal', [], content);
+  const instance = createInstance(takeItemUid(state), def.id, 1, 'normal', [], content);
   if (instance === null) throw new Error(`Instanz fehlgeschlagen: ${def.id}`);
   state.player.equipment['weapon'] = instance;
   if (!state.player.weapons.includes(weaponId)) state.player.weapons.push(weaponId);
@@ -172,7 +173,7 @@ export function giveWeapon(
 ): ItemInstance {
   const def = Object.values(content.items).find((candidate) => candidate.weaponId === weaponId);
   if (def === undefined) throw new Error(`kein ItemDef fuer Waffe ${weaponId}`);
-  const instance = createInstance(state, def.id, 1, 'normal', [], content);
+  const instance = createInstance(takeItemUid(state), def.id, 1, 'normal', [], content);
   if (instance === null) throw new Error(`Instanz fehlgeschlagen: ${def.id}`);
   state.player.inventory.push(instance);
   if (!state.player.weapons.includes(weaponId)) state.player.weapons.push(weaponId);

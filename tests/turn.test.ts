@@ -9,7 +9,8 @@ import {
   tickCooldowns,
 } from '../src/core/turn';
 import { tickEffects } from '../src/core/effects';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import { setup } from './fixtures/world';
 
 describe('reapDead', () => {
@@ -202,7 +203,7 @@ describe('freie Aktion mit Ausruestung', () => {
   it('laesst bei voller Chance die Runde ganz entfallen', () => {
     const { state, content } = setup();
     const boots = createInstance(
-      state,
+      takeItemUid(state),
       'boots_rubber',
       20,
       'rare',
@@ -222,7 +223,7 @@ describe('freie Aktion mit Ausruestung', () => {
   it('verbraucht bei einer Chance ueber 0 einen Wurf', () => {
     const { state, content } = setup();
     const boots = createInstance(
-      state,
+      takeItemUid(state),
       'boots_rubber',
       20,
       'rare',

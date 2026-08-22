@@ -94,7 +94,7 @@ describe('metaFor', () => {
     state.playTimeMs = 3456;
     const json = serialize(state);
 
-    const meta = await metaFor(state, 1, json, '2026-08-20T10:00:00.000Z');
+    const meta = await metaFor(state, 1, json, '2026-08-20T10:00:00.000Z', 'Test Map');
 
     expect(meta).toEqual({
       slot: 1,
@@ -102,6 +102,7 @@ describe('metaFor', () => {
       level: 1,
       difficulty: 'normal',
       mapId: 'test',
+      mapName: 'Test Map',
       playTimeMs: 3456,
       updatedAt: '2026-08-20T10:00:00.000Z',
       checksum: await checksum(json),
@@ -172,5 +173,29 @@ describe('createLocalStore', () => {
 
     await expect(store.write('normal', 0, state)).rejects.toBeInstanceOf(SaveTooLargeError);
     expect(backend.entries.size).toBe(0);
+  });
+});
+
+describe('mapName aus INTERFACES v1.5', () => {
+  it('loest den Kartennamen beim Schreiben auf', async () => {
+    const { state, content } = setup();
+    const store = createLocalStore(
+      memoryBackend(),
+      () => '2026-08-20T10:00:00.000Z',
+      (mapId) => content.maps[mapId]?.name ?? mapId
+    );
+
+    const meta = await store.write('normal', 0, state);
+
+    expect(meta.mapId).toBe('test');
+    expect(meta.mapName).toBe('Test Map');
+    // Die Platzliste kommt damit ohne ContentDb aus.
+    expect((await store.list())[0]?.mapName).toBe('Test Map');
+  });
+
+  it('faellt ohne Aufloeser auf die Id zurueck', async () => {
+    const { state } = setup();
+    const store = createLocalStore(memoryBackend());
+    expect((await store.write('normal', 0, state)).mapName).toBe('test');
   });
 });

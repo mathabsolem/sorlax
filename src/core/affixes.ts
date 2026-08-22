@@ -6,14 +6,14 @@
  * Reihenfolge von `Object.keys` ist zwar in der Praxis stabil, aber kein
  * zugesicherter Teil des Spielstands.
  */
-import { createInstance } from './items';
+import { isBossOnlyUnique } from './bossLoot';
+import { createInstance, slotsForDef } from './items';
 import type { Rng } from './rng';
 import type {
   AffixDef,
   ContentDb,
   DropTableDef,
   EquipSlot,
-  GameState,
   ItemInstance,
   Rarity,
   RolledAffix,
@@ -103,22 +103,24 @@ function drawAffixes(rng: Rng, pool: AffixDef[], count: number): RolledAffix[] {
   return rolled;
 }
 
-/** Einzigartige Gegenstaende, die auf diesem Steckplatz und dieser Stufe liegen duerfen. */
+/**
+ * Einzigartige Gegenstaende, die auf diesem Steckplatz und dieser Stufe liegen
+ * duerfen. Die vier Bossstuecke aus CONTENT_TABLES Abschnitt 2 fallen
+ * ausschliesslich beim Boss und bleiben deshalb aus dem Wurf.
+ */
 function eligibleUniques(slot: EquipSlot, itemLevel: number, content: ContentDb): UniqueDef[] {
   return byId(content.uniques).filter((unique) => {
     if (unique.minItemLevel > itemLevel) return false;
-    return content.items[unique.baseId]?.slot === slot;
+    if (isBossOnlyUnique(unique.id)) return false;
+    return slotsForDef(content.items[unique.baseId]).includes(slot);
   });
 }
 
 /**
  * Wuerfelt einen Gegenstand nach INTERFACES Abschnitt 5.
  *
- * Abweichung vom Vertrag, gemeldet statt stillschweigend gebogen: INTERFACES
- * Abschnitt 5 kennt die sechs Parameter bis `forEnemy`. Damit laesst sich keine
- * `uid` vergeben, denn die zaehlt laut RPG.md Abschnitt 4 im `GameState`
- * (`nextItemUid`). Die sechs Vertragsparameter bleiben in Reihenfolge und Typ
- * unveraendert, `state` kommt als siebter dazu.
+ * Seit v1.5 kommt die `uid` als siebter Parameter herein. Der Aufrufer liest
+ * `state.nextItemUid` und erhoeht ihn; `rollItem` kennt den Zustand nicht.
  *
  * Wirft bei unbekanntem Grundtyp: der Vertrag sieht keinen nullbaren
  * Rueckgabewert vor, und ein Gegenstand ohne Grundtyp waere kaputt.
@@ -130,13 +132,13 @@ export function rollItem(
   table: DropTableDef,
   content: ContentDb,
   forEnemy: boolean,
-  state: GameState
+  uid: number
 ): ItemInstance {
   const base = content.items[baseId];
-  if (base === undefined || base.slot === undefined) {
+  const slot = slotsForDef(base)[0];
+  if (base === undefined || slot === undefined) {
     throw new Error(`not an equipment base: ${baseId}`);
   }
-  const slot = base.slot;
 
   let rarity = rollRarity(rng, table);
   let finalBaseId = baseId;
@@ -164,7 +166,7 @@ export function rollItem(
     );
   }
 
-  const instance = createInstance(state, finalBaseId, itemLevel, rarity, affixes, content);
+  const instance = createInstance(uid, finalBaseId, itemLevel, rarity, affixes, content);
   if (instance === null) throw new Error(`not an equipment base: ${finalBaseId}`);
   return instance;
 }

@@ -93,6 +93,13 @@ function logEvents(state: GameState, content: ContentDb, events: GameEvent[]): v
           `${itemNameOf(state, content, event.uid)} angelegt (${SLOT_NAMES[event.slot]})`
         );
         break;
+      case 'unequipped':
+        pushLog(
+          state,
+          'pickup',
+          `${itemNameOf(state, content, event.uid)} abgelegt (${SLOT_NAMES[event.slot]})`
+        );
+        break;
       case 'levelUp':
         pushLog(state, 'system', `Stufe ${event.newLevel} erreicht`);
         break;

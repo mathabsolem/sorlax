@@ -2,7 +2,8 @@
  * Ausruestung in getDerivedStats, PHASE_3_6 Block 5.
  */
 import { describe, expect, it } from 'vitest';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import {
   PLAYER_RESIST_CAP,
   effectiveAttributes,
@@ -25,7 +26,7 @@ function craft(
   baseId: string,
   affixes: { affixId: string; value: number }[]
 ): ItemInstance {
-  const item = createInstance(state, baseId, 20, 'rare', affixes, content);
+  const item = createInstance(takeItemUid(state), baseId, 20, 'rare', affixes, content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   return item;
 }

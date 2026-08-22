@@ -2,6 +2,7 @@
  * Affixauswahl und Gegenstandswuerfel, PHASE_3_6 Block 2.
  */
 import { describe, expect, it } from 'vitest';
+import { takeItemUid } from '../src/core/items';
 import { MAX_PREFIXES, MAX_SUFFIXES, RARITIES, eligibleAffixes, rollItem } from '../src/core/affixes';
 import { Rng } from '../src/core/rng';
 import type { ContentDb, DropTableDef, GameState, ItemInstance, Rarity } from '../src/core/types';
@@ -41,7 +42,7 @@ function rollMany(
   const rng = new Rng(4242);
   const items: ItemInstance[] = [];
   for (let index = 0; index < count; index++) {
-    items.push(rollItem(rng, baseId, itemLevel, drops, content, forEnemy, state));
+    items.push(rollItem(rng, baseId, itemLevel, drops, content, forEnemy, takeItemUid(state)));
   }
   return items;
 }
@@ -102,8 +103,8 @@ describe('rollItem', () => {
       const { state, content } = setup();
       const rng = new Rng(31337);
       return [
-        rollItem(rng, 'suit_overall', 20, RARE_ONLY, content, false, state),
-        rollItem(rng, 'suit_overall', 20, RARE_ONLY, content, false, state),
+        rollItem(rng, 'suit_overall', 20, RARE_ONLY, content, false, takeItemUid(state)),
+        rollItem(rng, 'suit_overall', 20, RARE_ONLY, content, false, takeItemUid(state)),
       ];
     };
     expect(once()).toEqual(once());
@@ -113,7 +114,7 @@ describe('rollItem', () => {
     const { state, content } = setup();
     const rng = new Rng(5);
     for (let index = 0; index < 20; index++) {
-      expect(rollItem(rng, 'suit_overall', 20, MAGIC_ONLY, content, false, state).rarity).toBe(
+      expect(rollItem(rng, 'suit_overall', 20, MAGIC_ONLY, content, false, takeItemUid(state)).rarity).toBe(
         'magic'
       );
     }
@@ -183,17 +184,18 @@ describe('rollItem', () => {
 
   it('ersetzt bei einzigartigen Gegenstaenden den Grundtyp und die Affixliste', () => {
     const { state, content } = setup();
-    const item = rollItem(new Rng(11), 'suit_plated', 20, UNIQUE_ONLY, content, false, state);
+    // boots_steel wird durch boots_rubber ersetzt, den Grundtyp des Stollenschritts.
+    const item = rollItem(new Rng(11), 'boots_steel', 20, UNIQUE_ONLY, content, false, takeItemUid(state));
 
     expect(item.rarity).toBe('unique');
-    expect(item.baseId).toBe('suit_overall');
-    expect(item.affixes).toEqual(content.uniques['uniq_ember_shell']?.affixes);
+    expect(item.baseId).toBe('boots_rubber');
+    expect(item.affixes).toEqual(content.uniques['uq_stollenschritt']?.affixes);
   });
 
   it('faellt auf selten zurueck, wenn kein passender einzigartiger Gegenstand da ist', () => {
     const { state, content } = setup();
     const withoutUniques: ContentDb = { ...content, uniques: {} };
-    const item = rollItem(new Rng(11), 'suit_overall', 20, UNIQUE_ONLY, withoutUniques, false, state);
+    const item = rollItem(new Rng(11), 'suit_overall', 20, UNIQUE_ONLY, withoutUniques, false, takeItemUid(state));
 
     expect(item.rarity).toBe('rare');
     expect(item.affixes.length).toBeGreaterThanOrEqual(1);
@@ -201,7 +203,24 @@ describe('rollItem', () => {
 
   it('wirft bei einem Grundtyp ohne Steckplatz', () => {
     const { state, content } = setup();
-    expect(() => rollItem(new Rng(1), 'medkit', 1, RARE_ONLY, content, false, state)).toThrow();
-    expect(() => rollItem(new Rng(1), 'nix', 1, RARE_ONLY, content, false, state)).toThrow();
+    expect(() => rollItem(new Rng(1), 'medkit', 1, RARE_ONLY, content, false, takeItemUid(state))).toThrow();
+    expect(() => rollItem(new Rng(1), 'nix', 1, RARE_ONLY, content, false, takeItemUid(state))).toThrow();
+  });
+});
+
+describe('Determinismus', () => {
+  // Test 7 aus PHASE_5
+  it('liefert bei gleichem RNG-Zustand und gleicher uid dasselbe Ergebnis', () => {
+    const { state, content } = setup();
+    const untouched = state.nextItemUid;
+    const first = rollItem(new Rng(2024), 'suit_overall', 14, RARE_ONLY, content, false, 7);
+    const second = rollItem(new Rng(2024), 'suit_overall', 14, RARE_ONLY, content, false, 7);
+
+    expect(second).toEqual(first);
+    // Nur die uid unterscheidet zwei sonst gleiche Wuerfe.
+    const other = rollItem(new Rng(2024), 'suit_overall', 14, RARE_ONLY, content, false, 8);
+    expect(other).toEqual({ ...first, uid: 8 });
+    // rollItem kennt den Zustand seit v1.5 nicht mehr und zaehlt nichts hoch.
+    expect(state.nextItemUid).toBe(untouched);
   });
 });

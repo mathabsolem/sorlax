@@ -3,7 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { attackAction } from '../src/core/attack';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import { invalidatePlayerDerived, playerDerived } from '../src/core/turn';
 import { equipWeapon, setup } from './fixtures/world';
 
@@ -127,7 +128,7 @@ describe('Munitionsverbrauch', () => {
     state.player.ammo['bullets'] = 3;
 
     const belt = createInstance(
-      state,
+      takeItemUid(state),
       'belt_tool',
       20,
       'rare',

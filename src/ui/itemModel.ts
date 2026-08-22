@@ -53,8 +53,12 @@ export function canEquip(
 }
 
 /** Das getragene Teil, gegen das ein Kandidat verglichen wird. */
-export function wornFor(player: PlayerState, item: ItemInstance): ItemInstance | null {
-  for (const slot of slotsFor(item)) {
+export function wornFor(
+  player: PlayerState,
+  item: ItemInstance,
+  content: ContentDb
+): ItemInstance | null {
+  for (const slot of slotsFor(item, content)) {
     const worn = player.equipment[slot];
     if (worn !== undefined) return worn;
   }
@@ -134,7 +138,7 @@ export function compareItems(
   candidate: ItemInstance,
   content: ContentDb
 ): Comparison {
-  const worn = wornFor(state.player, candidate);
+  const worn = wornFor(state.player, candidate, content);
   const slot = worn?.slot ?? candidate.slot;
 
   const perStat: StatDelta[] = [];

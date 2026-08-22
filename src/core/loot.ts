@@ -9,8 +9,9 @@
  * freeTilesAround dazu, womit die Datei ueber 300 Zeilen gewachsen waere.
  */
 import { rollItem } from './affixes';
+import { bossUniqueId } from './bossLoot';
 import { DIFFICULTY_ORDER } from './difficulty';
-import { addGroundItem, slotsFor, slotsForDef } from './items';
+import { addGroundItem, createInstance, slotsFor, slotsForDef, takeItemUid } from './items';
 import { loadRng, saveRng } from './rng';
 import type { Rng } from './rng';
 import { EQUIP_SLOTS } from './types';
@@ -81,8 +82,7 @@ function uniqueSlots(itemLevel: number, content: ContentDb): Set<EquipSlot> {
   const slots = new Set<EquipSlot>();
   for (const unique of Object.values(content.uniques)) {
     if (unique.minItemLevel > itemLevel) continue;
-    const slot = content.items[unique.baseId]?.slot;
-    if (slot !== undefined) slots.add(slot);
+    for (const slot of slotsForDef(content.items[unique.baseId])) slots.add(slot);
   }
   return slots;
 }
@@ -119,6 +119,32 @@ function tableFor(
   return content.dropTables[isBoss ? 'boss_drop' : 'common_drop'];
 }
 
+/**
+ * Das garantierte einzigartige Teil eines Bosses, CONTENT_TABLES Abschnitt 2.
+ *
+ * `EnemyDef` hat dafuer kein Feld, siehe `bossLoot.ts`. Ohne Eintrag im
+ * Katalog faellt der Boss auf den gewoehnlichen Wurf zurueck.
+ */
+function guaranteedUnique(
+  state: GameState,
+  entity: Entity,
+  itemLevel: number,
+  content: ContentDb
+): ItemInstance | null {
+  const uniqueId = bossUniqueId(entity.defId);
+  if (uniqueId === undefined) return null;
+  const unique = content.uniques[uniqueId];
+  if (unique === undefined) return null;
+  return createInstance(
+    takeItemUid(state),
+    unique.baseId,
+    itemLevel,
+    'unique',
+    unique.affixes,
+    content
+  );
+}
+
 /** Ruestet einen Gegner aus. `boss` bekommt mindestens ein einzigartiges Teil. */
 function equipEnemy(
   state: GameState,
@@ -132,9 +158,20 @@ function equipEnemy(
   const pieces = isBoss ? rng.randInt(2, 4) : rng.randInt(1, 2);
   const taken = new Set<EquipSlot>();
   const equipment: Partial<Record<EquipSlot, ItemInstance>> = {};
-  const uniqueCandidates = isBoss ? uniqueSlots(itemLevel, content) : new Set<EquipSlot>();
 
-  for (let index = 0; index < pieces; index++) {
+  // Garantiertes Stueck des Bosses, CONTENT_TABLES Abschnitt 2. Es entsteht
+  // ohne Wurf und ohne Ruecksicht auf `minItemLevel`, denn der Boss steht auf
+  // seiner eigenen Sohle. Es zaehlt als erstes seiner Ausruestungsstuecke.
+  const guaranteed = isBoss ? guaranteedUnique(state, entity, itemLevel, content) : null;
+  if (guaranteed !== null) {
+    equipment[guaranteed.slot] = guaranteed;
+    taken.add(guaranteed.slot);
+  }
+
+  const uniqueCandidates =
+    isBoss && guaranteed === null ? uniqueSlots(itemLevel, content) : new Set<EquipSlot>();
+
+  for (let index = guaranteed === null ? 0 : 1; index < pieces; index++) {
     // Rang `equipped` traegt magisch oder selten, der Boss mindestens ein
     // einzigartiges Teil und den Rest nach seiner eigenen Tabelle. Das
     // Pflichtstueck wird auf die Steckplaetze beschraenkt, fuer die es auch
@@ -153,9 +190,9 @@ function equipEnemy(
       taken.add(slot);
       continue;
     }
-    const item = rollItem(rng, base.id, itemLevel, pieceTable, content, true, state);
+    const item = rollItem(rng, base.id, itemLevel, pieceTable, content, true, takeItemUid(state));
     // Messgeraete passen in beide Plaetze, sie bleiben im gewuerfelten.
-    const target = slotsFor(item).includes(slot) ? slot : item.slot;
+    const target = slotsFor(item, content).includes(slot) ? slot : item.slot;
     taken.add(slot);
     taken.add(target);
     equipment[target] = item;

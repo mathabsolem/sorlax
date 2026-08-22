@@ -41,3 +41,20 @@ export const EFFECT_RESIST_THRESHOLD = 50;
 export function isEffectId(value: string): value is EffectId {
   return value in EFFECT_DEFS;
 }
+
+/**
+ * Positive Effekte aus CONTENT_TABLES Abschnitt 1. Sie werden von
+ * getDerivedStats gelesen, nicht von tickEffects abgearbeitet: sie richten
+ * keinen Schaden an, sie verschieben einen abgeleiteten Wert.
+ */
+export const BOON_STATS: Record<string, { stat: string; mode: 'flat' | 'percent' }> = {
+  plating: { stat: 'armor', mode: 'flat' },
+};
+
+/** Praefix, mit dem ein Verbrauchsgut einen Effekt entfernt statt setzt. */
+export const CURE_PREFIX = 'cure_';
+
+/** Der Effekt, den ein `cure_`-Eintrag entfernt, oder null. */
+export function curedEffectId(effectId: string): string | null {
+  return effectId.startsWith(CURE_PREFIX) ? effectId.slice(CURE_PREFIX.length) : null;
+}

@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
-import { createInstance } from '../src/core/items';
+import { createInstance, takeItemUid } from '../src/core/items';
 import { useSkillAction } from '../src/core/skillActions';
 import { SKILL_REGISTRY } from '../src/core/skills/registry';
 import { breachHandler } from '../src/core/skills/breach';
@@ -185,7 +185,7 @@ describe('useSkill', () => {
       const enemy = world.state.maps['test']?.entities[0];
       if (enemy === undefined) throw new Error('kein Gegner');
       const plate = createInstance(
-        world.state,
+        takeItemUid(world.state),
         'suit_overall',
         20,
         'rare',

@@ -3,7 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { getDerivedStats, playerActor } from '../src/core/derived';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import { deserialize, serialize } from '../src/core/state';
 import {
   assignableSkills,
@@ -110,7 +111,7 @@ describe('statBreakdown', () => {
     learn(state, 'precise_strike', 3);
 
     const gloves = createInstance(
-      state,
+      takeItemUid(state),
       'gloves_grip',
       20,
       'rare',
@@ -138,7 +139,7 @@ describe('statBreakdown', () => {
     learn(state, 'steady_aim', 3);
 
     const suit = createInstance(
-      state,
+      takeItemUid(state),
       'suit_overall',
       20,
       'rare',

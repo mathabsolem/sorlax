@@ -4,7 +4,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
 import { clampHealthToMax, equipAction, unequipAction } from '../src/core/equipActions';
-import { MAX_INVENTORY, addToInventory, createInstance } from '../src/core/items';
+import { MAX_INVENTORY, addToInventory, createInstance,
+  takeItemUid } from '../src/core/items';
 import { invalidatePlayerDerived, playerDerived } from '../src/core/turn';
 import type { ContentDb, GameState, ItemInstance } from '../src/core/types';
 import { setup } from './fixtures/world';
@@ -25,7 +26,7 @@ function give(
   baseId: string,
   affixes: { affixId: string; value: number }[] = []
 ): ItemInstance {
-  const item = createInstance(state, baseId, 20, 'rare', affixes, content);
+  const item = createInstance(takeItemUid(state), baseId, 20, 'rare', affixes, content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   addToInventory(state, item);
   return item;
@@ -141,7 +142,8 @@ describe('unequip', () => {
 
     const events = applyCommand(state, { type: 'unequip', slot: 'suit' }, content);
 
-    expect(events).toEqual([{ type: 'message', text: 'Anzug abgelegt' }]);
+    // Seit INTERFACES v1.5 ein eigenes Ereignis, keine Textmeldung mehr.
+    expect(events).toEqual([{ type: 'unequipped', slot: 'suit', uid: item.uid }]);
     expect(state.player.equipment['suit']).toBeUndefined();
     expect(state.player.inventory).toEqual([item]);
     expect(state.turnCount).toBe(0);
@@ -200,5 +202,51 @@ describe('clampHealthToMax', () => {
     state.player.health = 20;
     clampHealthToMax(state, content);
     expect(state.player.health).toBe(20);
+  });
+});
+
+describe('Messgeraete', () => {
+  // Test 5 aus PHASE_5
+  it('nimmt zwei Messgeraete in beide Handgelenke', () => {
+    const { state, content } = world();
+    const left = give(state, content, 'gauge_pressure');
+    const right = give(state, content, 'gauge_seismic');
+    state.player.level = 8;
+    state.player.attributes.strength = 22;
+
+    expect(equipAction(state, content, left.uid).ok).toBe(true);
+    expect(equipAction(state, content, right.uid).ok).toBe(true);
+    expect(state.player.equipment['gauge_left']?.uid).toBe(left.uid);
+    expect(state.player.equipment['gauge_right']?.uid).toBe(right.uid);
+  });
+
+  // Test 5 aus PHASE_5, zweite Haelfte: RPG.md Abschnitt 3 verbietet denselben
+  // einzigartigen Gegenstand zweimal.
+  it('legt denselben einzigartigen Gegenstand nicht zweimal an', () => {
+    const { state, content } = world();
+    const unique = content.uniques['uq_pruefblei'];
+    expect(unique).toBeDefined();
+    if (unique === undefined) return;
+
+    const copies = [0, 1].map(() => {
+      const item = createInstance(
+        takeItemUid(state),
+        unique.baseId,
+        20,
+        'unique',
+        unique.affixes,
+        content
+      );
+      if (item === null) throw new Error('kein Grundtyp');
+      addToInventory(state, item);
+      return item;
+    });
+
+    expect(equipAction(state, content, copies[0]?.uid ?? -1).ok).toBe(true);
+    expect(equipAction(state, content, copies[1]?.uid ?? -1)).toEqual({
+      ok: false,
+      reason: 'unique already equipped',
+    });
+    expect(state.player.equipment['gauge_right']).toBeUndefined();
   });
 });

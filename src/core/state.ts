@@ -2,7 +2,7 @@
  * Aufbau, Serialisierung und Migration des Spielzustands.
  */
 import { getDerivedStats, playerActor } from './derived';
-import { STARTER_WEAPON_ITEM, createInstance } from './items';
+import { STARTER_WEAPON_ITEM, createInstance, takeItemUid } from './items';
 import { migrate } from './migrate';
 import { tileKey } from './grid';
 import { Rng } from './rng';
@@ -177,7 +177,14 @@ export function createNewGame(
     log: [],
   };
 
-  const starter = createInstance(state, STARTER_WEAPON_ITEM, 1, 'normal', [], content);
+  const starter = createInstance(
+    takeItemUid(state),
+    STARTER_WEAPON_ITEM,
+    1,
+    'normal',
+    [],
+    content
+  );
   if (starter === null) throw new Error(`content has no ${STARTER_WEAPON_ITEM}`);
   player.equipment['weapon'] = starter;
   const starterWeaponId = content.items[STARTER_WEAPON_ITEM]?.weaponId;

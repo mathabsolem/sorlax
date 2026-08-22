@@ -8,6 +8,7 @@ import {
   addGroundItem,
   addToInventory,
   createInstance,
+  takeItemUid,
   equippedSlotOf,
   findItem,
   groundItemsAt,
@@ -22,7 +23,7 @@ import type { ContentDb, GameState, ItemInstance } from '../src/core/types';
 import { setup } from './fixtures/world';
 
 function make(state: GameState, content: ContentDb, baseId = 'suit_overall'): ItemInstance {
-  const item = createInstance(state, baseId, 1, 'normal', [], content);
+  const item = createInstance(takeItemUid(state), baseId, 1, 'normal', [], content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   return item;
 }
@@ -31,7 +32,7 @@ describe('createInstance', () => {
   it('uebernimmt Steckplatz und Werte aus dem Grundtyp', () => {
     const { state, content } = setup();
     const item = createInstance(
-      state,
+      takeItemUid(state),
       'helmet_hardhat',
       7,
       'magic',
@@ -51,16 +52,16 @@ describe('createInstance', () => {
   it('kopiert die Affixliste, statt sie zu teilen', () => {
     const { state, content } = setup();
     const affixes = [{ affixId: 'pre_sturdy', value: 9 }];
-    const item = createInstance(state, 'helmet_hardhat', 1, 'magic', affixes, content);
+    const item = createInstance(takeItemUid(state), 'helmet_hardhat', 1, 'magic', affixes, content);
     affixes[0] = { affixId: 'pre_plated', value: 2 };
     expect(item?.affixes).toEqual([{ affixId: 'pre_sturdy', value: 9 }]);
   });
 
   it('liefert null ohne Grundtyp und ohne Steckplatz', () => {
     const { state, content } = setup();
-    expect(createInstance(state, 'gibtsnicht', 1, 'normal', [], content)).toBeNull();
+    expect(createInstance(takeItemUid(state), 'gibtsnicht', 1, 'normal', [], content)).toBeNull();
     // `medkit` ist Stapelware und hat deshalb keinen Steckplatz.
-    expect(createInstance(state, 'medkit', 1, 'normal', [], content)).toBeNull();
+    expect(createInstance(takeItemUid(state), 'medkit', 1, 'normal', [], content)).toBeNull();
   });
 
   // Test 1 aus PHASE_3_6
@@ -186,12 +187,12 @@ describe('Waffenplatz und Steckplatzwahl', () => {
 
   it('slotsFor gibt Messgeraeten beide Plaetze und allem anderen genau einen', () => {
     const { state, content } = setup();
-    const gauge = createInstance(state, 'gauge_pressure', 1, 'normal', [], content);
-    const suit = createInstance(state, 'suit_overall', 1, 'normal', [], content);
+    const gauge = createInstance(takeItemUid(state), 'gauge_pressure', 1, 'normal', [], content);
+    const suit = createInstance(takeItemUid(state), 'suit_overall', 1, 'normal', [], content);
     if (gauge === null || suit === null) throw new Error('kein Grundtyp');
 
-    expect(slotsFor(gauge)).toEqual(['gauge_left', 'gauge_right']);
-    expect(slotsFor(suit)).toEqual(['suit']);
+    expect(slotsFor(gauge, content)).toEqual(['gauge_left', 'gauge_right']);
+    expect(slotsFor(suit, content)).toEqual(['suit']);
   });
 
   it('slotsForDef arbeitet auf dem Grundtyp und liefert ohne Steckplatz nichts', () => {

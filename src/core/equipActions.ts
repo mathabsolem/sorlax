@@ -17,8 +17,8 @@ import {
   removeFromInventory,
   slotsFor,
 } from './items';
-import { SLOT_NAMES } from './text';
 import { invalidatePlayerDerived, playerDerived } from './turn';
+import { EQUIP_SLOTS } from './types';
 import type { ContentDb, EquipSlot, GameEvent, GameState } from './types';
 
 /**
@@ -56,8 +56,19 @@ export function equipAction(state: GameState, content: ContentDb, uid: number): 
     return { ok: false, reason: `requires agility ${def.reqAgility}` };
   }
 
+  // RPG.md Abschnitt 3: derselbe einzigartige Gegenstand darf nicht doppelt
+  // getragen werden. Ohne die Pruefung liessen sich zwei Messgeraete gleichen
+  // Namens in beide Handgelenke legen.
+  if (item.rarity === 'unique') {
+    const twin = EQUIP_SLOTS.some((slot) => {
+      const worn = state.player.equipment[slot];
+      return worn !== undefined && worn.rarity === 'unique' && worn.baseId === item.baseId;
+    });
+    if (twin) return { ok: false, reason: 'unique already equipped' };
+  }
+
   // Passt der Gegenstand in mehrere Plaetze, gewinnt der erste freie.
-  const candidates = slotsFor(item);
+  const candidates = slotsFor(item, content);
   const target = candidates.find((slot) => state.player.equipment[slot] === undefined) ?? item.slot;
 
   const previous = state.player.equipment[target];
@@ -89,8 +100,7 @@ export function unequipAction(
   addToInventory(state, item);
   clampHealthToMax(state, content);
 
-  // INTERFACES Abschnitt 7 kennt kein `unequipped`-Ereignis, deshalb eine Meldung.
-  return { ok: true, events: [{ type: 'message', text: `${SLOT_NAMES[slot]} abgelegt` }] };
+  return { ok: true, events: [{ type: 'unequipped', slot, uid: item.uid }] };
 }
 
 /** Wirft ein Teil aus Inventar oder Ausruestung auf die Kachel des Spielers. */

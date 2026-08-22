@@ -5,13 +5,17 @@
 import { currentScene } from './actionResult';
 import type { ActionResult } from './actionResult';
 import { playerActor } from './derived';
-import { applyEffectDefault } from './effects';
+import { applyBoon, applyEffect, removeEffect } from './effects';
+import { BOON_STATS, EFFECT_DEFS, curedEffectId } from './effectDefs';
+import type { EffectId } from './effectDefs';
 import { doorAt, enemyAt, entitiesAt, removeEntity } from './entities';
 import { isSolid, stepFrom, tileKey } from './grid';
 import {
   IDENTIFY_ITEM_ID,
   addToInventory,
+  ammoTypeOf,
   createInstance,
+  takeItemUid,
   findItem,
   groundItemsAt,
   removeGroundItem,
@@ -34,13 +38,15 @@ import type {
 function stow(state: GameState, def: ItemDef, content: ContentDb): boolean {
   const player = state.player;
   switch (def.type) {
-    case 'ammo':
-      player.ammo[def.id] = (player.ammo[def.id] ?? 0) + def.amount;
+    case 'ammo': {
+      const ammoType = ammoTypeOf(def);
+      player.ammo[ammoType] = (player.ammo[ammoType] ?? 0) + def.amount;
       return true;
+    }
     case 'weapon': {
       // Eine gefundene Waffe wird zur Instanz im Inventar. `weapons` fuehrt
       // daneben die Grundtypen fuer die Waffenleiste (PHASE_3_8 Block 3).
-      const instance = createInstance(state, def.id, 1, 'normal', [], content);
+      const instance = createInstance(takeItemUid(state), def.id, 1, 'normal', [], content);
       if (instance === null || !addToInventory(state, instance)) return false;
       const weaponId = def.weaponId;
       if (weaponId !== undefined && !player.weapons.includes(weaponId)) {
@@ -164,9 +170,26 @@ export function useConsumableAction(
 
   const effect = def.effect;
   if (effect !== undefined) {
-    events.push(
-      ...applyEffectDefault(playerActor(state), effect.id, content, state.difficulty)
-    );
+    const cured = curedEffectId(effect.id);
+    if (cured !== null) {
+      // `cure_toxin` entfernt `toxin` (CONTENT_TABLES Abschnitt 1).
+      events.push(...removeEffect(playerActor(state), cured));
+    } else if (BOON_STATS[effect.id] !== undefined) {
+      events.push(
+        ...applyBoon(playerActor(state), effect.id, effect.turns, effect.magnitude)
+      );
+    } else {
+      events.push(
+        ...applyEffect(
+          playerActor(state),
+          effect.id,
+          EFFECT_DEFS[effect.id as EffectId]?.sourceType ?? 'physical',
+          effect.magnitude,
+          content,
+          state.difficulty
+        )
+      );
+    }
   }
 
   player.consumables[itemId] = (player.consumables[itemId] ?? 0) - 1;

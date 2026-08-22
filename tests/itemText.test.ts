@@ -3,7 +3,8 @@
  * Aus itemModel.test.ts herausgeloest.
  */
 import { describe, expect, it } from 'vitest';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import {
   affixLines,
   baseLines,
@@ -24,7 +25,7 @@ function craft(
   affixes: { affixId: string; value: number }[] = [],
   identified = true
 ): ItemInstance {
-  const item = createInstance(state, baseId, 20, 'rare', affixes, content);
+  const item = createInstance(takeItemUid(state), baseId, 20, 'rare', affixes, content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   item.identified = identified;
   return item;

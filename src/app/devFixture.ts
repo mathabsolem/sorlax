@@ -224,7 +224,7 @@ function weaponItem(id: string, name: string, weaponId: string): ItemDef {
     id,
     name,
     type: 'weapon',
-    slot: 'weapon',
+    slots: ['weapon'],
     weaponId,
     amount: 1,
     reqLevel: 1,

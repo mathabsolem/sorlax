@@ -6,6 +6,7 @@ import affixesJson from '../../content/affixes.json';
 import dropTablesJson from '../../content/dropTables.json';
 import equipmentJson from '../../content/items.json';
 import skillsJson from '../../content/skills.json';
+import uniquesJson from '../../content/uniques.json';
 import weaponsJson from '../../content/weapons.json';
 import type {
   AffixDef,
@@ -28,28 +29,8 @@ export const EQUIPMENT: Record<string, ItemDef> = equipmentJson as unknown as Re
   ItemDef
 >;
 export const SKILLS = skillsJson as unknown as Record<string, SkillDef>;
+
+/** Die einzigartigen Gegenstaende aus CONTENT_TABLES Abschnitt 2. */
+export const UNIQUES = uniquesJson as unknown as Record<string, UniqueDef>;
 export const WEAPON_DEFS = weaponsJson as unknown as Record<string, WeaponDef>;
 
-/**
- * Einzigartige Gegenstaende gibt es in content/ noch nicht, siehe Bericht zu
- * Phase 3.6. Fuer die Tests reichen zwei feste Eintraege.
- */
-export const UNIQUES: Record<string, UniqueDef> = {
-  uniq_ember_shell: {
-    id: 'uniq_ember_shell',
-    baseId: 'suit_overall',
-    name: 'Ember Shell',
-    minItemLevel: 1,
-    affixes: [
-      { affixId: 'suf_of_embers', value: 20 },
-      { affixId: 'pre_plated', value: 5 },
-    ],
-  },
-  uniq_lamp_crown: {
-    id: 'uniq_lamp_crown',
-    baseId: 'helmet_hardhat',
-    name: 'Lamp Crown',
-    minItemLevel: 1,
-    affixes: [{ affixId: 'suf_of_the_lamp', value: 3 }],
-  },
-};

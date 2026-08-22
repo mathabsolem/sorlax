@@ -16,14 +16,14 @@
       "shock": 0,
       "void": 0
     },
-    "speed": 1.0,
+    "speed": 1,
     "behavior": "scripted",
     "scriptId": "halvern",
-    "aggroRange": 10,
+    "aggroRange": 12,
     "preferredRange": 1,
     "weaponId": "nw_slam_fire",
     "baseXp": 400,
-    "spriteWidth": 1.1,
+    "spriteWidth": 1.3,
     "frames": {
       "idle": [
         "halvern_idle_0",
@@ -65,14 +65,14 @@
       "shock": -60,
       "void": 0
     },
-    "speed": 1.0,
+    "speed": 1,
     "behavior": "scripted",
     "scriptId": "sporemother",
-    "aggroRange": 12,
+    "aggroRange": 20,
     "preferredRange": 3,
     "weaponId": "nw_sporeburst",
     "baseXp": 900,
-    "spriteWidth": 1.6,
+    "spriteWidth": 2,
     "frames": {
       "idle": [
         "sporemother_idle_0",
@@ -114,14 +114,14 @@
       "shock": 0,
       "void": 0
     },
-    "speed": 1.0,
+    "speed": 1,
     "behavior": "scripted",
     "scriptId": "rime",
-    "aggroRange": 12,
+    "aggroRange": 16,
     "preferredRange": 6,
     "weaponId": "nw_boltpistol_ice",
     "baseXp": 1600,
-    "spriteWidth": 1.0,
+    "spriteWidth": 1.4,
     "frames": {
       "idle": [
         "rime_idle_0",
@@ -163,14 +163,14 @@
       "shock": 25,
       "void": 90
     },
-    "speed": 1.0,
+    "speed": 1,
     "behavior": "scripted",
     "scriptId": "sorlax",
-    "aggroRange": 14,
-    "preferredRange": 4,
+    "aggroRange": 20,
+    "preferredRange": 1,
     "weaponId": "nw_slam_void",
     "baseXp": 5000,
-    "spriteWidth": 1.8,
+    "spriteWidth": 1.6,
     "frames": {
       "idle": [
         "sorlax_idle_0",
@@ -195,61 +195,6 @@
     },
     "dropTableId": "boss_drop"
   },
-  "spore_poison": {
-    "id": "spore_poison",
-    "archetype": "spore",
-    "element": "poison",
-    "name": "Sporenträger",
-    "baseHealth": 37,
-    "baseArmor": 2,
-    "baseAccuracy": 11,
-    "baseEvasion": 2,
-    "resistances": {
-      "physical": 0,
-      "fire": 0,
-      "poison": 80,
-      "ice": 0,
-      "shock": -50,
-      "void": 0
-    },
-    "speed": 1.0,
-    "behavior": "ranged",
-    "aggroRange": 9,
-    "preferredRange": 4,
-    "weaponId": "nw_sporeburst",
-    "baseXp": 30,
-    "spriteWidth": 0.9,
-    "frames": {
-      "idle": [
-        "spore_idle_0",
-        "spore_idle_1",
-        "spore_idle_2",
-        "spore_idle_3"
-      ],
-      "attack": [
-        "spore_attack_0",
-        "spore_attack_1",
-        "spore_attack_2"
-      ],
-      "pain": [
-        "spore_pain_0"
-      ],
-      "death": [
-        "spore_death_0",
-        "spore_death_1",
-        "spore_death_2",
-        "spore_death_3"
-      ]
-    },
-    "drops": [
-      {
-        "defId": "antitoxin",
-        "amount": 1,
-        "chance": 0.35
-      }
-    ],
-    "dropTableId": "common_drop"
-  },
   "rat_physical": {
     "id": "rat_physical",
     "archetype": "rat",
@@ -267,7 +212,7 @@
       "shock": 0,
       "void": 0
     },
-    "speed": 2.0,
+    "speed": 2,
     "behavior": "charger",
     "aggroRange": 6,
     "preferredRange": 1,
@@ -322,7 +267,7 @@
       "shock": 0,
       "void": 0
     },
-    "speed": 1.0,
+    "speed": 1,
     "behavior": "melee",
     "aggroRange": 8,
     "preferredRange": 1,
@@ -354,8 +299,1493 @@
     "drops": [
       {
         "defId": "ammo_pistol",
-        "amount": 8,
+        "amount": 1,
         "chance": 0.45
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "drone_physical": {
+    "id": "drone_physical",
+    "archetype": "drone",
+    "element": "physical",
+    "name": "Schürfdrohne SK-3",
+    "baseHealth": 20,
+    "baseArmor": 3,
+    "baseAccuracy": 14,
+    "baseEvasion": 0,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "turret",
+    "aggroRange": 8,
+    "preferredRange": 5,
+    "weaponId": "nw_cutter",
+    "baseXp": 18,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "drone_idle_0",
+        "drone_idle_1",
+        "drone_idle_2",
+        "drone_idle_3"
+      ],
+      "attack": [
+        "drone_attack_0",
+        "drone_attack_1",
+        "drone_attack_2"
+      ],
+      "pain": [
+        "drone_pain_0"
+      ],
+      "death": [
+        "drone_death_0",
+        "drone_death_1",
+        "drone_death_2",
+        "drone_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.15
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "rat_fire": {
+    "id": "rat_fire",
+    "archetype": "rat",
+    "element": "fire",
+    "name": "Brennende Grubenratte",
+    "baseHealth": 11,
+    "baseArmor": 0,
+    "baseAccuracy": 9,
+    "baseEvasion": 11,
+    "resistances": {
+      "physical": 0,
+      "fire": 80,
+      "poison": 0,
+      "ice": -50,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 2,
+    "behavior": "charger",
+    "aggroRange": 6,
+    "preferredRange": 1,
+    "weaponId": "nw_bite_fire",
+    "baseXp": 8,
+    "spriteWidth": 0.5,
+    "frames": {
+      "idle": [
+        "rat_idle_0",
+        "rat_idle_1",
+        "rat_idle_2",
+        "rat_idle_3"
+      ],
+      "attack": [
+        "rat_attack_0",
+        "rat_attack_1",
+        "rat_attack_2"
+      ],
+      "pain": [
+        "rat_pain_0"
+      ],
+      "death": [
+        "rat_death_0",
+        "rat_death_1",
+        "rat_death_2",
+        "rat_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "heal_small",
+        "amount": 1,
+        "chance": 0.1
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "miner_fire": {
+    "id": "miner_fire",
+    "archetype": "miner",
+    "element": "fire",
+    "name": "Brennender Verschütteter",
+    "baseHealth": 23,
+    "baseArmor": 1,
+    "baseAccuracy": 11,
+    "baseEvasion": 5,
+    "resistances": {
+      "physical": 0,
+      "fire": 80,
+      "poison": 0,
+      "ice": -50,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "melee",
+    "aggroRange": 8,
+    "preferredRange": 1,
+    "weaponId": "nw_pickaxe_fire",
+    "baseXp": 15,
+    "spriteWidth": 0.8,
+    "frames": {
+      "idle": [
+        "miner_idle_0",
+        "miner_idle_1",
+        "miner_idle_2",
+        "miner_idle_3"
+      ],
+      "attack": [
+        "miner_attack_0",
+        "miner_attack_1",
+        "miner_attack_2"
+      ],
+      "pain": [
+        "miner_pain_0"
+      ],
+      "death": [
+        "miner_death_0",
+        "miner_death_1",
+        "miner_death_2",
+        "miner_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_pistol",
+        "amount": 1,
+        "chance": 0.45
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "crawler_physical": {
+    "id": "crawler_physical",
+    "archetype": "crawler",
+    "element": "physical",
+    "name": "Deckenkriecher",
+    "baseHealth": 18,
+    "baseArmor": 0,
+    "baseAccuracy": 11,
+    "baseEvasion": 14,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 2,
+    "behavior": "charger",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_claw",
+    "baseXp": 14,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "crawler_idle_0",
+        "crawler_idle_1",
+        "crawler_idle_2",
+        "crawler_idle_3"
+      ],
+      "attack": [
+        "crawler_attack_0",
+        "crawler_attack_1",
+        "crawler_attack_2"
+      ],
+      "pain": [
+        "crawler_pain_0"
+      ],
+      "death": [
+        "crawler_death_0",
+        "crawler_death_1",
+        "crawler_death_2",
+        "crawler_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "heal_small",
+        "amount": 1,
+        "chance": 0.2
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "spore_physical": {
+    "id": "spore_physical",
+    "archetype": "spore",
+    "element": "physical",
+    "name": "Sporenträger",
+    "baseHealth": 32,
+    "baseArmor": 2,
+    "baseAccuracy": 11,
+    "baseEvasion": 3,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 9,
+    "preferredRange": 4,
+    "weaponId": "nw_sporeburst",
+    "baseXp": 30,
+    "spriteWidth": 0.9,
+    "frames": {
+      "idle": [
+        "spore_idle_0",
+        "spore_idle_1",
+        "spore_idle_2",
+        "spore_idle_3"
+      ],
+      "attack": [
+        "spore_attack_0",
+        "spore_attack_1",
+        "spore_attack_2"
+      ],
+      "pain": [
+        "spore_pain_0"
+      ],
+      "death": [
+        "spore_death_0",
+        "spore_death_1",
+        "spore_death_2",
+        "spore_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "antitoxin",
+        "amount": 1,
+        "chance": 0.35
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "miner_poison": {
+    "id": "miner_poison",
+    "archetype": "miner",
+    "element": "poison",
+    "name": "Vergifteter Verschütteter",
+    "baseHealth": 30,
+    "baseArmor": 1,
+    "baseAccuracy": 10,
+    "baseEvasion": 3,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 80,
+      "ice": 0,
+      "shock": -50,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "melee",
+    "aggroRange": 8,
+    "preferredRange": 1,
+    "weaponId": "nw_pickaxe_poison",
+    "baseXp": 15,
+    "spriteWidth": 0.8,
+    "frames": {
+      "idle": [
+        "miner_idle_0",
+        "miner_idle_1",
+        "miner_idle_2",
+        "miner_idle_3"
+      ],
+      "attack": [
+        "miner_attack_0",
+        "miner_attack_1",
+        "miner_attack_2"
+      ],
+      "pain": [
+        "miner_pain_0"
+      ],
+      "death": [
+        "miner_death_0",
+        "miner_death_1",
+        "miner_death_2",
+        "miner_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_pistol",
+        "amount": 1,
+        "chance": 0.45
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "spore_poison": {
+    "id": "spore_poison",
+    "archetype": "spore",
+    "element": "poison",
+    "name": "Vergifteter Sporenträger",
+    "baseHealth": 37,
+    "baseArmor": 2,
+    "baseAccuracy": 11,
+    "baseEvasion": 2,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 80,
+      "ice": 0,
+      "shock": -50,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 9,
+    "preferredRange": 4,
+    "weaponId": "nw_sporeburst",
+    "baseXp": 30,
+    "spriteWidth": 0.9,
+    "frames": {
+      "idle": [
+        "spore_idle_0",
+        "spore_idle_1",
+        "spore_idle_2",
+        "spore_idle_3"
+      ],
+      "attack": [
+        "spore_attack_0",
+        "spore_attack_1",
+        "spore_attack_2"
+      ],
+      "pain": [
+        "spore_pain_0"
+      ],
+      "death": [
+        "spore_death_0",
+        "spore_death_1",
+        "spore_death_2",
+        "spore_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "antitoxin",
+        "amount": 1,
+        "chance": 0.35
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "cultist_physical": {
+    "id": "cultist_physical",
+    "archetype": "cultist",
+    "element": "physical",
+    "name": "Tiefenkultist",
+    "baseHealth": 30,
+    "baseArmor": 1,
+    "baseAccuracy": 15,
+    "baseEvasion": 7,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 12,
+    "preferredRange": 6,
+    "weaponId": "nw_boltpistol",
+    "baseXp": 35,
+    "spriteWidth": 0.8,
+    "frames": {
+      "idle": [
+        "cultist_idle_0",
+        "cultist_idle_1",
+        "cultist_idle_2",
+        "cultist_idle_3"
+      ],
+      "attack": [
+        "cultist_attack_0",
+        "cultist_attack_1",
+        "cultist_attack_2"
+      ],
+      "pain": [
+        "cultist_pain_0"
+      ],
+      "death": [
+        "cultist_death_0",
+        "cultist_death_1",
+        "cultist_death_2",
+        "cultist_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.35
+      },
+      {
+        "defId": "ammo_pistol",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "chainrunner_physical": {
+    "id": "chainrunner_physical",
+    "archetype": "chainrunner",
+    "element": "physical",
+    "name": "Kettenläufer",
+    "baseHealth": 44,
+    "baseArmor": 2,
+    "baseAccuracy": 12,
+    "baseEvasion": 6,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "charger",
+    "aggroRange": 8,
+    "preferredRange": 1,
+    "weaponId": "nw_chainlash",
+    "baseXp": 40,
+    "spriteWidth": 1,
+    "frames": {
+      "idle": [
+        "chainrunner_idle_0",
+        "chainrunner_idle_1",
+        "chainrunner_idle_2",
+        "chainrunner_idle_3"
+      ],
+      "attack": [
+        "chainrunner_attack_0",
+        "chainrunner_attack_1",
+        "chainrunner_attack_2"
+      ],
+      "pain": [
+        "chainrunner_pain_0"
+      ],
+      "death": [
+        "chainrunner_death_0",
+        "chainrunner_death_1",
+        "chainrunner_death_2",
+        "chainrunner_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_shell",
+        "amount": 1,
+        "chance": 0.4
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "cultist_poison": {
+    "id": "cultist_poison",
+    "archetype": "cultist",
+    "element": "poison",
+    "name": "Vergifteter Tiefenkultist",
+    "baseHealth": 35,
+    "baseArmor": 1,
+    "baseAccuracy": 15,
+    "baseEvasion": 6,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 80,
+      "ice": 0,
+      "shock": -50,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 12,
+    "preferredRange": 6,
+    "weaponId": "nw_boltpistol_poison",
+    "baseXp": 35,
+    "spriteWidth": 0.8,
+    "frames": {
+      "idle": [
+        "cultist_idle_0",
+        "cultist_idle_1",
+        "cultist_idle_2",
+        "cultist_idle_3"
+      ],
+      "attack": [
+        "cultist_attack_0",
+        "cultist_attack_1",
+        "cultist_attack_2"
+      ],
+      "pain": [
+        "cultist_pain_0"
+      ],
+      "death": [
+        "cultist_death_0",
+        "cultist_death_1",
+        "cultist_death_2",
+        "cultist_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.35
+      },
+      {
+        "defId": "ammo_pistol",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "chainrunner_ice": {
+    "id": "chainrunner_ice",
+    "archetype": "chainrunner",
+    "element": "ice",
+    "name": "Erfrorener Kettenläufer",
+    "baseHealth": 48,
+    "baseArmor": 2,
+    "baseAccuracy": 11,
+    "baseEvasion": 5,
+    "resistances": {
+      "physical": 0,
+      "fire": -50,
+      "poison": 0,
+      "ice": 80,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "charger",
+    "aggroRange": 8,
+    "preferredRange": 1,
+    "weaponId": "nw_chainlash_ice",
+    "baseXp": 40,
+    "spriteWidth": 1,
+    "frames": {
+      "idle": [
+        "chainrunner_idle_0",
+        "chainrunner_idle_1",
+        "chainrunner_idle_2",
+        "chainrunner_idle_3"
+      ],
+      "attack": [
+        "chainrunner_attack_0",
+        "chainrunner_attack_1",
+        "chainrunner_attack_2"
+      ],
+      "pain": [
+        "chainrunner_pain_0"
+      ],
+      "death": [
+        "chainrunner_death_0",
+        "chainrunner_death_1",
+        "chainrunner_death_2",
+        "chainrunner_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_shell",
+        "amount": 1,
+        "chance": 0.4
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "hauler_physical": {
+    "id": "hauler_physical",
+    "archetype": "hauler",
+    "element": "physical",
+    "name": "Lastenläufer",
+    "baseHealth": 55,
+    "baseArmor": 4,
+    "baseAccuracy": 11,
+    "baseEvasion": 1,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_crush",
+    "baseXp": 55,
+    "spriteWidth": 1.1,
+    "frames": {
+      "idle": [
+        "hauler_idle_0",
+        "hauler_idle_1",
+        "hauler_idle_2",
+        "hauler_idle_3"
+      ],
+      "attack": [
+        "hauler_attack_0",
+        "hauler_attack_1",
+        "hauler_attack_2"
+      ],
+      "pain": [
+        "hauler_pain_0"
+      ],
+      "death": [
+        "hauler_death_0",
+        "hauler_death_1",
+        "hauler_death_2",
+        "hauler_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "drone_ice": {
+    "id": "drone_ice",
+    "archetype": "drone",
+    "element": "ice",
+    "name": "Erfrorene Schürfdrohne SK-3",
+    "baseHealth": 22,
+    "baseArmor": 3,
+    "baseAccuracy": 13,
+    "baseEvasion": -1,
+    "resistances": {
+      "physical": 0,
+      "fire": -50,
+      "poison": 0,
+      "ice": 80,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "turret",
+    "aggroRange": 8,
+    "preferredRange": 5,
+    "weaponId": "nw_cutter_ice",
+    "baseXp": 18,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "drone_idle_0",
+        "drone_idle_1",
+        "drone_idle_2",
+        "drone_idle_3"
+      ],
+      "attack": [
+        "drone_attack_0",
+        "drone_attack_1",
+        "drone_attack_2"
+      ],
+      "pain": [
+        "drone_pain_0"
+      ],
+      "death": [
+        "drone_death_0",
+        "drone_death_1",
+        "drone_death_2",
+        "drone_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.15
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "hauler_ice": {
+    "id": "hauler_ice",
+    "archetype": "hauler",
+    "element": "ice",
+    "name": "Erfrorener Lastenläufer",
+    "baseHealth": 61,
+    "baseArmor": 4,
+    "baseAccuracy": 10,
+    "baseEvasion": 0,
+    "resistances": {
+      "physical": 0,
+      "fire": -50,
+      "poison": 0,
+      "ice": 80,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_crush_ice",
+    "baseXp": 55,
+    "spriteWidth": 1.1,
+    "frames": {
+      "idle": [
+        "hauler_idle_0",
+        "hauler_idle_1",
+        "hauler_idle_2",
+        "hauler_idle_3"
+      ],
+      "attack": [
+        "hauler_attack_0",
+        "hauler_attack_1",
+        "hauler_attack_2"
+      ],
+      "pain": [
+        "hauler_pain_0"
+      ],
+      "death": [
+        "hauler_death_0",
+        "hauler_death_1",
+        "hauler_death_2",
+        "hauler_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "cultist_shock": {
+    "id": "cultist_shock",
+    "archetype": "cultist",
+    "element": "shock",
+    "name": "Geladener Tiefenkultist",
+    "baseHealth": 26,
+    "baseArmor": 1,
+    "baseAccuracy": 18,
+    "baseEvasion": 9,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": -50,
+      "ice": 0,
+      "shock": 80,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 12,
+    "preferredRange": 6,
+    "weaponId": "nw_boltpistol_shock",
+    "baseXp": 35,
+    "spriteWidth": 0.8,
+    "frames": {
+      "idle": [
+        "cultist_idle_0",
+        "cultist_idle_1",
+        "cultist_idle_2",
+        "cultist_idle_3"
+      ],
+      "attack": [
+        "cultist_attack_0",
+        "cultist_attack_1",
+        "cultist_attack_2"
+      ],
+      "pain": [
+        "cultist_pain_0"
+      ],
+      "death": [
+        "cultist_death_0",
+        "cultist_death_1",
+        "cultist_death_2",
+        "cultist_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.35
+      },
+      {
+        "defId": "ammo_pistol",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "crawler_ice": {
+    "id": "crawler_ice",
+    "archetype": "crawler",
+    "element": "ice",
+    "name": "Erfrorener Deckenkriecher",
+    "baseHealth": 20,
+    "baseArmor": 0,
+    "baseAccuracy": 10,
+    "baseEvasion": 13,
+    "resistances": {
+      "physical": 0,
+      "fire": -50,
+      "poison": 0,
+      "ice": 80,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 2,
+    "behavior": "charger",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_claw_ice",
+    "baseXp": 14,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "crawler_idle_0",
+        "crawler_idle_1",
+        "crawler_idle_2",
+        "crawler_idle_3"
+      ],
+      "attack": [
+        "crawler_attack_0",
+        "crawler_attack_1",
+        "crawler_attack_2"
+      ],
+      "pain": [
+        "crawler_pain_0"
+      ],
+      "death": [
+        "crawler_death_0",
+        "crawler_death_1",
+        "crawler_death_2",
+        "crawler_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "heal_small",
+        "amount": 1,
+        "chance": 0.2
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "warden_physical": {
+    "id": "warden_physical",
+    "archetype": "warden",
+    "element": "physical",
+    "name": "Grabungswächter",
+    "baseHealth": 95,
+    "baseArmor": 7,
+    "baseAccuracy": 13,
+    "baseEvasion": 0,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 0.5,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_slam",
+    "baseXp": 90,
+    "spriteWidth": 1.4,
+    "frames": {
+      "idle": [
+        "warden_idle_0",
+        "warden_idle_1",
+        "warden_idle_2",
+        "warden_idle_3"
+      ],
+      "attack": [
+        "warden_attack_0",
+        "warden_attack_1",
+        "warden_attack_2"
+      ],
+      "pain": [
+        "warden_pain_0"
+      ],
+      "death": [
+        "warden_death_0",
+        "warden_death_1",
+        "warden_death_2",
+        "warden_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_charge",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "heal_large",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "drone_shock": {
+    "id": "drone_shock",
+    "archetype": "drone",
+    "element": "shock",
+    "name": "Geladene Schürfdrohne SK-3",
+    "baseHealth": 17,
+    "baseArmor": 3,
+    "baseAccuracy": 17,
+    "baseEvasion": 2,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": -50,
+      "ice": 0,
+      "shock": 80,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "turret",
+    "aggroRange": 8,
+    "preferredRange": 5,
+    "weaponId": "nw_cutter_shock",
+    "baseXp": 18,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "drone_idle_0",
+        "drone_idle_1",
+        "drone_idle_2",
+        "drone_idle_3"
+      ],
+      "attack": [
+        "drone_attack_0",
+        "drone_attack_1",
+        "drone_attack_2"
+      ],
+      "pain": [
+        "drone_pain_0"
+      ],
+      "death": [
+        "drone_death_0",
+        "drone_death_1",
+        "drone_death_2",
+        "drone_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.15
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "warden_ice": {
+    "id": "warden_ice",
+    "archetype": "warden",
+    "element": "ice",
+    "name": "Erfrorener Grabungswächter",
+    "baseHealth": 105,
+    "baseArmor": 7,
+    "baseAccuracy": 12,
+    "baseEvasion": -1,
+    "resistances": {
+      "physical": 0,
+      "fire": -50,
+      "poison": 0,
+      "ice": 80,
+      "shock": 0,
+      "void": 0
+    },
+    "speed": 0.5,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_slam_ice",
+    "baseXp": 90,
+    "spriteWidth": 1.4,
+    "frames": {
+      "idle": [
+        "warden_idle_0",
+        "warden_idle_1",
+        "warden_idle_2",
+        "warden_idle_3"
+      ],
+      "attack": [
+        "warden_attack_0",
+        "warden_attack_1",
+        "warden_attack_2"
+      ],
+      "pain": [
+        "warden_pain_0"
+      ],
+      "death": [
+        "warden_death_0",
+        "warden_death_1",
+        "warden_death_2",
+        "warden_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_charge",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "heal_large",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "cultist_void": {
+    "id": "cultist_void",
+    "archetype": "cultist",
+    "element": "void",
+    "name": "Leerer Tiefenkultist",
+    "baseHealth": 38,
+    "baseArmor": 1,
+    "baseAccuracy": 17,
+    "baseEvasion": 7,
+    "resistances": {
+      "physical": 40,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 80
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 12,
+    "preferredRange": 6,
+    "weaponId": "nw_boltpistol_void",
+    "baseXp": 35,
+    "spriteWidth": 0.8,
+    "frames": {
+      "idle": [
+        "cultist_idle_0",
+        "cultist_idle_1",
+        "cultist_idle_2",
+        "cultist_idle_3"
+      ],
+      "attack": [
+        "cultist_attack_0",
+        "cultist_attack_1",
+        "cultist_attack_2"
+      ],
+      "pain": [
+        "cultist_pain_0"
+      ],
+      "death": [
+        "cultist_death_0",
+        "cultist_death_1",
+        "cultist_death_2",
+        "cultist_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.35
+      },
+      {
+        "defId": "ammo_pistol",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "crawler_void": {
+    "id": "crawler_void",
+    "archetype": "crawler",
+    "element": "void",
+    "name": "Leerer Deckenkriecher",
+    "baseHealth": 23,
+    "baseArmor": 0,
+    "baseAccuracy": 13,
+    "baseEvasion": 14,
+    "resistances": {
+      "physical": 40,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 80
+    },
+    "speed": 2,
+    "behavior": "charger",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_claw_void",
+    "baseXp": 14,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "crawler_idle_0",
+        "crawler_idle_1",
+        "crawler_idle_2",
+        "crawler_idle_3"
+      ],
+      "attack": [
+        "crawler_attack_0",
+        "crawler_attack_1",
+        "crawler_attack_2"
+      ],
+      "pain": [
+        "crawler_pain_0"
+      ],
+      "death": [
+        "crawler_death_0",
+        "crawler_death_1",
+        "crawler_death_2",
+        "crawler_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "heal_small",
+        "amount": 1,
+        "chance": 0.2
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "hauler_void": {
+    "id": "hauler_void",
+    "archetype": "hauler",
+    "element": "void",
+    "name": "Leerer Lastenläufer",
+    "baseHealth": 69,
+    "baseArmor": 4,
+    "baseAccuracy": 13,
+    "baseEvasion": 1,
+    "resistances": {
+      "physical": 40,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 80
+    },
+    "speed": 1,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_crush_void",
+    "baseXp": 55,
+    "spriteWidth": 1.1,
+    "frames": {
+      "idle": [
+        "hauler_idle_0",
+        "hauler_idle_1",
+        "hauler_idle_2",
+        "hauler_idle_3"
+      ],
+      "attack": [
+        "hauler_attack_0",
+        "hauler_attack_1",
+        "hauler_attack_2"
+      ],
+      "pain": [
+        "hauler_pain_0"
+      ],
+      "death": [
+        "hauler_death_0",
+        "hauler_death_1",
+        "hauler_death_2",
+        "hauler_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "drone_void": {
+    "id": "drone_void",
+    "archetype": "drone",
+    "element": "void",
+    "name": "Leere Schürfdrohne SK-3",
+    "baseHealth": 25,
+    "baseArmor": 3,
+    "baseAccuracy": 16,
+    "baseEvasion": 0,
+    "resistances": {
+      "physical": 40,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 80
+    },
+    "speed": 1,
+    "behavior": "turret",
+    "aggroRange": 8,
+    "preferredRange": 5,
+    "weaponId": "nw_cutter_void",
+    "baseXp": 18,
+    "spriteWidth": 0.6,
+    "frames": {
+      "idle": [
+        "drone_idle_0",
+        "drone_idle_1",
+        "drone_idle_2",
+        "drone_idle_3"
+      ],
+      "attack": [
+        "drone_attack_0",
+        "drone_attack_1",
+        "drone_attack_2"
+      ],
+      "pain": [
+        "drone_pain_0"
+      ],
+      "death": [
+        "drone_death_0",
+        "drone_death_1",
+        "drone_death_2",
+        "drone_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_rivet",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "armor_plate",
+        "amount": 1,
+        "chance": 0.15
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "chainrunner_shock": {
+    "id": "chainrunner_shock",
+    "archetype": "chainrunner",
+    "element": "shock",
+    "name": "Geladener Kettenläufer",
+    "baseHealth": 37,
+    "baseArmor": 2,
+    "baseAccuracy": 15,
+    "baseEvasion": 8,
+    "resistances": {
+      "physical": 0,
+      "fire": 0,
+      "poison": -50,
+      "ice": 0,
+      "shock": 80,
+      "void": 0
+    },
+    "speed": 1,
+    "behavior": "charger",
+    "aggroRange": 8,
+    "preferredRange": 1,
+    "weaponId": "nw_chainlash_shock",
+    "baseXp": 40,
+    "spriteWidth": 1,
+    "frames": {
+      "idle": [
+        "chainrunner_idle_0",
+        "chainrunner_idle_1",
+        "chainrunner_idle_2",
+        "chainrunner_idle_3"
+      ],
+      "attack": [
+        "chainrunner_attack_0",
+        "chainrunner_attack_1",
+        "chainrunner_attack_2"
+      ],
+      "pain": [
+        "chainrunner_pain_0"
+      ],
+      "death": [
+        "chainrunner_death_0",
+        "chainrunner_death_1",
+        "chainrunner_death_2",
+        "chainrunner_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_shell",
+        "amount": 1,
+        "chance": 0.4
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "warden_void": {
+    "id": "warden_void",
+    "archetype": "warden",
+    "element": "void",
+    "name": "Leerer Grabungswächter",
+    "baseHealth": 119,
+    "baseArmor": 7,
+    "baseAccuracy": 15,
+    "baseEvasion": 0,
+    "resistances": {
+      "physical": 40,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 80
+    },
+    "speed": 0.5,
+    "behavior": "melee",
+    "aggroRange": 7,
+    "preferredRange": 1,
+    "weaponId": "nw_slam_void",
+    "baseXp": 90,
+    "spriteWidth": 1.4,
+    "frames": {
+      "idle": [
+        "warden_idle_0",
+        "warden_idle_1",
+        "warden_idle_2",
+        "warden_idle_3"
+      ],
+      "attack": [
+        "warden_attack_0",
+        "warden_attack_1",
+        "warden_attack_2"
+      ],
+      "pain": [
+        "warden_pain_0"
+      ],
+      "death": [
+        "warden_death_0",
+        "warden_death_1",
+        "warden_death_2",
+        "warden_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "ammo_charge",
+        "amount": 1,
+        "chance": 0.5
+      },
+      {
+        "defId": "heal_large",
+        "amount": 1,
+        "chance": 0.3
+      }
+    ],
+    "dropTableId": "common_drop"
+  },
+  "spore_void": {
+    "id": "spore_void",
+    "archetype": "spore",
+    "element": "void",
+    "name": "Leerer Sporenträger",
+    "baseHealth": 40,
+    "baseArmor": 2,
+    "baseAccuracy": 13,
+    "baseEvasion": 3,
+    "resistances": {
+      "physical": 40,
+      "fire": 0,
+      "poison": 0,
+      "ice": 0,
+      "shock": 0,
+      "void": 80
+    },
+    "speed": 1,
+    "behavior": "ranged",
+    "aggroRange": 9,
+    "preferredRange": 4,
+    "weaponId": "nw_sporeburst_void",
+    "baseXp": 30,
+    "spriteWidth": 0.9,
+    "frames": {
+      "idle": [
+        "spore_idle_0",
+        "spore_idle_1",
+        "spore_idle_2",
+        "spore_idle_3"
+      ],
+      "attack": [
+        "spore_attack_0",
+        "spore_attack_1",
+        "spore_attack_2"
+      ],
+      "pain": [
+        "spore_pain_0"
+      ],
+      "death": [
+        "spore_death_0",
+        "spore_death_1",
+        "spore_death_2",
+        "spore_death_3"
+      ]
+    },
+    "drops": [
+      {
+        "defId": "antitoxin",
+        "amount": 1,
+        "chance": 0.35
       }
     ],
     "dropTableId": "common_drop"

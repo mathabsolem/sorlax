@@ -56,12 +56,17 @@ export async function checksum(json: string): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-/** Kopfdaten eines Standes fuer die Platzliste im Menue. */
+/**
+ * Kopfdaten eines Standes fuer die Platzliste im Menue.
+ * Seit INTERFACES v1.5 wird der Kartenname mitgespeichert, damit die Liste
+ * ohne `ContentDb` auskommt.
+ */
 export async function metaFor(
   state: GameState,
   slot: number,
   json: string,
-  now: string
+  now: string,
+  mapName: string
 ): Promise<SaveMeta> {
   return {
     slot,
@@ -69,6 +74,7 @@ export async function metaFor(
     level: state.player.level,
     difficulty: state.difficulty,
     mapId: state.currentMapId,
+    mapName,
     playTimeMs: state.playTimeMs,
     updatedAt: now,
     checksum: await checksum(json),
@@ -89,7 +95,9 @@ export class SaveTooLargeError extends Error {
  */
 export function createLocalStore(
   backend: SaveBackend,
-  now: () => string = () => new Date().toISOString()
+  now: () => string = () => new Date().toISOString(),
+  /** Loest den Kartennamen auf. Ohne Inhalte bleibt die Id stehen. */
+  mapNameOf: (mapId: string) => string = (mapId) => mapId
 ): LocalStore {
   return {
     async list(): Promise<SaveMeta[]> {
@@ -111,7 +119,7 @@ export function createLocalStore(
       const size = saveSizeOf(json);
       if (!size.ok) throw new SaveTooLargeError(size.bytes);
 
-      const meta = await metaFor(state, slot, json, now());
+      const meta = await metaFor(state, slot, json, now(), mapNameOf(state.currentMapId));
       await backend.put(slotKey(difficulty, slot), { meta, state: JSON.parse(json) as GameState });
       return meta;
     },

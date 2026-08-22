@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { EQUIP_SLOTS } from '../src/core/types';
-import type { EquipSlot, Rarity } from '../src/core/types';
+import type { Rarity } from '../src/core/types';
 import { AFFIXES, DROP_TABLES, EQUIPMENT } from './fixtures/world';
 
 const KINDS = ['prefix', 'suffix'];
@@ -84,7 +84,7 @@ describe('content/items.json', () => {
       (slot) => slot !== 'weapon' && slot !== 'gauge_right'
     );
     for (const slot of gearSlots) {
-      const bases = gear.filter((def) => def.slot === slot);
+      const bases = gear.filter((def) => (def.slots ?? []).includes(slot));
       expect(bases).toHaveLength(2);
 
       const light = bases.filter((def) => def.reqLevel === 1);
@@ -97,14 +97,17 @@ describe('content/items.json', () => {
   it('traegt bei jedem Eintrag Schluessel, Steckplatz und Menge', () => {
     for (const [key, def] of Object.entries(EQUIPMENT)) {
       expect(def.id).toBe(key);
-      expect(def.amount).toBe(1);
       for (const mod of def.baseModifiers ?? []) expect(MODES).toContain(mod.mode);
+      // Ausruestung liegt einzeln, Stapelware traegt ihre Menge im Feld.
+      if (def.type === 'equipment' || def.type === 'weapon') expect(def.amount).toBe(1);
+      else expect(def.amount).toBeGreaterThan(0);
 
       // Stapelware wie scanner_charge hat keinen Steckplatz.
       if (def.type === 'equipment' || def.type === 'weapon') {
-        expect(EQUIP_SLOTS).toContain(def.slot as EquipSlot);
+        expect(def.slots?.length).toBeGreaterThan(0);
+        for (const slot of def.slots ?? []) expect(EQUIP_SLOTS).toContain(slot);
       } else {
-        expect(def.slot).toBeUndefined();
+        expect(def.slots).toBeUndefined();
       }
     }
   });
@@ -113,13 +116,13 @@ describe('content/items.json', () => {
     const scanner = EQUIPMENT['scanner_charge'];
     expect(scanner?.type).toBe('powerup');
     expect(scanner?.amount).toBe(1);
-    expect(scanner?.slot).toBeUndefined();
+    expect(scanner?.slots).toBeUndefined();
   });
 
   it('fuehrt die zehn Waffen aus BESTIARY Abschnitt 7', () => {
     expect(weapons).toHaveLength(10);
     for (const def of weapons) {
-      expect(def.slot).toBe('weapon');
+      expect(def.slots).toEqual(['weapon']);
       expect(def.weaponId).toBe(def.id.replace(/^item_/, ''));
       // Nahkampf verlangt Kraft, Fernkampf Geschick (PHASE_3_8 Block 3).
       const melee = def.reqStrength > 0;

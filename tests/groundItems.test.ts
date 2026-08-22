@@ -4,7 +4,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
 import { dropItemAction, equipAction } from '../src/core/equipActions';
-import { MAX_INVENTORY, addToInventory, createInstance } from '../src/core/items';
+import { MAX_INVENTORY, addToInventory, createInstance,
+  takeItemUid } from '../src/core/items';
 import { pickupGroundItems } from '../src/core/playerActions';
 import type { ContentDb, GameState, ItemInstance } from '../src/core/types';
 import { setup } from './fixtures/world';
@@ -21,7 +22,7 @@ function give(
   baseId: string,
   affixes: { affixId: string; value: number }[] = []
 ): ItemInstance {
-  const item = createInstance(state, baseId, 20, 'rare', affixes, content);
+  const item = createInstance(takeItemUid(state), baseId, 20, 'rare', affixes, content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   addToInventory(state, item);
   return item;

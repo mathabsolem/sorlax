@@ -2,7 +2,8 @@
  * Gegenstandsvergleich und Detailansicht, PHASE_4_5 Bloecke 1 bis 3.
  */
 import { describe, expect, it } from 'vitest';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import { serialize } from '../src/core/state';
 import { canEquip, compareItems, isUpgrade, wornFor } from '../src/ui/itemModel';
 import type { ContentDb, GameState, ItemInstance } from '../src/core/types';
@@ -15,7 +16,7 @@ function craft(
   affixes: { affixId: string; value: number }[] = [],
   identified = true
 ): ItemInstance {
-  const item = createInstance(state, baseId, 20, 'rare', affixes, content);
+  const item = createInstance(takeItemUid(state), baseId, 20, 'rare', affixes, content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   item.identified = identified;
   return item;
@@ -177,7 +178,7 @@ describe('wornFor', () => {
     const gauge = craft(state, content, 'gauge_pressure');
     state.player.equipment['gauge_right'] = gauge;
 
-    expect(wornFor(state.player, craft(state, content, 'gauge_seismic'))).toBe(gauge);
-    expect(wornFor(state.player, craft(state, content, 'suit_overall'))).toBeNull();
+    expect(wornFor(state.player, craft(state, content, 'gauge_seismic'), content)).toBe(gauge);
+    expect(wornFor(state.player, craft(state, content, 'suit_overall'), content)).toBeNull();
   });
 });

@@ -4,7 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
-import { IDENTIFY_ITEM_ID, addToInventory, createInstance } from '../src/core/items';
+import { IDENTIFY_ITEM_ID, addToInventory, createInstance,
+  takeItemUid } from '../src/core/items';
 import { useConsumableAction } from '../src/core/playerActions';
 import {
   SKILLBAR_SLOTS,
@@ -18,7 +19,7 @@ import { setup } from './fixtures/world';
 
 function unidentified(state: GameState, content: ContentDb): ItemInstance {
   const item = createInstance(
-    state,
+    takeItemUid(state),
     'suit_overall',
     12,
     'rare',

@@ -197,6 +197,6 @@ describe('Meldungsprotokoll', () => {
     const texts = state.log.map((entry) => entry.text);
     expect(texts).toContain('Punkt auf Konstitution');
     expect(texts).toContain('Punkt auf Zielschlag');
-    expect(texts).toContain('Waffe abgelegt');
+    expect(texts.some((text) => text.startsWith('Brechstange abgelegt'))).toBe(true);
   });
 });

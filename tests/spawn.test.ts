@@ -72,11 +72,10 @@ describe('rollMapLoot', () => {
     const equipped = enemies(mapStateOf(state)).filter((e) => e.rank === 'equipped');
 
     // RPG.md Abschnitt 9 nennt neun Prozent, also einen Erwartungswert von 18
-    // bei 200 Gegnern. Die Spanne 5 bis 40 deckt die Streuung sicher ab.
-    // PHASE_3_6 nennt an dieser Stelle 40 bis 80, was zu den eigenen neun
-    // Prozent nicht passt; RPG.md Abschnitt 9 ist laut SPEC 5 verbindlich.
-    expect(equipped.length).toBeGreaterThanOrEqual(5);
-    expect(equipped.length).toBeLessThanOrEqual(40);
+    // bei 200 Gegnern. CONTENT_TABLES Abschnitt 4 ratifiziert die Spanne 8 bis
+    // 32; die 40 bis 80 aus PHASE_3_6 waren falsch.
+    expect(equipped.length).toBeGreaterThanOrEqual(8);
+    expect(equipped.length).toBeLessThanOrEqual(32);
     for (const entity of equipped) {
       const pieces = Object.keys(entity.equipment ?? {});
       expect(pieces.length).toBeGreaterThanOrEqual(1);
@@ -93,8 +92,11 @@ describe('rollMapLoot', () => {
   });
 
   it('gibt forceRank den Vorrang vor dem Wurf', () => {
+    // Tiefe 12, damit die Gegnerstufe die minItemLevel der einzigartigen
+    // Gegenstaende aus CONTENT_TABLES Abschnitt 2 ueberhaupt erreicht.
     const { state } = setup({
       loot: true,
+      depth: 12,
       entities: [
         { kind: 'enemy', defId: 'grunt', pos: { x: 3, y: 1 }, forceRank: 'equipped' },
         { kind: 'enemy', defId: 'grunt', pos: { x: 4, y: 1 }, forceRank: 'boss' },

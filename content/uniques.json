@@ -1,0 +1,146 @@
+{
+  "uq_halvern_visier": {
+    "id": "uq_halvern_visier",
+    "baseId": "helmet_visor",
+    "name": "Halverns Brandvisier",
+    "minItemLevel": 6,
+    "affixes": [
+      {
+        "affixId": "suf_of_embers",
+        "value": 35
+      },
+      {
+        "affixId": "pre_plated",
+        "value": 5
+      },
+      {
+        "affixId": "suf_of_the_lamp",
+        "value": 2
+      }
+    ]
+  },
+  "uq_sporenlunge": {
+    "id": "uq_sporenlunge",
+    "baseId": "suit_overall",
+    "name": "Sporenlunge",
+    "minItemLevel": 13,
+    "affixes": [
+      {
+        "affixId": "suf_of_spores",
+        "value": 35
+      },
+      {
+        "affixId": "suf_of_vigor",
+        "value": 28
+      },
+      {
+        "affixId": "pre_plated",
+        "value": 4
+      }
+    ]
+  },
+  "uq_frostkern": {
+    "id": "uq_frostkern",
+    "baseId": "guard_deflector",
+    "name": "Frostkern",
+    "minItemLevel": 19,
+    "affixes": [
+      {
+        "affixId": "suf_of_rime",
+        "value": 35
+      },
+      {
+        "affixId": "pre_reinforced",
+        "value": 11
+      },
+      {
+        "affixId": "suf_of_embers",
+        "value": 15
+      }
+    ]
+  },
+  "uq_sorlax_auge": {
+    "id": "uq_sorlax_auge",
+    "baseId": "amulet_sigil",
+    "name": "Das Auge von Sorlax",
+    "minItemLevel": 26,
+    "affixes": [
+      {
+        "affixId": "suf_of_focus",
+        "value": 6
+      },
+      {
+        "affixId": "pre_charged",
+        "value": 9
+      },
+      {
+        "affixId": "suf_of_vigor",
+        "value": 30
+      }
+    ]
+  },
+  "uq_stollenschritt": {
+    "id": "uq_stollenschritt",
+    "baseId": "boots_rubber",
+    "name": "Stollenschritt",
+    "minItemLevel": 8,
+    "affixes": [
+      {
+        "affixId": "suf_of_evasion",
+        "value": 6
+      },
+      {
+        "affixId": "suf_of_haste",
+        "value": 7
+      }
+    ]
+  },
+  "uq_greifer": {
+    "id": "uq_greifer",
+    "baseId": "gloves_grip",
+    "name": "Der Greifer",
+    "minItemLevel": 10,
+    "affixes": [
+      {
+        "affixId": "pre_honed",
+        "value": 8
+      },
+      {
+        "affixId": "suf_of_precision",
+        "value": 5
+      }
+    ]
+  },
+  "uq_pruefblei": {
+    "id": "uq_pruefblei",
+    "baseId": "gauge_pressure",
+    "name": "Prüfblei",
+    "minItemLevel": 14,
+    "affixes": [
+      {
+        "affixId": "suf_of_might",
+        "value": 6
+      },
+      {
+        "affixId": "pre_plated",
+        "value": 5
+      }
+    ]
+  },
+  "uq_wetterglas": {
+    "id": "uq_wetterglas",
+    "baseId": "gauge_seismic",
+    "name": "Wetterglas",
+    "minItemLevel": 20,
+    "affixes": [
+      {
+        "affixId": "suf_of_focus",
+        "value": 6
+      },
+      {
+        "affixId": "pre_honed",
+        "value": 7
+      }
+    ]
+  }
+}

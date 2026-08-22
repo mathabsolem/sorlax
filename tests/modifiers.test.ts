@@ -14,7 +14,8 @@ import {
   resistanceTypeOf,
 } from '../src/core/modifiers';
 import type { ModifierSums } from '../src/core/modifiers';
-import { createInstance } from '../src/core/items';
+import { createInstance,
+  takeItemUid } from '../src/core/items';
 import { startAttributes } from '../src/core/state';
 import type { ContentDb, GameState, ItemInstance } from '../src/core/types';
 import { setup } from './fixtures/world';
@@ -25,7 +26,7 @@ function craft(
   baseId: string,
   affixes: { affixId: string; value: number }[]
 ): ItemInstance {
-  const item = createInstance(state, baseId, 20, 'rare', affixes, content);
+  const item = createInstance(takeItemUid(state), baseId, 20, 'rare', affixes, content);
   if (item === null) throw new Error(`kein Grundtyp: ${baseId}`);
   return item;
 }

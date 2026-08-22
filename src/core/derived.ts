@@ -14,7 +14,7 @@
  * DerivedStats, sondern ein Zuschlag im Kampf und liegt deshalb in combat.ts.
  */
 import { modifiersFor } from './difficulty';
-import { DRAIN_ARMOR_PENALTY } from './effectDefs';
+import { BOON_STATS, DRAIN_ARMOR_PENALTY } from './effectDefs';
 import {
   attributeBonus,
   collectEquipmentModifiers,
@@ -67,7 +67,10 @@ function findEffect(effects: readonly ActiveEffect[], id: string): ActiveEffect 
   return effects.find((effect) => effect.id === id && effect.remainingTurns > 0);
 }
 
-/** Wirkung laufender Statuseffekte auf die abgeleiteten Werte, SPEC 4.5. */
+/**
+ * Wirkung laufender Statuseffekte auf die abgeleiteten Werte.
+ * Schaedliche nach SPEC 4.5, foerderliche nach CONTENT_TABLES Abschnitt 1.
+ */
 function applyEffects(stats: DerivedStats, effects: readonly ActiveEffect[]): void {
   const jolt = findEffect(effects, 'jolt');
   if (jolt !== undefined) {
@@ -78,6 +81,37 @@ function applyEffects(stats: DerivedStats, effects: readonly ActiveEffect[]): vo
   if (drain !== undefined) {
     stats.maxHealth = Math.max(1, Math.round(stats.maxHealth * (1 - drain.magnitude / 100)));
     stats.armor -= DRAIN_ARMOR_PENALTY;
+  }
+
+  // Foerderliche Effekte wirken additiv wie ein Ausruestungsaffix: flach
+  // aufsummieren, prozentual aufsummieren und einmal anwenden.
+  const boons = emptySums();
+  for (const effect of effects) {
+    if (effect.remainingTurns <= 0) continue;
+    const boon = BOON_STATS[effect.id];
+    if (boon === undefined) continue;
+    addBoon(boons, boon.stat, boon.mode, effect.magnitude);
+  }
+  applyBoons(stats, boons);
+}
+
+type BoonSums = { flat: Record<string, number>; percent: Record<string, number> };
+
+function emptySums(): BoonSums {
+  return { flat: {}, percent: {} };
+}
+
+function addBoon(sums: BoonSums, stat: string, mode: 'flat' | 'percent', value: number): void {
+  const bucket = mode === 'flat' ? sums.flat : sums.percent;
+  bucket[stat] = (bucket[stat] ?? 0) + value;
+}
+
+function applyBoons(stats: DerivedStats, sums: BoonSums): void {
+  const target = stats as unknown as Record<string, number>;
+  for (const stat of new Set([...Object.keys(sums.flat), ...Object.keys(sums.percent)])) {
+    const current = target[stat];
+    if (typeof current !== 'number') continue;
+    target[stat] = (current + (sums.flat[stat] ?? 0)) * (1 + (sums.percent[stat] ?? 0) / 100);
   }
 }
 

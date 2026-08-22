@@ -16,6 +16,7 @@ import {
   MAX_INVENTORY,
   addToInventory,
   createInstance,
+  takeItemUid,
   equippedWeapon,
 } from '../src/core/items';
 import { equipAction } from '../src/core/equipActions';
@@ -132,7 +133,7 @@ describe('Rundreise mit Ausruestung', () => {
     if (mapState === undefined) throw new Error('kein Kartenzustand');
 
     const worn = createInstance(
-      state,
+      takeItemUid(state),
       'suit_overall',
       12,
       'rare',
@@ -147,13 +148,13 @@ describe('Rundreise mit Ausruestung', () => {
     expect(equipAction(state, content, worn.uid).ok).toBe(true);
 
     for (let index = 0; index < MAX_INVENTORY; index++) {
-      const item = createInstance(state, 'belt_tool', index + 1, 'magic', [
+      const item = createInstance(takeItemUid(state), 'belt_tool', index + 1, 'magic', [
         { affixId: 'suf_of_vigor', value: 15 + (index % 16) },
       ], content);
       if (item === null) throw new Error('kein Grundtyp');
       addToInventory(state, item);
     }
-    const spare = createInstance(state, 'gloves_grip', 3, 'normal', [], content);
+    const spare = createInstance(takeItemUid(state), 'gloves_grip', 3, 'normal', [], content);
     if (spare === null) throw new Error('kein Grundtyp');
     mapState.groundItems.push({ pos: { x: 2, y: 2 }, item: spare });
 

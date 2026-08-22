@@ -6,7 +6,13 @@
  * Resistenz des Ziels gegen sein Element 50 oder hoeher ist.
  */
 import { enemyActor, getDerivedStats, playerActor } from './derived';
-import { EFFECT_DEFS, EFFECT_ORDER, EFFECT_RESIST_THRESHOLD, isEffectId } from './effectDefs';
+import {
+  BOON_STATS,
+  EFFECT_DEFS,
+  EFFECT_ORDER,
+  EFFECT_RESIST_THRESHOLD,
+  isEffectId,
+} from './effectDefs';
 import type { EffectId } from './effectDefs';
 import { isAlive } from './entities';
 import type {
@@ -77,6 +83,39 @@ export function applyEffect(
 }
 
 /** Legt einen Effekt mit den Standardwerten aus der Tabelle an. */
+/**
+ * Setzt einen foerderlichen Effekt aus CONTENT_TABLES Abschnitt 1.
+ * Dauer und Staerke kommen aus dem `ItemDef`, nicht aus der Effekttabelle, und
+ * es gibt keine Resistenzpruefung: das ist kein Angriff.
+ */
+export function applyBoon(
+  target: Actor,
+  effectId: string,
+  turns: number,
+  magnitude: number
+): GameEvent[] {
+  if (BOON_STATS[effectId] === undefined) return [];
+
+  const effects = effectsOf(target);
+  const existing = effects.find((effect) => effect.id === effectId);
+  if (existing !== undefined) {
+    existing.remainingTurns = turns;
+    existing.magnitude = magnitude;
+  } else {
+    effects.push({ id: effectId, remainingTurns: turns, magnitude, sourceType: 'physical' });
+  }
+  return [{ type: 'effectApplied', who: refOf(target), effectId, turns }];
+}
+
+/** Entfernt einen laufenden Effekt. Liefert das `effectExpired`-Ereignis. */
+export function removeEffect(target: Actor, effectId: string): GameEvent[] {
+  const effects = effectsOf(target);
+  const index = effects.findIndex((effect) => effect.id === effectId);
+  if (index < 0) return [];
+  effects.splice(index, 1);
+  return [{ type: 'effectExpired', who: refOf(target), effectId }];
+}
+
 export function applyEffectDefault(
   target: Actor,
   effectId: string,
@@ -122,6 +161,16 @@ function tickActor(actor: Actor, content: ContentDb, difficulty: Difficulty): Ga
     effect.remainingTurns -= 1;
     if (effect.remainingTurns <= 0) {
       events.push({ type: 'effectExpired', who, effectId: id });
+    }
+  }
+
+  // Foerderliche Effekte richten keinen Schaden an, laufen aber genauso ab
+  // (CONTENT_TABLES Abschnitt 1). Sie stehen nicht in EFFECT_ORDER.
+  for (const effect of effects) {
+    if (BOON_STATS[effect.id] === undefined || effect.remainingTurns <= 0) continue;
+    effect.remainingTurns -= 1;
+    if (effect.remainingTurns <= 0) {
+      events.push({ type: 'effectExpired', who, effectId: effect.id });
     }
   }
 

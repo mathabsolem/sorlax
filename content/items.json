@@ -3,7 +3,9 @@
     "id": "suit_overall",
     "name": "Arbeitsoverall",
     "type": "equipment",
-    "slot": "suit",
+    "slots": [
+      "suit"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -27,7 +29,9 @@
     "id": "suit_plated",
     "name": "Panzeranzug",
     "type": "equipment",
-    "slot": "suit",
+    "slots": [
+      "suit"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -51,7 +55,9 @@
     "id": "helmet_hardhat",
     "name": "Schutzhelm",
     "type": "equipment",
-    "slot": "helmet",
+    "slots": [
+      "helmet"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -75,7 +81,9 @@
     "id": "helmet_visor",
     "name": "Vollvisierhelm",
     "type": "equipment",
-    "slot": "helmet",
+    "slots": [
+      "helmet"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -99,7 +107,9 @@
     "id": "belt_tool",
     "name": "Werkzeuggürtel",
     "type": "equipment",
-    "slot": "belt",
+    "slots": [
+      "belt"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -123,7 +133,9 @@
     "id": "belt_harness",
     "name": "Traggeschirr",
     "type": "equipment",
-    "slot": "belt",
+    "slots": [
+      "belt"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -147,7 +159,9 @@
     "id": "boots_rubber",
     "name": "Gummistiefel",
     "type": "equipment",
-    "slot": "boots",
+    "slots": [
+      "boots"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -171,7 +185,9 @@
     "id": "boots_steel",
     "name": "Stahlkappenstiefel",
     "type": "equipment",
-    "slot": "boots",
+    "slots": [
+      "boots"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -195,7 +211,9 @@
     "id": "gloves_grip",
     "name": "Griffhandschuhe",
     "type": "equipment",
-    "slot": "gloves",
+    "slots": [
+      "gloves"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -219,7 +237,9 @@
     "id": "gloves_armored",
     "name": "Panzerhandschuhe",
     "type": "equipment",
-    "slot": "gloves",
+    "slots": [
+      "gloves"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -243,7 +263,9 @@
     "id": "guard_deflector",
     "name": "Ablenkmodul",
     "type": "equipment",
-    "slot": "guard",
+    "slots": [
+      "guard"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -267,7 +289,9 @@
     "id": "guard_plate",
     "name": "Schulterpanzer",
     "type": "equipment",
-    "slot": "guard",
+    "slots": [
+      "guard"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -291,7 +315,9 @@
     "id": "amulet_tag",
     "name": "Erkennungsmarke",
     "type": "equipment",
-    "slot": "amulet",
+    "slots": [
+      "amulet"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -315,7 +341,9 @@
     "id": "amulet_sigil",
     "name": "Fundsiegel",
     "type": "equipment",
-    "slot": "amulet",
+    "slots": [
+      "amulet"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -339,7 +367,10 @@
     "id": "gauge_pressure",
     "name": "Druckmesser",
     "type": "equipment",
-    "slot": "gauge_left",
+    "slots": [
+      "gauge_left",
+      "gauge_right"
+    ],
     "amount": 1,
     "reqLevel": 1,
     "reqStrength": 10,
@@ -363,7 +394,10 @@
     "id": "gauge_seismic",
     "name": "Seismograf",
     "type": "equipment",
-    "slot": "gauge_left",
+    "slots": [
+      "gauge_left",
+      "gauge_right"
+    ],
     "amount": 1,
     "reqLevel": 8,
     "reqStrength": 22,
@@ -387,7 +421,9 @@
     "id": "item_w_prybar",
     "name": "Brechstange",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_prybar",
     "amount": 1,
     "reqLevel": 1,
@@ -400,7 +436,9 @@
     "id": "item_w_pistol",
     "name": "Grubenpistole 9 mm",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_pistol",
     "amount": 1,
     "reqLevel": 1,
@@ -413,7 +451,9 @@
     "id": "item_w_shotgun",
     "name": "Bolzensetzflinte",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_shotgun",
     "amount": 1,
     "reqLevel": 1,
@@ -426,7 +466,9 @@
     "id": "item_w_riveter",
     "name": "Bolzenkarabiner",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_riveter",
     "amount": 1,
     "reqLevel": 1,
@@ -439,7 +481,9 @@
     "id": "item_w_rod",
     "name": "Induktionsstab",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_rod",
     "amount": 1,
     "reqLevel": 1,
@@ -452,7 +496,9 @@
     "id": "item_w_charger",
     "name": "Sprengladungswerfer",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_charger",
     "amount": 1,
     "reqLevel": 1,
@@ -465,7 +511,9 @@
     "id": "item_w_lance",
     "name": "Brennlanze",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_lance",
     "amount": 1,
     "reqLevel": 4,
@@ -478,7 +526,9 @@
     "id": "item_w_sprayer",
     "name": "Toxinsprüher",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_sprayer",
     "amount": 1,
     "reqLevel": 8,
@@ -491,7 +541,9 @@
     "id": "item_w_drill",
     "name": "Frostbohrer",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_drill",
     "amount": 1,
     "reqLevel": 12,
@@ -504,7 +556,9 @@
     "id": "item_w_scepter",
     "name": "Zepter von Sorlax",
     "type": "weapon",
-    "slot": "weapon",
+    "slots": [
+      "weapon"
+    ],
     "weaponId": "w_scepter",
     "amount": 1,
     "reqLevel": 16,
@@ -515,7 +569,7 @@
   },
   "scanner_charge": {
     "id": "scanner_charge",
-    "name": "Scannerladung",
+    "name": "Prüfzelle",
     "type": "powerup",
     "amount": 1,
     "reqLevel": 1,
@@ -523,5 +577,158 @@
     "reqAgility": 0,
     "sprite": "scanner_charge",
     "icon": "scanner_charge"
+  },
+  "heal_small": {
+    "id": "heal_small",
+    "name": "Notverband",
+    "type": "heal",
+    "amount": 25,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "heal_small",
+    "icon": "heal_small"
+  },
+  "heal_large": {
+    "id": "heal_large",
+    "name": "Trauma-Kit",
+    "type": "heal",
+    "amount": 60,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "heal_large",
+    "icon": "heal_large"
+  },
+  "antitoxin": {
+    "id": "antitoxin",
+    "name": "Antitoxin",
+    "type": "heal",
+    "amount": 10,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "effect": {
+      "id": "cure_toxin",
+      "turns": 0,
+      "magnitude": 0
+    },
+    "sprite": "antitoxin",
+    "icon": "antitoxin"
+  },
+  "armor_plate": {
+    "id": "armor_plate",
+    "name": "Panzerplatte",
+    "type": "powerup",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "effect": {
+      "id": "plating",
+      "turns": 20,
+      "magnitude": 10
+    },
+    "sprite": "armor_plate",
+    "icon": "armor_plate"
+  },
+  "ammo_pistol": {
+    "id": "ammo_pistol",
+    "name": "9-mm-Magazin",
+    "type": "ammo",
+    "amount": 8,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_pistol",
+    "icon": "ammo_pistol"
+  },
+  "ammo_rivet": {
+    "id": "ammo_rivet",
+    "name": "Bolzenstreifen",
+    "type": "ammo",
+    "amount": 6,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_rivet",
+    "icon": "ammo_rivet"
+  },
+  "ammo_shell": {
+    "id": "ammo_shell",
+    "name": "Setzpatronen",
+    "type": "ammo",
+    "amount": 4,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_shell",
+    "icon": "ammo_shell"
+  },
+  "ammo_charge": {
+    "id": "ammo_charge",
+    "name": "Vortriebsladung",
+    "type": "ammo",
+    "amount": 2,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_charge",
+    "icon": "ammo_charge"
+  },
+  "ammo_fuel": {
+    "id": "ammo_fuel",
+    "name": "Brennstoffpatrone",
+    "type": "ammo",
+    "amount": 6,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_fuel",
+    "icon": "ammo_fuel"
+  },
+  "ammo_toxin_canister": {
+    "id": "ammo_toxin_canister",
+    "name": "Toxinkanister",
+    "type": "ammo",
+    "amount": 5,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_toxin_canister",
+    "icon": "ammo_toxin_canister"
+  },
+  "ammo_coolant": {
+    "id": "ammo_coolant",
+    "name": "Kühlmittelzelle",
+    "type": "ammo",
+    "amount": 4,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_coolant",
+    "icon": "ammo_coolant"
+  },
+  "ammo_cell": {
+    "id": "ammo_cell",
+    "name": "Induktionszelle",
+    "type": "ammo",
+    "amount": 6,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_cell",
+    "icon": "ammo_cell"
+  },
+  "ammo_essence": {
+    "id": "ammo_essence",
+    "name": "Essenzsplitter",
+    "type": "ammo",
+    "amount": 3,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "ammo_essence",
+    "icon": "ammo_essence"
   }
 }

@@ -14,7 +14,7 @@ import { InputGate } from '../input/gate';
 import { attachTouch } from '../input/touch';
 import { createIndexedBackend } from '../net/indexedBackend';
 import { AUTOSAVE_SLOT, SaveTooLargeError, createLocalStore } from '../net/localStore';
-import { IDENTIFY_ITEM_ID, addToInventory, createInstance } from '../core/items';
+import { IDENTIFY_ITEM_ID, addToInventory, createInstance, takeItemUid } from '../core/items';
 import { createPlaceholderAssets, USE_PLACEHOLDERS } from '../render/placeholders';
 import { loadAssets } from '../render/assetLoader';
 import { SoftwareRenderer } from '../render/renderer';
@@ -50,7 +50,7 @@ function grantDevKit(state: GameState, content: ContentDb): void {
   state.player.consumables[IDENTIFY_ITEM_ID] = 2;
 
   const found = createInstance(
-    state,
+    takeItemUid(state),
     'suit_overall',
     12,
     'rare',
@@ -106,7 +106,11 @@ export async function start(host: HTMLElement): Promise<void> {
   const log = new MessageLog(host);
   const automap = new Automap(host);
   const overlay = new Overlay(host);
-  const store = createLocalStore(createIndexedBackend());
+  const store = createLocalStore(
+    createIndexedBackend(),
+    () => new Date().toISOString(),
+    (mapId) => content.maps[mapId]?.name ?? mapId
+  );
 
   let targetId: number | null = null;
   let lastAutosaveTurn = 0;
@@ -229,7 +233,7 @@ export async function start(host: HTMLElement): Promise<void> {
       overlay.show('Beendet');
     },
     onSettingsChanged: () => undefined,
-  }, content);
+  });
 
   const toggleMap = (): void => {
     if (overlay.isOpen()) {

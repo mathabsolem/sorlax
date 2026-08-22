@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import enemiesJson from '../content/enemies.json';
 import { applyCommand } from '../src/core/commands';
-import { UNARMED, activeWeapon, createInstance, equippedWeapon } from '../src/core/items';
+import { UNARMED, activeWeapon, createInstance,
+  takeItemUid, equippedWeapon } from '../src/core/items';
 import { migrate } from '../src/core/migrate';
 import { CURRENT_SAVE_VERSION, serialize } from '../src/core/state';
 import type { EnemyDef, GameState } from '../src/core/types';
@@ -92,7 +93,7 @@ describe('Block 3, equippedWeapon', () => {
 
   it('liefert null, wenn der Grundtyp keine Waffe ist', () => {
     const { state, content } = setup();
-    const suit = createInstance(state, 'suit_overall', 1, 'normal', [], content);
+    const suit = createInstance(takeItemUid(state), 'suit_overall', 1, 'normal', [], content);
     if (suit === null) throw new Error('kein Grundtyp');
     state.player.equipment['weapon'] = suit;
 
@@ -108,7 +109,14 @@ describe('Block 3, equippedWeapon', () => {
         entities: [{ kind: 'enemy', defId: 'tank', pos: { x: 2, y: 1 } }],
       });
       world.state.player.attributes.agility = 200;
-      const weapon = createInstance(world.state, 'item_w_prybar', 20, 'rare', affixes, world.content);
+      const weapon = createInstance(
+        takeItemUid(world.state),
+        'item_w_prybar',
+        20,
+        'rare',
+        affixes,
+        world.content
+      );
       if (weapon === null) throw new Error('kein Grundtyp');
       world.state.player.equipment['weapon'] = weapon;
       const enemy = world.state.maps['test']?.entities[0];

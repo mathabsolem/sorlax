@@ -289,6 +289,7 @@ export type GameEvent =
   | { type: 'pickup'; defId: string; amount: number }
   | { type: 'itemPickedUp'; uid: number }
   | { type: 'equipped'; slot: EquipSlot; uid: number }
+  | { type: 'unequipped'; slot: EquipSlot; uid: number }
   | { type: 'doorChanged'; pos: TileCoord; state: 'open' | 'closed' | 'blocked' }
   | { type: 'levelUp'; newLevel: number }
   | { type: 'mapChange'; mapId: string }
@@ -363,7 +364,7 @@ export type ItemDef = {
     | 'quest'
     | 'powerup'
     | 'equipment';
-  slot?: EquipSlot; // Pflicht bei type 'equipment' und 'weapon'
+  slots?: EquipSlot[]; // Pflicht bei type 'equipment' und 'weapon'
   weaponId?: string; // Pflicht bei type 'weapon', verweist auf WeaponDef
   amount: number;
   reqLevel: number;
@@ -478,6 +479,7 @@ export type SaveMeta = {
   level: number;
   difficulty: Difficulty;
   mapId: string;
+  mapName: string;
   playTimeMs: number;
   updatedAt: string;
   checksum: string;

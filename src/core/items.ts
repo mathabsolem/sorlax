@@ -71,40 +71,38 @@ export function activeWeapon(state: GameState, content: ContentDb): WeaponDef {
 /**
  * Steckplaetze, in die ein Gegenstand passt.
  *
- * Gemeldete Vertragsluecke: BESTIARY Abschnitt 8 gibt fuer `gauge_right`
- * ausdruecklich "dieselben wie links" an, `ItemDef.slot` kennt aber nur einen
- * Steckplatz. Ein Messgeraet traegt deshalb `gauge_left` und darf ersatzweise
- * nach rechts, sonst waere `gauge_right` nie zu belegen.
+ * Seit INTERFACES v1.5 fuehrt `ItemDef` eine Liste. Ein Messgeraet traegt
+ * `['gauge_left', 'gauge_right']` und passt damit in beide Handgelenke.
+ * `ItemInstance.slot` bleibt der Platz, in dem das Stueck tatsaechlich sitzt.
  */
-export function slotsFor(item: ItemInstance): EquipSlot[] {
-  return slotsForSlot(item.slot);
+export function slotsFor(item: ItemInstance, content: ContentDb): EquipSlot[] {
+  const fromDef = slotsForDef(content.items[item.baseId]);
+  return fromDef.length > 0 ? fromDef : [item.slot];
 }
 
-/** Dasselbe fuer einen Grundtyp, bevor eine Instanz existiert. */
-export function slotsForDef(def: ItemDef): EquipSlot[] {
-  return def.slot === undefined ? [] : slotsForSlot(def.slot);
-}
-
-function slotsForSlot(slot: EquipSlot): EquipSlot[] {
-  if (slot === 'gauge_left') return ['gauge_left', 'gauge_right'];
-  return [slot];
+/** Steckplaetze eines Grundtyps, bevor eine Instanz existiert. */
+export function slotsForDef(def: ItemDef | undefined): EquipSlot[] {
+  return def?.slots ?? [];
 }
 
 /**
  * Neue Instanz eines Grundtyps.
  *
- * INTERFACES kennt fuer `ItemInstance` das Pflichtfeld `slot`, der Steckplatz
- * steht aber nur in `ItemDef`. Deshalb traegt diese Funktion `content` als
+ * INTERFACES kennt fuer `ItemInstance` das Pflichtfeld `slot`, die Steckplaetze
+ * stehen aber nur in `ItemDef`. Deshalb traegt diese Funktion `content` als
  * letzten Parameter, ergaenzend zur Skizze in PHASE_3_6. Aus demselben Grund ist
- * der Rueckgabewert nullbar: ohne Grundtyp oder ohne `slot` gibt es keine
+ * der Rueckgabewert nullbar: ohne Grundtyp oder ohne Steckplatz gibt es keine
  * gueltige Instanz.
+ *
+ * Die `uid` kommt herein, wie es INTERFACES v1.5 fuer `rollItem` vorgibt. Wer
+ * den Zaehler aus dem Zustand nehmen will, benutzt `takeItemUid`.
  *
  * `identified` ist immer true. Der Identifizierungsweg ueber `scanner_charge`
  * und `field_analysis` (RPG.md Abschnitt 4) gehoert nicht in diese Phase; ein
  * unidentifizierter Gegenstand haette hier keinen Weg zurueck.
  */
 export function createInstance(
-  state: GameState,
+  uid: number,
   baseId: string,
   itemLevel: number,
   rarity: Rarity,
@@ -113,11 +111,9 @@ export function createInstance(
 ): ItemInstance | null {
   const def = content.items[baseId];
   if (def === undefined) return null;
-  const slot = def.slot;
+  // Der erste Eintrag ist der Standardplatz; equipAction darf ausweichen.
+  const slot = def.slots?.[0];
   if (slot === undefined) return null;
-
-  const uid = state.nextItemUid;
-  state.nextItemUid += 1;
 
   return {
     uid,
@@ -128,6 +124,26 @@ export function createInstance(
     affixes: affixes.map((affix) => ({ affixId: affix.affixId, value: affix.value })),
     identified: true,
   };
+}
+
+/** Praefix der Munitionsgegenstaende, CONTENT_TABLES Abschnitt 1. */
+export const AMMO_PREFIX = 'ammo_';
+
+/**
+ * Munitionssorte eines Gegenstands. `WeaponDef.ammoType` nennt die Sorte ohne
+ * Praefix (`pistol`), der Katalog fuehrt sie als `ammo_pistol`. `ItemDef` hat
+ * kein eigenes Feld dafuer, deshalb steht die Zuordnung im Namen. Ohne Praefix
+ * gilt die Id selbst als Sorte.
+ */
+export function ammoTypeOf(def: ItemDef): string {
+  return def.id.startsWith(AMMO_PREFIX) ? def.id.slice(AMMO_PREFIX.length) : def.id;
+}
+
+/** Naechste freie uid aus dem Zustand. Erhoeht den Zaehler. */
+export function takeItemUid(state: GameState): number {
+  const uid = state.nextItemUid;
+  state.nextItemUid += 1;
+  return uid;
 }
 
 /** Legt einen Gegenstand ins Inventar. False heisst: voll, nichts veraendert. */
