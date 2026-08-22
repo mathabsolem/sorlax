@@ -1,7 +1,24 @@
-# Scepter of Sorlax — INTERFACES v1.3
+# Scepter of Sorlax — INTERFACES v1.5
 
-Status: eingefroren. Ersetzt v1.2.1.
-Grundlage: SPEC v1.2, BESTIARY v3, RPG.md.
+Status: eingefroren. Ersetzt v1.4.
+Grundlage: SPEC v1.2, BESTIARY v3, CONTENT_TABLES.md, RPG.md.
+
+Änderungen gegenüber v1.4, alle aus der Rückmeldung nach Phase 4.5:
+- `ItemDef.slot` wird zu `ItemDef.slots: EquipSlot[]`. Ein Messgerät passt damit in beide
+  Handgelenke, ohne dass zwei Definitionen mit derselben Id nötig wären.
+- `GameEvent` bekommt `unequipped`. Das Ablegen war bisher von einer beliebigen Textmeldung
+  nicht zu unterscheiden.
+- `SaveMeta` bekommt `mapName`, damit die Platzliste ohne `ContentDb` auskommt.
+- `rollItem` bekommt als siebten Parameter `uid: number` statt des ganzen `GameState`.
+  Der Zähler bleibt in `GameState.nextItemUid`, der Aufrufer liest ihn und erhöht ihn.
+  Damit bleibt `rollItem` frei von Zustandswissen.
+- `getDerivedStats` berücksichtigt `ActiveEffect`. Bisher gab es nur negative Effekte,
+  Verbrauchsgüter aus CONTENT_TABLES.md brauchen auch positive.
+
+Übernommen aus v1.4, dort direkt im Repo geändert:
+- `useConsumable` bekommt `targetUid?: number`
+- `GameState.flags` trägt zusätzlich `string`
+- neues Kommando `assignSkillSlot`
 
 Änderung gegenüber v1.2.1: `PlayerState.equippedWeaponId` entfällt. Die getragene Waffe
 ist ausschließlich `equipment.weapon`, eine `ItemInstance`, deren `ItemDef` über
@@ -95,6 +112,10 @@ export type DerivedStats = {
 export function getDerivedStats(actor: Actor, content: ContentDb, difficulty: Difficulty): DerivedStats;
 ```
 
+`getDerivedStats` bezieht `ActiveEffect` mit ein, sowohl negative aus SPEC 4.5 als auch
+positive aus CONTENT_TABLES.md Abschnitt 1. Ein Effekt wirkt über seine `magnitude` auf
+das Feld, das seine Definition nennt.
+
 `Actor` ist der gemeinsame Nenner von Spieler und Gegner. Die Funktion ist rein und wird
 pro Runde einmal berechnet und zwischengespeichert, nicht pro Angriff.
 
@@ -118,7 +139,7 @@ export type GameState = {
   player: PlayerState;
   currentMapId: string;
   maps: Record<string, MapRuntimeState>;
-  flags: Record<string, boolean | number>;
+  flags: Record<string, boolean | number | string>;
   log: LogEntry[];          // maximal 100 Einträge, ältere werden vorne verworfen
 };
 
@@ -252,7 +273,8 @@ export function rollItem(
   itemLevel: number,
   table: DropTableDef,
   content: ContentDb,
-  forEnemy: boolean
+  forEnemy: boolean,
+  uid: number
 ): ItemInstance;
 ```
 
@@ -300,13 +322,14 @@ export type Command =
   | { type: 'attack'; targetId?: EntityId }
   | { type: 'useSkill'; skillId: string; targetId?: EntityId }
   | { type: 'interact' }
-  | { type: 'useConsumable'; itemId: string }
+  | { type: 'useConsumable'; itemId: string; targetUid?: number }
   | { type: 'switchWeapon'; weaponId: string }
   | { type: 'equip'; uid: number }
   | { type: 'unequip'; slot: EquipSlot }
   | { type: 'dropItem'; uid: number }
   | { type: 'spendAttribute'; attr: keyof Attributes }
   | { type: 'spendSkillPoint'; skillId: string }
+  | { type: 'assignSkillSlot'; index: number; skillId: string }
   | { type: 'wait' };
 
 export type GameEvent =
@@ -322,6 +345,7 @@ export type GameEvent =
   | { type: 'pickup'; defId: string; amount: number }
   | { type: 'itemPickedUp'; uid: number }
   | { type: 'equipped'; slot: EquipSlot; uid: number }
+  | { type: 'unequipped'; slot: EquipSlot; uid: number }
   | { type: 'doorChanged'; pos: TileCoord; state: 'open' | 'closed' | 'blocked' }
   | { type: 'levelUp'; newLevel: number }
   | { type: 'mapChange'; mapId: string }
@@ -394,7 +418,7 @@ export type ItemDef = {
   id: string;
   name: string;
   type: 'weapon' | 'ammo' | 'heal' | 'armor' | 'key' | 'keyCard' | 'quest' | 'powerup' | 'equipment';
-  slot?: EquipSlot;                   // Pflicht bei type 'equipment' und 'weapon'
+  slots?: EquipSlot[];                // Pflicht bei type 'equipment' und 'weapon'
   weaponId?: string;                  // Pflicht bei type 'weapon', verweist auf WeaponDef
   amount: number;
   reqLevel: number;
@@ -552,6 +576,7 @@ export type SaveMeta = {
   level: number;
   difficulty: Difficulty;
   mapId: string;
+  mapName: string;
   playTimeMs: number;
   updatedAt: string;
   checksum: string;
