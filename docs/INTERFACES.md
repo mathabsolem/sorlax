@@ -1,32 +1,24 @@
-# Scepter of Sorlax — INTERFACES v1.4
+# Scepter of Sorlax — INTERFACES v1.5
 
-Status: eingefroren. Ersetzt v1.3.
-Grundlage: SPEC v1.2, BESTIARY v3, RPG.md.
+Status: eingefroren. Ersetzt v1.4.
+Grundlage: SPEC v1.2, BESTIARY v3, CONTENT_TABLES.md, RPG.md.
 
-Änderungen gegenüber v1.3: zwei Lücken, die in Phase 4.5 aufgefallen sind, werden
-geschlossen.
+Änderungen gegenüber v1.4, alle aus der Rückmeldung nach Phase 4.5:
+- `ItemDef.slot` wird zu `ItemDef.slots: EquipSlot[]`. Ein Messgerät passt damit in beide
+  Handgelenke, ohne dass zwei Definitionen mit derselben Id nötig wären.
+- `GameEvent` bekommt `unequipped`. Das Ablegen war bisher von einer beliebigen Textmeldung
+  nicht zu unterscheiden.
+- `SaveMeta` bekommt `mapName`, damit die Platzliste ohne `ContentDb` auskommt.
+- `rollItem` bekommt als siebten Parameter `uid: number` statt des ganzen `GameState`.
+  Der Zähler bleibt in `GameState.nextItemUid`, der Aufrufer liest ihn und erhöht ihn.
+  Damit bleibt `rollItem` frei von Zustandswissen.
+- `getDerivedStats` berücksichtigt `ActiveEffect`. Bisher gab es nur negative Effekte,
+  Verbrauchsgüter aus CONTENT_TABLES.md brauchen auch positive.
 
-`useConsumable` bekommt ein optionales Ziel. Ohne das lässt sich `scanner_charge` aus
-RPG.md Abschnitt 4 nicht anwenden, weil nicht feststeht, welcher Gegenstand identifiziert
-werden soll:
-
-```ts
-| { type: 'useConsumable'; itemId: string; targetUid?: number }
-```
-
-`GameState.flags` trägt zusätzlich Zeichenketten, und die Belegung der Fertigkeitsleiste
-bekommt ein eigenes Kommando. Vorher konnte die Leiste ihre Belegung nicht speichern: eine
-`skillId` ist eine Zeichenkette, und ohne Kommando hätte die Oberfläche den Zustand selbst
-anfassen müssen.
-
-```ts
-flags: Record<string, boolean | number | string>;
-
-| { type: 'assignSkillSlot'; index: number; skillId: string }
-```
-
-`assignSkillSlot` schreibt `flags['skillbar_<index>']`. Ein leerer `skillId` räumt den
-Platz. Das Kommando kostet keine Runde.
+Übernommen aus v1.4, dort direkt im Repo geändert:
+- `useConsumable` bekommt `targetUid?: number`
+- `GameState.flags` trägt zusätzlich `string`
+- neues Kommando `assignSkillSlot`
 
 Änderung gegenüber v1.2.1: `PlayerState.equippedWeaponId` entfällt. Die getragene Waffe
 ist ausschließlich `equipment.weapon`, eine `ItemInstance`, deren `ItemDef` über
@@ -119,6 +111,10 @@ export type DerivedStats = {
 
 export function getDerivedStats(actor: Actor, content: ContentDb, difficulty: Difficulty): DerivedStats;
 ```
+
+`getDerivedStats` bezieht `ActiveEffect` mit ein, sowohl negative aus SPEC 4.5 als auch
+positive aus CONTENT_TABLES.md Abschnitt 1. Ein Effekt wirkt über seine `magnitude` auf
+das Feld, das seine Definition nennt.
 
 `Actor` ist der gemeinsame Nenner von Spieler und Gegner. Die Funktion ist rein und wird
 pro Runde einmal berechnet und zwischengespeichert, nicht pro Angriff.
@@ -277,7 +273,8 @@ export function rollItem(
   itemLevel: number,
   table: DropTableDef,
   content: ContentDb,
-  forEnemy: boolean
+  forEnemy: boolean,
+  uid: number
 ): ItemInstance;
 ```
 
@@ -348,6 +345,7 @@ export type GameEvent =
   | { type: 'pickup'; defId: string; amount: number }
   | { type: 'itemPickedUp'; uid: number }
   | { type: 'equipped'; slot: EquipSlot; uid: number }
+  | { type: 'unequipped'; slot: EquipSlot; uid: number }
   | { type: 'doorChanged'; pos: TileCoord; state: 'open' | 'closed' | 'blocked' }
   | { type: 'levelUp'; newLevel: number }
   | { type: 'mapChange'; mapId: string }
@@ -359,8 +357,7 @@ export function applyCommand(state: GameState, cmd: Command, content: ContentDb)
 ```
 
 Ein `invalid`-Ereignis bedeutet: keine Runde vergangen, Zustand unverändert.
-`equip`, `unequip`, `dropItem`, `spendAttribute`, `spendSkillPoint` und `assignSkillSlot`
-kosten keine Runde.
+`equip`, `unequip`, `dropItem`, `spendAttribute` und `spendSkillPoint` kosten keine Runde.
 
 ## 8. Inhalte
 
@@ -421,7 +418,7 @@ export type ItemDef = {
   id: string;
   name: string;
   type: 'weapon' | 'ammo' | 'heal' | 'armor' | 'key' | 'keyCard' | 'quest' | 'powerup' | 'equipment';
-  slot?: EquipSlot;                   // Pflicht bei type 'equipment' und 'weapon'
+  slots?: EquipSlot[];                // Pflicht bei type 'equipment' und 'weapon'
   weaponId?: string;                  // Pflicht bei type 'weapon', verweist auf WeaponDef
   amount: number;
   reqLevel: number;
@@ -579,6 +576,7 @@ export type SaveMeta = {
   level: number;
   difficulty: Difficulty;
   mapId: string;
+  mapName: string;
   playTimeMs: number;
   updatedAt: string;
   checksum: string;
