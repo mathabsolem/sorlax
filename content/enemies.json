@@ -24,6 +24,7 @@
     "weaponId": "nw_slam_fire",
     "baseXp": 400,
     "spriteWidth": 1.3,
+    "guaranteedUniqueId": "uq_halvern_visier",
     "frames": {
       "idle": [
         "halvern_idle_0",
@@ -73,6 +74,7 @@
     "weaponId": "nw_sporeburst",
     "baseXp": 900,
     "spriteWidth": 2,
+    "guaranteedUniqueId": "uq_sporenlunge",
     "frames": {
       "idle": [
         "sporemother_idle_0",
@@ -122,6 +124,7 @@
     "weaponId": "nw_boltpistol_ice",
     "baseXp": 1600,
     "spriteWidth": 1.4,
+    "guaranteedUniqueId": "uq_frostkern",
     "frames": {
       "idle": [
         "rime_idle_0",
@@ -171,6 +174,7 @@
     "weaponId": "nw_slam_void",
     "baseXp": 5000,
     "spriteWidth": 1.6,
+    "guaranteedUniqueId": "uq_sorlax_auge",
     "frames": {
       "idle": [
         "sorlax_idle_0",

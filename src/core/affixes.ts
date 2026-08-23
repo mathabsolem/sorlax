@@ -6,7 +6,6 @@
  * Reihenfolge von `Object.keys` ist zwar in der Praxis stabil, aber kein
  * zugesicherter Teil des Spielstands.
  */
-import { isBossOnlyUnique } from './bossLoot';
 import { createInstance, slotsForDef } from './items';
 import type { Rng } from './rng';
 import type {
@@ -105,13 +104,12 @@ function drawAffixes(rng: Rng, pool: AffixDef[], count: number): RolledAffix[] {
 
 /**
  * Einzigartige Gegenstaende, die auf diesem Steckplatz und dieser Stufe liegen
- * duerfen. Die vier Bossstuecke aus CONTENT_TABLES Abschnitt 2 fallen
- * ausschliesslich beim Boss und bleiben deshalb aus dem Wurf.
+ * duerfen. `bossExclusive` haelt die Bossstuecke aus dem Wurf, INTERFACES v1.6.
  */
 function eligibleUniques(slot: EquipSlot, itemLevel: number, content: ContentDb): UniqueDef[] {
   return byId(content.uniques).filter((unique) => {
     if (unique.minItemLevel > itemLevel) return false;
-    if (isBossOnlyUnique(unique.id)) return false;
+    if (unique.bossExclusive === true) return false;
     return slotsForDef(content.items[unique.baseId]).includes(slot);
   });
 }

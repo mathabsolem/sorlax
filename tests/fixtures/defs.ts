@@ -114,11 +114,13 @@ export const ENEMIES: Record<string, EnemyDef> = {
   }),
 
   // Bosse und ihre Gefolgschaft, PHASE_3_7. Die Ids der gerufenen Gegner
-  // muessen zu SPORE_DEF_ID und SORLAX_MINIONS passen.
+  // muessen zu SPORE_DEF_ID und SORLAX_MINIONS passen. `guaranteedUniqueId`
+  // spiegelt CONTENT_TABLES Abschnitt 2, damit die Bossbeute pruefbar bleibt.
   boss_halvern: enemy({
     id: 'boss_halvern',
     behavior: 'scripted',
     scriptId: 'halvern',
+    guaranteedUniqueId: 'uq_halvern_visier',
     baseHealth: 200,
     aggroRange: 10,
     baseXp: 400,
@@ -127,6 +129,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     id: 'boss_sporemother',
     behavior: 'scripted',
     scriptId: 'sporemother',
+    guaranteedUniqueId: 'uq_sporenlunge',
     baseHealth: 300,
     aggroRange: 10,
     baseXp: 700,
@@ -135,6 +138,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     id: 'boss_rime',
     behavior: 'scripted',
     scriptId: 'rime',
+    guaranteedUniqueId: 'uq_frostkern',
     baseHealth: 400,
     aggroRange: 12,
     preferredRange: 6,
@@ -145,6 +149,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
     id: 'boss_sorlax',
     behavior: 'scripted',
     scriptId: 'sorlax',
+    guaranteedUniqueId: 'uq_sorlax_auge',
     baseHealth: 600,
     aggroRange: 14,
     baseXp: 3000,
@@ -193,7 +198,14 @@ export const ITEMS: Record<string, ItemDef> = {
   item_pistol: weaponItem('pistol', 'Pistol'),
   item_launcher: weaponItem('launcher', 'Launcher'),
   medkit: item({ id: 'medkit', name: 'Medkit', type: 'heal', amount: 20 }),
-  bullets: item({ id: 'bullets', name: 'Bullets', type: 'ammo', amount: 10 }),
+  // `ammoType` ist bei Munition Pflicht, INTERFACES v1.6.
+  bullets: item({
+    id: 'bullets',
+    name: 'Bullets',
+    type: 'ammo',
+    ammoType: 'bullets',
+    amount: 10,
+  }),
   redkey: item({ id: 'redkey', name: 'Red Key', type: 'key' }),
   shield: item({ id: 'shield', name: 'Shield', type: 'armor', amount: 4 }),
   relic: item({ id: 'relic', name: 'Relic', type: 'quest' }),

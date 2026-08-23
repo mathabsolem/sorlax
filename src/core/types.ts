@@ -214,6 +214,7 @@ export type UniqueDef = {
   baseId: string;
   name: string;
   minItemLevel: number;
+  bossExclusive?: boolean; // wird von rollItem nie gezogen
   affixes: { affixId: string; value: number }[];
 };
 
@@ -329,6 +330,7 @@ export type EnemyDef = {
   weaponId: string;
   baseXp: number;
   spriteWidth: number;
+  guaranteedUniqueId?: string; // Boss traegt dieses Stueck ohne Wurf
   frames: { idle: string[]; attack: string[]; pain: string[]; death: string[] };
   drops?: { defId: string; amount: number; chance: number }[];
   dropTableId?: string; // fuer Ausruestung
@@ -366,7 +368,8 @@ export type ItemDef = {
     | 'equipment';
   slots?: EquipSlot[]; // Pflicht bei type 'equipment' und 'weapon'
   weaponId?: string; // Pflicht bei type 'weapon', verweist auf WeaponDef
-  amount: number;
+  ammoType?: string; // Pflicht bei type 'ammo', verweist auf WeaponDef.ammoType
+  amount: number; // bei 'heal' die Heilmenge, bei 'ammo' die Stapelgroesse
   reqLevel: number;
   reqStrength: number;
   reqAgility: number;

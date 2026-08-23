@@ -243,7 +243,7 @@ export function createDevContent(): ContentDb {
     items: {
       ...(equipment as unknown as ContentDb['items']),
       medkit: consumable('medkit', 'Verbandpack', 'heal', 20),
-      bolts: consumable('bolts', 'Bolzen', 'ammo', 12),
+      bolts: { ...consumable('bolts', 'Bolzen', 'ammo', 12), ammoType: 'bolts' },
       // Seit INTERFACES v1.3 haelt der Platz `weapon` eine ItemInstance.
       // createNewGame braucht dafuer den Grundtyp der Startwaffe.
       [STARTER_WEAPON_ITEM]: weaponItem(STARTER_WEAPON_ITEM, 'Schneidbrenner', 'cutter'),

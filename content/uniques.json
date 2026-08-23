@@ -4,6 +4,7 @@
     "baseId": "helmet_visor",
     "name": "Halverns Brandvisier",
     "minItemLevel": 6,
+    "bossExclusive": true,
     "affixes": [
       {
         "affixId": "suf_of_embers",
@@ -24,6 +25,7 @@
     "baseId": "suit_overall",
     "name": "Sporenlunge",
     "minItemLevel": 13,
+    "bossExclusive": true,
     "affixes": [
       {
         "affixId": "suf_of_spores",
@@ -44,6 +46,7 @@
     "baseId": "guard_deflector",
     "name": "Frostkern",
     "minItemLevel": 19,
+    "bossExclusive": true,
     "affixes": [
       {
         "affixId": "suf_of_rime",
@@ -64,6 +67,7 @@
     "baseId": "amulet_sigil",
     "name": "Das Auge von Sorlax",
     "minItemLevel": 26,
+    "bossExclusive": true,
     "affixes": [
       {
         "affixId": "suf_of_focus",
@@ -84,6 +88,7 @@
     "baseId": "boots_rubber",
     "name": "Stollenschritt",
     "minItemLevel": 8,
+    "bossExclusive": false,
     "affixes": [
       {
         "affixId": "suf_of_evasion",
@@ -100,6 +105,7 @@
     "baseId": "gloves_grip",
     "name": "Der Greifer",
     "minItemLevel": 10,
+    "bossExclusive": false,
     "affixes": [
       {
         "affixId": "pre_honed",
@@ -116,6 +122,7 @@
     "baseId": "gauge_pressure",
     "name": "Prüfblei",
     "minItemLevel": 14,
+    "bossExclusive": false,
     "affixes": [
       {
         "affixId": "suf_of_might",
@@ -132,6 +139,7 @@
     "baseId": "gauge_seismic",
     "name": "Wetterglas",
     "minItemLevel": 20,
+    "bossExclusive": false,
     "affixes": [
       {
         "affixId": "suf_of_focus",

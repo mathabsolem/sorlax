@@ -276,33 +276,46 @@ describe('Abschnitt 8, Ausruestungs-Grundtypen', () => {
 
 describe('Felder ohne Vorlage', () => {
   /**
-   * Abschnitt 6 nennt fuer Bosse weder Aggroreichweite noch bevorzugte Distanz,
-   * Spritebreite oder Waffe. Diese vier Felder sind gesetzt, nicht abgeleitet.
+   * Jedes Feld eines Bosses braucht eine Tabelle in docs/. Aggroreichweite,
+   * bevorzugte Distanz, Spritebreite und Waffe liess BESTIARY Abschnitt 6
+   * offen; CONTENT_TABLES Abschnitt 3 hat sie ratifiziert.
+   * `guaranteedUniqueId` steht in CONTENT_TABLES Abschnitt 2.
    * Der Test haelt die Liste fest, damit sie nicht unbemerkt waechst.
    */
   const CANONICAL = new Set([
     'id', 'archetype', 'element', 'name', 'baseHealth', 'baseArmor', 'baseAccuracy',
     'baseEvasion', 'resistances', 'speed', 'behavior', 'scriptId', 'baseXp', 'frames',
     'dropTableId',
+    // CONTENT_TABLES Abschnitt 3
+    'aggroRange', 'preferredRange', 'weaponId', 'spriteWidth',
+    // CONTENT_TABLES Abschnitt 2
+    'guaranteedUniqueId',
   ]);
-  const WITHOUT_SOURCE = new Set(['aggroRange', 'preferredRange', 'weaponId', 'spriteWidth']);
 
-  it('haben die Bosse genau die vier bekannten Felder ohne Tabelle', () => {
+  it('fuehren die Bosse kein Feld, zu dem es keine Tabelle gibt', () => {
     const unexpected: string[] = [];
     for (const id of Object.keys(BOSSES)) {
       const def = ENEMIES[id];
       if (def === undefined) continue;
       for (const field of Object.keys(def)) {
-        if (CANONICAL.has(field) || WITHOUT_SOURCE.has(field)) continue;
+        if (CANONICAL.has(field)) continue;
         unexpected.push(`${id}.${field}: neues Feld ohne Vorlage in docs/`);
       }
     }
     expect(unexpected).toEqual([]);
-    expect([...WITHOUT_SOURCE].sort()).toEqual([
-      'aggroRange',
-      'preferredRange',
-      'spriteWidth',
-      'weaponId',
-    ]);
+  });
+
+  it('gibt jedem Boss sein garantiertes Stueck aus Abschnitt 2', () => {
+    const problems: string[] = [];
+    const want: Record<string, string> = {
+      boss_halvern: 'uq_halvern_visier',
+      boss_sporemother: 'uq_sporenlunge',
+      boss_rime: 'uq_frostkern',
+      boss_sorlax: 'uq_sorlax_auge',
+    };
+    for (const [id, uniqueId] of Object.entries(want)) {
+      check(problems, id, 'guaranteedUniqueId', ENEMIES[id]?.guaranteedUniqueId, uniqueId);
+    }
+    expect(problems).toEqual([]);
   });
 });

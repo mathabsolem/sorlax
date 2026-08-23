@@ -126,19 +126,6 @@ export function createInstance(
   };
 }
 
-/** Praefix der Munitionsgegenstaende, CONTENT_TABLES Abschnitt 1. */
-export const AMMO_PREFIX = 'ammo_';
-
-/**
- * Munitionssorte eines Gegenstands. `WeaponDef.ammoType` nennt die Sorte ohne
- * Praefix (`pistol`), der Katalog fuehrt sie als `ammo_pistol`. `ItemDef` hat
- * kein eigenes Feld dafuer, deshalb steht die Zuordnung im Namen. Ohne Praefix
- * gilt die Id selbst als Sorte.
- */
-export function ammoTypeOf(def: ItemDef): string {
-  return def.id.startsWith(AMMO_PREFIX) ? def.id.slice(AMMO_PREFIX.length) : def.id;
-}
-
 /** Naechste freie uid aus dem Zustand. Erhoeht den Zaehler. */
 export function takeItemUid(state: GameState): number {
   const uid = state.nextItemUid;

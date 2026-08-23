@@ -3,9 +3,10 @@
  */
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from '../src/core/commands';
+import { pickupAt } from '../src/core/playerActions';
 import { getDerivedStats, playerActor } from '../src/core/derived';
 import { applyEffectDefault } from '../src/core/effects';
-import { IDENTIFY_ITEM_ID, addToInventory, ammoTypeOf, createInstance, takeItemUid } from '../src/core/items';
+import { IDENTIFY_ITEM_ID, addToInventory, createInstance, takeItemUid } from '../src/core/items';
 import { advanceRound } from '../src/core/turn';
 import type { ContentDb, GameState } from '../src/core/types';
 import { setup } from './fixtures/world';
@@ -116,12 +117,31 @@ describe('scanner_charge', () => {
   });
 });
 
-describe('ammoTypeOf', () => {
-  it('schneidet das Praefix ab und laesst Ids ohne Praefix stehen', () => {
-    const { content } = setup();
+describe('Munition', () => {
+  it('bucht den Stapel unter der Munitionssorte des Gegenstands', () => {
+    const { state, content } = setup();
     const pistol = content.items['ammo_pistol'];
-    expect(pistol).toBeDefined();
-    if (pistol !== undefined) expect(ammoTypeOf(pistol)).toBe('pistol');
-    expect(ammoTypeOf({ ...(pistol ?? ({} as never)), id: 'bolts' })).toBe('bolts');
+    expect(pistol?.ammoType).toBe('pistol');
+
+    const mapState = state.maps['test'];
+    if (mapState === undefined || pistol === undefined) throw new Error('kein Kartenzustand');
+    const pos = { x: state.player.pos.x, y: state.player.pos.y };
+    mapState.entities.push({
+      id: 900,
+      kind: 'item',
+      defId: pistol.id,
+      pos,
+      facing: 0,
+      actionPoints: 0,
+      active: false,
+      effects: [],
+      animation: { frame: 'idle', startedAtTurn: 0 },
+    });
+
+    pickupAt(state, content, pos);
+
+    // Die Waffe fragt nach `pistol`, nicht nach `ammo_pistol`.
+    expect(state.player.ammo['pistol']).toBe(pistol.amount);
+    expect(state.player.ammo['ammo_pistol']).toBeUndefined();
   });
 });

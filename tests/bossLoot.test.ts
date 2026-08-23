@@ -1,17 +1,34 @@
 /**
- * Garantierte Bossbeute aus CONTENT_TABLES Abschnitt 2, PHASE_5 Block 3 und 5.
+ * Garantierte Bossbeute aus CONTENT_TABLES v1.1 Abschnitt 2.
  *
- * Die Zuordnung Boss zu einzigartigem Gegenstand liegt in src/core/bossLoot.ts,
- * weil `EnemyDef` dafuer kein Feld hat. Das ist als Vertragsluecke gemeldet.
+ * Die Zuordnung steht seit INTERFACES v1.6 als `EnemyDef.guaranteedUniqueId`
+ * im Katalog, die Ausnahme vom Wurf als `UniqueDef.bossExclusive`.
  */
 import { describe, expect, it } from 'vitest';
 import { rollItem } from '../src/core/affixes';
-import { BOSS_UNIQUES, bossUniqueId, isBossOnlyUnique } from '../src/core/bossLoot';
+import { dropLoot } from '../src/core/loot';
 import { takeItemUid } from '../src/core/items';
+import enemiesJson from '../content/enemies.json';
 import { Rng } from '../src/core/rng';
 import { reapDead } from '../src/core/turn';
-import type { DropTableDef, GameState, MapRuntimeState, Rarity } from '../src/core/types';
+import type {
+  DropTableDef,
+  EnemyDef,
+  GameState,
+  MapRuntimeState,
+  Rarity,
+} from '../src/core/types';
 import { setup } from './fixtures/world';
+
+const ENEMIES = enemiesJson as unknown as Record<string, EnemyDef>;
+
+/** Die vier Zuordnungen aus CONTENT_TABLES Abschnitt 2, fest hinterlegt. */
+const BOSS_UNIQUES: Record<string, string> = {
+  boss_halvern: 'uq_halvern_visier',
+  boss_sporemother: 'uq_sporenlunge',
+  boss_rime: 'uq_frostkern',
+  boss_sorlax: 'uq_sorlax_auge',
+};
 
 const UNIQUE_ONLY: DropTableDef = {
   id: 'unique_only',
@@ -25,21 +42,24 @@ function mapStateOf(state: GameState): MapRuntimeState {
   return mapState;
 }
 
-describe('bossUniqueId', () => {
-  it('kennt zu jedem der vier Bosse sein Stueck und sonst keines', () => {
-    expect(bossUniqueId('boss_halvern')).toBe('uq_halvern_visier');
-    expect(bossUniqueId('boss_sporemother')).toBe('uq_sporenlunge');
-    expect(bossUniqueId('boss_rime')).toBe('uq_frostkern');
-    expect(bossUniqueId('boss_sorlax')).toBe('uq_sorlax_auge');
-    expect(bossUniqueId('rat_fire')).toBeUndefined();
-    expect(Object.keys(BOSS_UNIQUES)).toHaveLength(4);
+describe('guaranteedUniqueId', () => {
+  it('steht bei jedem der vier Bosse und bei sonst keinem Gegner', () => {
+    for (const [bossId, uniqueId] of Object.entries(BOSS_UNIQUES)) {
+      expect(ENEMIES[bossId]?.guaranteedUniqueId).toBe(uniqueId);
+    }
+    const others = Object.values(ENEMIES)
+      .filter((def) => def.guaranteedUniqueId !== undefined)
+      .map((def) => def.id)
+      .filter((id) => BOSS_UNIQUES[id] === undefined);
+    expect(others).toEqual([]);
   });
 });
 
-describe('isBossOnlyUnique', () => {
+describe('bossExclusive', () => {
   it('trennt die vier Bossstuecke vom normalen Wurf', () => {
-    expect(isBossOnlyUnique('uq_frostkern')).toBe(true);
-    expect(isBossOnlyUnique('uq_stollenschritt')).toBe(false);
+    const { content } = setup();
+    expect(content.uniques['uq_frostkern']?.bossExclusive).toBe(true);
+    expect(content.uniques['uq_stollenschritt']?.bossExclusive).toBe(false);
   });
 
   it('haelt die Bossstuecke aus rollItem heraus', () => {
@@ -91,5 +111,69 @@ describe('Bosstod', () => {
         baseId,
       ]);
     }
+  });
+});
+
+describe('Elementmunition', () => {
+  /**
+   * Karte mit einem toten Gegner der genannten Art. Die Wurfchance steht auf
+   * 1.0, damit der Test den Tausch prueft und nicht den Zufall.
+   */
+  function fallen(defId: string) {
+    const world = setup({ loot: true, entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 3, y: 1 } }] });
+    const real = ENEMIES[defId];
+    if (real === undefined) throw new Error(`kein Katalogeintrag: ${defId}`);
+    const sure: EnemyDef = {
+      ...real,
+      id: 'grunt',
+      drops: (real.drops ?? []).map((drop) => ({ ...drop, chance: 1 })),
+    };
+    const content = { ...world.content, enemies: { ...world.content.enemies, grunt: sure } };
+    const mapState = mapStateOf(world.state);
+    const entity = mapState.entities.find((candidate) => candidate.kind === 'enemy');
+    if (entity === undefined) throw new Error('kein Gegner');
+    return { state: world.state, content, mapState, entity };
+  }
+
+  function droppedIds(mapState: MapRuntimeState): string[] {
+    return mapState.entities
+      .filter((entity) => entity.kind === 'item')
+      .map((entity) => entity.defId);
+  }
+
+  it('ersetzt die Standardmunition, sobald der Spieler die Elementwaffe traegt', () => {
+    const { state, content, mapState, entity } = fallen('miner_fire');
+    state.player.weapons.push('w_lance');
+
+    dropLoot(state, mapState, entity, content);
+
+    // w_lance schiesst Feuer und verlangt `fuel`, also faellt ammo_fuel.
+    expect(droppedIds(mapState)).toEqual(['ammo_fuel']);
+  });
+
+  it('laesst die Standardmunition liegen, solange die Waffe fehlt', () => {
+    const { state, content, mapState, entity } = fallen('miner_fire');
+
+    dropLoot(state, mapState, entity, content);
+
+    expect(droppedIds(mapState)).toEqual(['ammo_pistol']);
+  });
+
+  it('tauscht bei einer physischen Variante nichts', () => {
+    const { state, content, mapState, entity } = fallen('miner_physical');
+    state.player.weapons.push('w_lance');
+
+    dropLoot(state, mapState, entity, content);
+
+    expect(droppedIds(mapState)).toEqual(['ammo_pistol']);
+  });
+
+  it('laesst Heilmittel unangetastet', () => {
+    const { state, content, mapState, entity } = fallen('rat_fire');
+    state.player.weapons.push('w_lance');
+
+    dropLoot(state, mapState, entity, content);
+
+    expect(droppedIds(mapState)).toEqual(['heal_small']);
   });
 });

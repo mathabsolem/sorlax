@@ -9,7 +9,6 @@ import itemsJson from '../content/items.json';
 import skillsJson from '../content/skills.json';
 import uniquesJson from '../content/uniques.json';
 import weaponsJson from '../content/weapons.json';
-import { BOSS_UNIQUES } from '../src/core/bossLoot';
 import { BOON_STATS, CURE_PREFIX, EFFECT_ORDER } from '../src/core/effectDefs';
 import { DAMAGE_TYPES, EQUIP_SLOTS } from '../src/core/types';
 import type {
@@ -93,9 +92,11 @@ describe('Referenzen in content/', () => {
         add(`${def.id}.appliesEffect`, 'Effekt', def.appliesEffect, (id) => EFFECTS.has(id));
       }
       if (def.ammoType !== null) {
-        // Munition wird ueber den Namen zugeordnet: `pistol` liegt als
-        // `ammo_pistol` im Katalog, siehe CONTENT_TABLES Abschnitt 1.
-        add(`${def.id}.ammoType`, 'Munition', `ammo_${def.ammoType}`, has(ITEMS));
+        const ammoType = def.ammoType;
+        // Zu jeder Sorte muss es einen Gegenstand geben, der sie fuehrt.
+        add(`${def.id}.ammoType`, 'Munition', ammoType, (id) =>
+          Object.values(ITEMS).some((item) => item.ammoType === id)
+        );
       }
     }
 
@@ -125,9 +126,28 @@ describe('Referenzen in content/', () => {
       }
     }
 
-    for (const [bossId, uniqueId] of Object.entries(BOSS_UNIQUES)) {
-      add(`${bossId}.guaranteedUnique`, 'einzigartiger Gegenstand', uniqueId, has(UNIQUES));
-      add(`${bossId}.guaranteedUnique`, 'Boss', bossId, has(ENEMIES));
+    for (const def of Object.values(ENEMIES)) {
+      if (def.guaranteedUniqueId !== undefined) {
+        add(`${def.id}.guaranteedUniqueId`, 'einzigartiger Gegenstand', def.guaranteedUniqueId, has(UNIQUES));
+      }
+    }
+
+    for (const def of Object.values(ITEMS)) {
+      if (def.type !== 'ammo') continue;
+      const ammoType = def.ammoType;
+      if (ammoType === undefined) {
+        found.push({
+          where: `${def.id}.ammoType`,
+          kind: 'Munitionssorte',
+          value: '(fehlt)',
+          known: () => false,
+        });
+        continue;
+      }
+      // Die Sorte muss von mindestens einer Waffe verlangt werden.
+      add(`${def.id}.ammoType`, 'Munitionssorte', ammoType, (id) =>
+        Object.values(WEAPONS).some((weapon) => weapon.ammoType === id)
+      );
     }
 
     return found;
@@ -140,16 +160,18 @@ describe('Referenzen in content/', () => {
     expect(dangling).toEqual([]);
   });
 
-  it('hat zu jeder Munitionssorte einer Waffe einen Gegenstand gleicher Sorte', () => {
+  it('hat zu jeder Munitionssorte einer Waffe genau einen Gegenstand', () => {
     const problems: string[] = [];
     for (const def of Object.values(WEAPONS)) {
       if (def.ammoType === null) continue;
-      const item = ITEMS[`ammo_${def.ammoType}`];
-      if (item === undefined) {
-        problems.push(`${def.id}.ammoType: Munition ammo_${def.ammoType} fehlt im Katalog`);
+      const items = Object.values(ITEMS).filter((item) => item.ammoType === def.ammoType);
+      if (items.length !== 1) {
+        problems.push(
+          `${def.id}.ammoType: ${items.length} Gegenstaende fuehren die Sorte ${def.ammoType}`
+        );
         continue;
       }
-      check(problems, item.id, 'type', item.type, 'ammo');
+      check(problems, items[0]?.id ?? '', 'type', items[0]?.type, 'ammo');
     }
     expect(problems).toEqual([]);
   });

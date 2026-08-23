@@ -144,7 +144,8 @@ export const ARCHETYPE_DROPS: Record<string, { defId: string; units: number; cha
   chainrunner: [{ defId: 'ammo_shell', units: 4, chance: 0.4 }],
   cultist: [
     { defId: 'ammo_rivet', units: 6, chance: 0.35 },
-    { defId: 'ammo_pistol', units: 10, chance: 0.3 },
+    // CONTENT_TABLES v1.1 Abschnitt 4: 8 statt 10, denn ein Stapel fasst 8.
+    { defId: 'ammo_pistol', units: 8, chance: 0.3 },
   ],
   hauler: [{ defId: 'armor_plate', units: 1, chance: 0.3 }],
   warden: [

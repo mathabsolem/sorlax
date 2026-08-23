@@ -9,7 +9,6 @@
  * freeTilesAround dazu, womit die Datei ueber 300 Zeilen gewachsen waere.
  */
 import { rollItem } from './affixes';
-import { bossUniqueId } from './bossLoot';
 import { DIFFICULTY_ORDER } from './difficulty';
 import { addGroundItem, createInstance, slotsFor, slotsForDef, takeItemUid } from './items';
 import { loadRng, saveRng } from './rng';
@@ -120,10 +119,9 @@ function tableFor(
 }
 
 /**
- * Das garantierte einzigartige Teil eines Bosses, CONTENT_TABLES Abschnitt 2.
- *
- * `EnemyDef` hat dafuer kein Feld, siehe `bossLoot.ts`. Ohne Eintrag im
- * Katalog faellt der Boss auf den gewoehnlichen Wurf zurueck.
+ * Das garantierte einzigartige Teil eines Bosses, `EnemyDef.guaranteedUniqueId`
+ * aus INTERFACES v1.6. Ohne Eintrag faellt der Boss auf den gewoehnlichen
+ * Wurf zurueck.
  */
 function guaranteedUnique(
   state: GameState,
@@ -131,7 +129,7 @@ function guaranteedUnique(
   itemLevel: number,
   content: ContentDb
 ): ItemInstance | null {
-  const uniqueId = bossUniqueId(entity.defId);
+  const uniqueId = content.enemies[entity.defId]?.guaranteedUniqueId;
   if (uniqueId === undefined) return null;
   const unique = content.uniques[uniqueId];
   if (unique === undefined) return null;
@@ -239,6 +237,30 @@ export function rollMapLoot(state: GameState, mapDef: MapDef, content: ContentDb
   saveRng(state, rng);
 }
 
+/**
+ * Die Elementmunition, die diesen Standarddrop ersetzt, CONTENT_TABLES v1.1
+ * Abschnitt 4.
+ *
+ * Bedingung ist, dass der Spieler die Waffe des Elements schon traegt. Welche
+ * Waffe das ist, steht im Katalog: es ist die Spielerwaffe mit demselben
+ * `damageType` und einer eigenen Munitionssorte. Ohne solche Waffe bleibt es
+ * bei der Standardmunition.
+ */
+function elementAmmoFor(state: GameState, content: ContentDb, defId: string): string | null {
+  const element = content.enemies[defId]?.element;
+  if (element === undefined || element === 'physical') return null;
+
+  for (const weaponId of state.player.weapons) {
+    const weapon = content.weapons[weaponId];
+    if (weapon === undefined || weapon.damageType !== element) continue;
+    const ammoType = weapon.ammoType;
+    if (ammoType === null) continue;
+    const item = Object.values(content.items).find((candidate) => candidate.ammoType === ammoType);
+    if (item !== undefined) return item.id;
+  }
+  return null;
+}
+
 /** Naechste freie Entitaets-Id der Karte. */
 function takeEntityId(mapState: MapRuntimeState): number {
   const id = mapState.nextEntityId;
@@ -271,15 +293,20 @@ export function dropLoot(
   if (drops.length === 0) return events;
 
   const rng = loadRng(state);
+  const elementAmmo = elementAmmoFor(state, content, entity.defId);
   for (const drop of drops) {
     if (rng.next() >= drop.chance) continue;
-    if (content.items[drop.defId] === undefined) continue;
+    const def = content.items[drop.defId];
+    if (def === undefined) continue;
+    // Munition einer Elementvariante wird getauscht, sobald der Spieler die
+    // passende Waffe hat. Alles andere faellt unveraendert.
+    const defId = def.type === 'ammo' && elementAmmo !== null ? elementAmmo : drop.defId;
     // `drop.amount` ist die Zahl der Stapel, `ItemDef.amount` die Stapelgroesse.
     for (let count = 0; count < drop.amount; count++) {
       mapState.entities.push({
         id: takeEntityId(mapState),
         kind: 'item',
-        defId: drop.defId,
+        defId,
         pos: { x: entity.pos.x, y: entity.pos.y },
         facing: 0,
         actionPoints: 0,

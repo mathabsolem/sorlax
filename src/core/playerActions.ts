@@ -13,7 +13,6 @@ import { isSolid, stepFrom, tileKey } from './grid';
 import {
   IDENTIFY_ITEM_ID,
   addToInventory,
-  ammoTypeOf,
   createInstance,
   takeItemUid,
   findItem,
@@ -39,7 +38,10 @@ function stow(state: GameState, def: ItemDef, content: ContentDb): boolean {
   const player = state.player;
   switch (def.type) {
     case 'ammo': {
-      const ammoType = ammoTypeOf(def);
+      // `ammoType` ist bei dieser Art Pflicht (INTERFACES v1.6). Fehlt sie,
+      // gehoert der Gegenstand zu keiner Waffe und wird nicht eingesammelt.
+      const ammoType = def.ammoType;
+      if (ammoType === undefined) return false;
       player.ammo[ammoType] = (player.ammo[ammoType] ?? 0) + def.amount;
       return true;
     }
