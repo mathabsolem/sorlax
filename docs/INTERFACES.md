@@ -1,6 +1,14 @@
-# Scepter of Sorlax — INTERFACES v1.5
+# Scepter of Sorlax — INTERFACES v1.6
 
-Status: eingefroren. Ersetzt v1.4.
+Status: eingefroren. Ersetzt v1.5.
+
+Änderungen gegenüber v1.5, alle aus der Rückmeldung nach Phase 5:
+- `EnemyDef.guaranteedUniqueId?: string`. Ein Boss trägt sein Stück ohne Wurf. Damit
+  verschwindet die Zuordnungstabelle aus `src/core/bossLoot.ts`.
+- `UniqueDef.bossExclusive?: boolean`. Hält ein Stück aus dem normalen Wurf heraus.
+- `ItemDef.ammoType?: string`. Die Umgehung über das Präfix `ammo_` entfällt.
+
+Frühere Fassung, unverändert gültig:
 Grundlage: SPEC v1.2, BESTIARY v3, CONTENT_TABLES.md, RPG.md.
 
 Änderungen gegenüber v1.4, alle aus der Rückmeldung nach Phase 4.5:
@@ -258,6 +266,7 @@ export type UniqueDef = {
   baseId: string;
   name: string;
   minItemLevel: number;
+  bossExclusive?: boolean;            // wird von rollItem nie gezogen
   affixes: { affixId: string; value: number }[];
 };
 
@@ -392,6 +401,7 @@ export type EnemyDef = {
   weaponId: string;
   baseXp: number;
   spriteWidth: number;
+  guaranteedUniqueId?: string;        // Boss trägt dieses Stück ohne Wurf
   frames: { idle: string[]; attack: string[]; pain: string[]; death: string[] };
   drops?: { defId: string; amount: number; chance: number }[];
   dropTableId?: string;               // für Ausrüstung
@@ -420,7 +430,8 @@ export type ItemDef = {
   type: 'weapon' | 'ammo' | 'heal' | 'armor' | 'key' | 'keyCard' | 'quest' | 'powerup' | 'equipment';
   slots?: EquipSlot[];                // Pflicht bei type 'equipment' und 'weapon'
   weaponId?: string;                  // Pflicht bei type 'weapon', verweist auf WeaponDef
-  amount: number;
+  ammoType?: string;                  // Pflicht bei type 'ammo', verweist auf WeaponDef.ammoType
+  amount: number;                     // bei 'heal' die Heilmenge, bei 'ammo' die Stapelgröße
   reqLevel: number;
   reqStrength: number;
   reqAgility: number;
