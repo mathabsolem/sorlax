@@ -31,7 +31,8 @@ import { MessageLog } from '../ui/log';
 import { Menu } from '../ui/menu';
 import { Overlay } from '../ui/overlay';
 import { skillBar } from '../ui/hudModel';
-import { DEV_MAP_ID, DEV_SEED, collectAssetNames, createDevContent } from './devFixture';
+import { DEV_SEED, collectAssetNames } from './devFixture';
+import { FIRST_MAP_ID, createGameContent } from './gameContent';
 
 /** Ein einzelnes Bild darf hoechstens 100 ms Spielzeit tragen. */
 const MAX_FRAME_MS = 100;
@@ -79,8 +80,8 @@ function mountCanvas(host: HTMLElement): HTMLCanvasElement {
 }
 
 export async function start(host: HTMLElement): Promise<void> {
-  const content = createDevContent();
-  let state: GameState = createNewGame(DEV_SEED, content, DEV_MAP_ID);
+  const content = createGameContent();
+  let state: GameState = createNewGame(DEV_SEED, content, FIRST_MAP_ID);
 
   const names = collectAssetNames(content);
   const assets = USE_PLACEHOLDERS

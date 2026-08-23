@@ -14,14 +14,18 @@ export const TEXTURE_SIZE = 64;
 export const WEAPON_WIDTH = 160;
 export const WEAPON_HEIGHT = 100;
 
-/** Textur-Ids der Platzhalter. Karten verweisen ueber encodeTile auf sie. */
-export const TEX_WALL_RUST = 1;
-export const TEX_WALL_ROCK = 2;
-export const TEX_WALL_PANEL = 3;
-export const TEX_DOOR = 4;
-export const TEX_FLOOR_PLATE = 10;
-export const TEX_FLOOR_ROCK = 11;
-export const TEX_CEILING = 20;
+/**
+ * Textur-Ids der Entwicklungsfixture. Sie liegen ueber 200 und damit ausserhalb
+ * des Katalogs aus CONTENT_TABLES Abschnitt 6, der 10 bis 81 belegt. Beide
+ * teilen sich eine Tabelle, eine Ueberschneidung waere eine falsche Wand.
+ */
+export const TEX_WALL_RUST = 200;
+export const TEX_WALL_ROCK = 201;
+export const TEX_WALL_PANEL = 202;
+export const TEX_DOOR = 203;
+export const TEX_FLOOR_PLATE = 210;
+export const TEX_FLOOR_ROCK = 211;
+export const TEX_CEILING = 220;
 
 /** Fertig kodierter Wandwert einer Tuer, vom Renderer in die Karte gelegt. */
 export const DOOR_TILE_VALUE = encodeTile(TEX_DOOR, 0);
@@ -216,9 +220,75 @@ export function makeWeaponPlaceholder(name: string): PixelSurface {
   return out;
 }
 
+/**
+ * Grundfarbe je Zone, CONTENT_TABLES Abschnitt 6: Industrie, Pilzbefall,
+ * Frost, Struktur. Platzhalterfarben, keine Spielwerte.
+ */
+const ZONE_TINT: Record<number, [number, number, number]> = {
+  1: [104, 96, 88],
+  2: [88, 108, 74],
+  3: [98, 118, 142],
+  4: [104, 84, 126],
+};
+
+function tinted(base: [number, number, number], factor: number): [number, number, number] {
+  return [
+    Math.min(255, Math.round(base[0] * factor)),
+    Math.min(255, Math.round(base[1] * factor)),
+    Math.min(255, Math.round(base[2] * factor)),
+  ];
+}
+
+function zoneTint(zone: number): [number, number, number] {
+  return ZONE_TINT[zone] ?? ZONE_TINT[1] ?? [104, 96, 88];
+}
+
+/**
+ * Platzhalter fuer den Texturkatalog aus CONTENT_TABLES Abschnitt 6.
+ * Waende 10 bis 25, Boeden 40 bis 51, Spuren 60 bis 66, Decken 70 bis 81.
+ * Jede Zone bekommt ihren Farbstich, damit die Sohlen unterscheidbar bleiben.
+ */
+function catalogTextures(): Record<number, PixelSurface> {
+  const textures: Record<number, PixelSurface> = {};
+
+  for (let id = 10; id <= 25; id++) {
+    const zone = Math.floor((id - 10) / 4) + 1;
+    const variant = (id - 10) % 4;
+    textures[id] = wallTexture(tinted(zoneTint(zone), 0.8 + variant * 0.15), 12 + variant * 6);
+  }
+
+  for (let id = 40; id <= 51; id++) {
+    const zone = Math.floor((id - 40) / 3) + 1;
+    const variant = (id - 40) % 3;
+    textures[id] = floorTexture(
+      tinted(zoneTint(zone), 0.6 + variant * 0.12),
+      tinted(zoneTint(zone), 1.2 + variant * 0.1)
+    );
+  }
+
+  // Bodenspuren. Blut ab Zone 2, Oel und Staub in Zone 1.
+  const blood: [number, number, number] = [92, 26, 24];
+  const dust: [number, number, number] = [126, 118, 104];
+  for (const id of [60, 61, 62, 63]) textures[id] = floorTexture(blood, tinted(blood, 1.6));
+  textures[64] = floorTexture([32, 30, 28], [64, 60, 54]);
+  for (const id of [65, 66]) textures[id] = floorTexture(dust, tinted(dust, 1.3));
+
+  // Decken. Die Lampe der Zone ist heller als der Rest.
+  const lamps = new Set([71, 74, 77, 80]);
+  for (let id = 70; id <= 81; id++) {
+    textures[id] = lamps.has(id) ? ceilingTexture() : floorTexture(
+      tinted(zoneTint(Math.floor((id - 70) / 3) + 1), 0.45),
+      tinted(zoneTint(Math.floor((id - 70) / 3) + 1), 0.7)
+    );
+  }
+
+  return textures;
+}
+
 /** Vollstaendiges AssetBundle aus Platzhaltern. */
 export function createPlaceholderAssets(spriteNames: string[], weaponNames: string[]): AssetBundle {
   const textures: Record<number, PixelSurface> = {
+    ...catalogTextures(),
     [TEX_WALL_RUST]: wallTexture([148, 96, 62], 16),
     [TEX_WALL_ROCK]: wallTexture([96, 104, 112], 22),
     [TEX_WALL_PANEL]: wallTexture([74, 92, 110], 12),

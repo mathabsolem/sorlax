@@ -739,5 +739,49 @@
     "reqAgility": 0,
     "sprite": "ammo_essence",
     "icon": "ammo_essence"
+  },
+  "key_red": {
+    "id": "key_red",
+    "name": "Roter Schlüssel",
+    "type": "key",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "key_red",
+    "icon": "key_red"
+  },
+  "key_green": {
+    "id": "key_green",
+    "name": "Grüner Schlüssel",
+    "type": "key",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "key_green",
+    "icon": "key_green"
+  },
+  "key_blue": {
+    "id": "key_blue",
+    "name": "Blauer Schlüssel",
+    "type": "key",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "key_blue",
+    "icon": "key_blue"
+  },
+  "key_violet": {
+    "id": "key_violet",
+    "name": "Violetter Schlüssel",
+    "type": "key",
+    "amount": 1,
+    "reqLevel": 1,
+    "reqStrength": 0,
+    "reqAgility": 0,
+    "sprite": "key_violet",
+    "icon": "key_violet"
   }
 }

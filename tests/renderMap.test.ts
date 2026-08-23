@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { encodeTile, textureIdOf } from '../src/core/tiles';
 import { createRenderMap } from '../src/render/renderMap';
+import { TEX_FLOOR_PLATE } from '../src/render/placeholders';
 import { makeMap, setup } from './fixtures/world';
 import { createMapRuntime } from '../src/core/state';
 import { makeContent } from './fixtures/world';
@@ -18,7 +19,7 @@ describe('createRenderMap', () => {
     expect(view.height).toBe(8);
     expect(view.walls.length).toBe(64);
     expect(view.ambientLight).toBe(map.ambientLight);
-    expect(textureIdOf(view.floors[0] ?? 0)).toBe(10);
+    expect(textureIdOf(view.floors[0] ?? 0)).toBe(TEX_FLOOR_PLATE);
     expect(view.light[0]).toBe(255);
   });
 

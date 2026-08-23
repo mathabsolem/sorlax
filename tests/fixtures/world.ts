@@ -8,6 +8,11 @@ import { createInstance,
   takeItemUid } from '../../src/core/items';
 import { createNewGame } from '../../src/core/state';
 import { encodeTile } from '../../src/core/tiles';
+import {
+  TEX_CEILING,
+  TEX_FLOOR_PLATE,
+  TEX_WALL_RUST,
+} from '../../src/render/placeholders';
 import type {
   ContentDb,
   Difficulty,
@@ -30,7 +35,9 @@ export const TEST_XP_THRESHOLDS: number[] = Array.from(
   (_unused, index) => (10 * (index + 1) * (index + 2)) / 2
 );
 
-const W = 1;
+// Die Wandkennung ist die Platzhaltertextur, damit die Renderer-Tests auf der
+// Testkarte nicht ins Leere greifen.
+const W = TEX_WALL_RUST;
 const F = 0;
 
 /**
@@ -65,7 +72,7 @@ export function openWalls(size: number): number[] {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const border = x === 0 || y === 0 || x === size - 1 || y === size - 1;
-      walls.push(border ? 1 : 0);
+      walls.push(border ? TEX_WALL_RUST : 0);
     }
   }
   return walls;
@@ -95,8 +102,8 @@ export function makeMap(options: MapOptions = {}): MapDef {
     width: size,
     height: size,
     walls,
-    floors: walls.map(() => encodeTile(10, 0)),
-    ceilings: walls.map(() => encodeTile(20, 0)),
+    floors: walls.map(() => encodeTile(TEX_FLOOR_PLATE, 0)),
+    ceilings: walls.map(() => encodeTile(TEX_CEILING, 0)),
     light: options.light ?? walls.map(() => 255),
     lamps: options.lamps ?? [],
     spawn: options.spawn ?? { pos: { x: 1, y: 1 }, facing: 0 },
