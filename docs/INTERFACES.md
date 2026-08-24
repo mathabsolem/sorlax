@@ -1,6 +1,13 @@
-# Scepter of Sorlax — INTERFACES v1.6
+# Scepter of Sorlax — INTERFACES v1.7
 
-Status: eingefroren. Ersetzt v1.5.
+Status: eingefroren. Ersetzt v1.6.
+
+Änderung gegenüber v1.6, aus der Rückmeldung nach Phase 6:
+- `MapDef.rooms: RoomDef[]`. Der Validator konnte Räume aus dem Raster nicht mehr
+  rekonstruieren, deshalb waren die Regeln 10 und 12 nicht ehrlich prüfbar.
+  Der Generator kennt die Räume, also schreibt er sie mit.
+
+Frühere Fassung, unverändert gültig:
 
 Änderungen gegenüber v1.5, alle aus der Rückmeldung nach Phase 5:
 - `EnemyDef.guaranteedUniqueId?: string`. Ein Boss trägt sein Stück ohne Wurf. Damit
@@ -456,6 +463,7 @@ export type MapDef = {
   ceilings: number[];
   light: number[];
   spawn: { pos: TileCoord; facing: Facing };
+  rooms: RoomDef[];
   lamps: LampDef[];
   entities: MapEntityDef[];
   triggers: TriggerDef[];
@@ -464,6 +472,15 @@ export type MapDef = {
 };
 
 export type LampDef = { pos: TileCoord; radius: number; intensity: number };
+
+export type RoomDef = {
+  id: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  kind: 'start' | 'exit' | 'normal' | 'secret' | 'arena' | 'corridor';
+};
 
 export type MapEntityDef = {
   kind: 'enemy' | 'door' | 'item' | 'decoration';
