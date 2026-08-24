@@ -1,6 +1,26 @@
-# Scepter of Sorlax — INTERFACES v1.8
+# Scepter of Sorlax — INTERFACES v1.10
 
-Status: eingefroren. Ersetzt v1.7.
+Status: eingefroren. Ersetzt v1.9.
+
+Änderung gegenüber v1.9, aus der Rückmeldung zur Grafikerstellung:
+- Gegnersprites haben nicht mehr pauschal 64 x 64. Die Kantenlänge folgt `spriteWidth`
+  nach CONTENT_TABLES Abschnitt 6. `PixelSurface` trägt Breite und Höhe ohnehin mit, der
+  Renderer skaliert bereits über `spriteWidth`, es ändert sich nur die Erwartung an die
+  Dateien.
+
+Frühere Fassung, unverändert gültig:
+
+Änderungen gegenüber v1.8, aus der Rückmeldung nach Phase 7:
+- `pullSave` bekommt `difficulty` als ersten Parameter. Stände liegen je Schwierigkeitsgrad
+  getrennt, der Endpunkt braucht beides. Der optionale zweite Parameter mit Vorgabe
+  `'normal'` war eine Notlösung.
+- `pushSave` bekommt `mapName`. Der Server kann ihn nicht ableiten, im Spielstand steht nur
+  `currentMapId`. Der Client löst ihn über die `ContentDb` auf.
+- Neu festgeschrieben: Der Spielstand geht als **Text** über die Leitung, und `checksum`
+  deckt genau diese Zeichen ab. Ohne diese Festlegung hängt die Prüfsumme an der
+  Zahlenformatierung der Gegenseite und schlägt bei jedem Gleitkommawert fehl.
+
+Frühere Fassung, unverändert gültig:
 
 Änderung gegenüber v1.7, aus der Rückmeldung nach Phase 6.5:
 - `RoomDef.dark?: boolean`. Bewusst unbeleuchtete Räume brauchen ein Kennzeichen, sonst
@@ -573,7 +593,7 @@ Raritätsfarben werden als Rahmen im DOM gezeichnet, nicht als eigene Symbole.
 
 ```
 public/assets/textures/<id>.png       64 x 64
-public/assets/sprites/<name>.png      64 x 64
+public/assets/sprites/<name>.png      64, 96 oder 128, nach spriteWidth
 public/assets/weapons/<name>.png      160 x 100
 public/assets/icons/<name>.png        32 x 32
 public/assets/ui/<name>.png           beliebig
@@ -600,8 +620,8 @@ export interface ApiClient {
   login(email: string, password: string): Promise<AuthResult>;
   logout(): Promise<void>;
   listSaves(): Promise<SaveMeta[]>;
-  pullSave(slot: number): Promise<{ meta: SaveMeta; state: GameState }>;
-  pushSave(slot: number, state: GameState): Promise<SaveMeta>;
+  pullSave(difficulty: Difficulty, slot: number): Promise<{ meta: SaveMeta; state: GameState }>;
+  pushSave(slot: number, state: GameState, mapName: string): Promise<SaveMeta>;
 }
 
 export type AuthResult = { userId: number; token: string; expiresAt: string };
@@ -620,4 +640,16 @@ export type SaveMeta = {
 ```
 
 Netzfehler dürfen das Spiel nie blockieren, lokales Speichern hat Vorrang.
-Ein serialisierter Spielstand ist auf 2 MB begrenzt, siehe BACKEND.md.
+Ein serialisierter Spielstand ist auf 2 MB begrenzt, siehe SPEC Abschnitt 11.
+
+### Übertragungsformat, verbindlich
+
+Der Spielstand wird als Zeichenkette übertragen, nicht als verschachteltes JSON-Objekt im
+Anfragekörper. `checksum` ist SHA-256 über genau diese Zeichenkette.
+
+Die Gegenseite prüft die Prüfsumme über die empfangenen Zeichen und dekodiert erst danach.
+Sie kodiert den Stand nie neu, um ihn zu prüfen. Andernfalls hängt die Prüfsumme an
+Zahlenformatierung und Maskierung der jeweiligen Sprache, und Werte wie `0.55` reichen für
+eine Abweichung.
+
+Dasselbe gilt für die lokale Ablage: `localStore` hasht die Zeichenkette, die es speichert.
