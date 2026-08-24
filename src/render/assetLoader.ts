@@ -35,6 +35,34 @@ export async function loadSurface(url: string): Promise<PixelSurface> {
   };
 }
 
+/**
+ * Laedt die Texturen, die es als Datei gibt, und ueberspringt die uebrigen.
+ *
+ * Solange die Grafik entsteht, liegen nur einzelne Bilder in public/assets;
+ * fuer den Rest bleiben die Platzhalter stehen. Eine fehlende Datei ist
+ * deshalb kein Fehler, sondern der Normalfall.
+ */
+export async function loadOptionalTextures(
+  base: string,
+  ids: readonly number[],
+  /** Eingebettete Bilder als data-URI, fuer einen Aufbau aus einer Datei. */
+  embedded?: Record<number, string>
+): Promise<Record<number, PixelSurface>> {
+  const textures: Record<number, PixelSurface> = {};
+  for (const id of ids) {
+    // Sind Bilder eingebettet, gibt es keinen Ordner daneben: dann wird nur
+    // geladen, was wirklich dabei ist, statt ins Leere zu greifen.
+    const url = embedded === undefined ? `${base}/textures/${id}.png` : embedded[id];
+    if (url === undefined) continue;
+    try {
+      textures[id] = await loadSurface(url);
+    } catch {
+      // Kein Bild vorhanden: der Platzhalter bleibt.
+    }
+  }
+  return textures;
+}
+
 /** Laedt das komplette Bundle aus public/assets. */
 export async function loadAssets(base: string, manifest: AssetManifest): Promise<AssetBundle> {
   const textures: Record<number, PixelSurface> = {};

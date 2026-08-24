@@ -97,7 +97,7 @@ describe('AnimationState', () => {
   });
 
   // Test 6 aus PHASE_3
-  it('ist nach Ablauf aller Tweens wieder ruhig', () => {
+  it('ist nach Ablauf aller Schritte wieder ruhig', () => {
     const animation = new AnimationState();
     const events: GameEvent[] = [
       { type: 'moved', who: 'player', from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
@@ -108,8 +108,13 @@ describe('AnimationState', () => {
     animation.consumeEvents(events);
     expect(animation.isAnimating()).toBe(true);
 
-    const longest = Math.max(MOVE_MS, TURN_MS, WEAPON_MS, ENEMY_ATTACK_MS);
-    animation.advance(longest + 1);
+    // Die Schritte laufen nacheinander, also zaehlt die Summe, nicht das
+    // laengste Stueck: Gehen, Drehen, Schlagen, Zucken, Gegenschlag.
+    const total = MOVE_MS + TURN_MS + WEAPON_MS + PAIN_MS + ENEMY_ATTACK_MS;
+    animation.advance(total - 1);
+    expect(animation.isAnimating()).toBe(true);
+
+    animation.advance(2);
     expect(animation.isAnimating()).toBe(false);
   });
 
@@ -152,6 +157,9 @@ describe('AnimationState', () => {
     animation.consumeEvents([
       { type: 'attack', attacker: 'player', target: 1, hit: true, damage: 3, crit: false, damageType: 'physical' },
     ]);
+    // Erst schlaegt der Spieler, dann zuckt der Getroffene. Vorher steht er still.
+    expect(animation.frameOf(1, def)).toBe('idle_0');
+    animation.advance(WEAPON_MS + 1);
     expect(animation.frameOf(1, def)).toBe('pain_0');
   });
 
@@ -166,21 +174,26 @@ describe('AnimationState', () => {
     expect(animation.frameOf(1, def)).toBe('idle_0');
   });
 
-  it('laesst Pain-Frames vor dem Waffentween ablaufen und sperrt selbst nicht', () => {
+  it('spielt den Waffentween und danach den Pain-Frame, nicht beides zugleich', () => {
     const animation = new AnimationState();
     const def = enemyDef();
     animation.consumeEvents([
       { type: 'attack', attacker: 'player', target: 1, hit: true, damage: 3, crit: false, damageType: 'physical' },
     ]);
+
+    // Solange die Waffe schwingt, steht der Gegner still.
+    expect(animation.weaponRecoil()).toBeGreaterThanOrEqual(0);
+    expect(animation.frameOf(1, def)).toBe('idle_0');
+    expect(animation.queued()).toBe(2);
+
+    animation.advance(WEAPON_MS + 1);
+    expect(animation.weaponRecoil()).toBe(0);
     expect(animation.frameOf(1, def)).toBe('pain_0');
 
-    // Pain ist kuerzer als der Waffentween, danach steht der Gegner wieder still.
-    animation.advance(PAIN_MS + 1);
-    expect(animation.frameOf(1, def)).toBe('idle_0');
-    expect(PAIN_MS).toBeLessThan(WEAPON_MS);
-    expect(animation.isAnimating()).toBe(true);
-
-    animation.advance(WEAPON_MS);
+    animation.advance(PAIN_MS);
+    // Danach steht er wieder still. Welcher Idle-Frame das ist, haengt an der
+    // Renderzeit und nicht an der Reihe.
+    expect(def.frames.idle).toContain(animation.frameOf(1, def));
     expect(animation.isAnimating()).toBe(false);
   });
 
@@ -215,5 +228,79 @@ describe('AnimationState', () => {
     animation.snapTo(state);
     expect(animation.isAnimating()).toBe(false);
     expect(animation.angleOf()).toBeCloseTo(facingToAngle(state.player.facing), 10);
+  });
+});
+
+describe('Eine Animation zur Zeit', () => {
+  it('laesst zwei Gegner nacheinander laufen, nicht gleichzeitig', () => {
+    const animation = new AnimationState();
+    animation.consumeEvents([
+      { type: 'moved', who: 1, from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+      { type: 'moved', who: 2, from: { x: 5, y: 5 }, to: { x: 5, y: 6 } },
+    ]);
+
+    // Der erste laeuft, der zweite steht noch auf seiner alten Kachel, obwohl
+    // der Spielzustand ihn schon versetzt hat.
+    animation.advance(MOVE_MS / 2);
+    expect(animation.positionOf(1, { x: 2, y: 1 }).x).toBeCloseTo(2.0, 5);
+    expect(animation.positionOf(2, { x: 5, y: 6 })).toEqual({ x: 5.5, y: 5.5 });
+
+    // Jetzt ist der zweite an der Reihe und der erste steht auf dem Ziel.
+    animation.advance(MOVE_MS / 2 + MOVE_MS / 2);
+    expect(animation.positionOf(1, { x: 2, y: 1 })).toEqual({ x: 2.5, y: 1.5 });
+    expect(animation.positionOf(2, { x: 5, y: 6 }).y).toBeCloseTo(6.0, 5);
+
+    animation.advance(MOVE_MS);
+    expect(animation.isAnimating()).toBe(false);
+  });
+
+  it('haelt den Blickwinkel, bis die Drehung an der Reihe ist', () => {
+    const animation = new AnimationState();
+    animation.consumeEvents([
+      { type: 'moved', who: 'player', from: { x: 1, y: 1 }, to: { x: 1, y: 2 } },
+      { type: 'turned', who: 'player', facing: 2 },
+    ]);
+
+    // Waehrend des Schritts bleibt der Winkel stehen.
+    const before = animation.angleOf();
+    animation.advance(MOVE_MS / 2);
+    expect(animation.angleOf()).toBeCloseTo(before, 10);
+
+    animation.advance(MOVE_MS / 2 + TURN_MS / 2);
+    expect(animation.angleOf()).not.toBeCloseTo(before, 5);
+
+    animation.advance(TURN_MS);
+    expect(animation.angleOf()).toBeCloseTo(facingToAngle(2), 10);
+  });
+
+  it('reicht Restzeit an den naechsten Schritt weiter', () => {
+    const animation = new AnimationState();
+    animation.consumeEvents([
+      { type: 'moved', who: 1, from: { x: 1, y: 1 }, to: { x: 2, y: 1 } },
+      { type: 'moved', who: 2, from: { x: 4, y: 1 }, to: { x: 5, y: 1 } },
+    ]);
+
+    // Ein einziger grosser Zeitschritt arbeitet beide ab, sonst haenge die
+    // Reihe an der Bildrate.
+    animation.advance(2 * MOVE_MS + 1);
+    expect(animation.isAnimating()).toBe(false);
+    expect(animation.queued()).toBe(0);
+  });
+
+  it('nimmt die Schritte eines gestorbenen Gegners aus der Reihe', () => {
+    const { state } = setup({ entities: [{ kind: 'enemy', defId: 'grunt', pos: { x: 3, y: 1 } }] });
+    const animation = new AnimationState();
+    animation.observe(state);
+    const id = state.maps['test']?.entities[0]?.id ?? 1;
+
+    animation.consumeEvents([
+      { type: 'attack', attacker: 'player', target: id, hit: true, damage: 99, crit: false, damageType: 'physical' },
+      { type: 'died', who: id },
+    ]);
+
+    // Der Waffentween bleibt, der Pain-Schritt des Toten faellt weg.
+    expect(animation.queued()).toBe(1);
+    animation.advance(WEAPON_MS + 1);
+    expect(animation.isAnimating()).toBe(false);
   });
 });

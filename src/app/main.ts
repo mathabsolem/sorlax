@@ -19,7 +19,7 @@ import { AccountView } from '../ui/account';
 import { AUTOSAVE_SLOT, SaveTooLargeError, createLocalStore } from '../net/localStore';
 import { IDENTIFY_ITEM_ID, addToInventory, createInstance, takeItemUid } from '../core/items';
 import { createPlaceholderAssets, USE_PLACEHOLDERS } from '../render/placeholders';
-import { loadAssets } from '../render/assetLoader';
+import { loadAssets, loadOptionalTextures } from '../render/assetLoader';
 import { SoftwareRenderer } from '../render/renderer';
 import { Automap } from '../ui/automap';
 import { CharacterView } from '../ui/character';
@@ -35,7 +35,7 @@ import { Menu } from '../ui/menu';
 import { Overlay } from '../ui/overlay';
 import { skillBar } from '../ui/hudModel';
 import { DEV_SEED, collectAssetNames } from './devFixture';
-import { FIRST_MAP_ID, createGameContent } from './gameContent';
+import { FIRST_MAP_ID, collectTextureIds, createGameContent } from './gameContent';
 
 /** Ein einzelnes Bild darf hoechstens 100 ms Spielzeit tragen. */
 const MAX_FRAME_MS = 100;
@@ -82,19 +82,37 @@ function mountCanvas(host: HTMLElement): HTMLCanvasElement {
   return canvas;
 }
 
-export async function start(host: HTMLElement): Promise<void> {
-  const content = createGameContent();
-  let state: GameState = createNewGame(DEV_SEED, content, FIRST_MAP_ID);
+/**
+ * Startet das Spiel in `host`. `world` ist einspeisbar, damit ein Aufbau mit
+ * nur einer Sohle dieselbe Schleife benutzen kann wie das ganze Spiel.
+ */
+export async function start(host: HTMLElement, world?: ContentDb): Promise<void> {
+  const content = world ?? createGameContent();
+  const firstMap = content.maps[FIRST_MAP_ID] === undefined
+    ? (Object.keys(content.maps)[0] ?? FIRST_MAP_ID)
+    : FIRST_MAP_ID;
+  let state: GameState = createNewGame(DEV_SEED, content, firstMap);
 
   const names = collectAssetNames(content);
   const assets = USE_PLACEHOLDERS
     ? createPlaceholderAssets(names.spriteNames, names.weaponNames)
     : await loadAssets('assets', {
-        textureIds: [],
+        textureIds: collectTextureIds(content.maps),
         spriteNames: names.spriteNames,
         weaponNames: names.weaponNames,
         uiNames: [],
       });
+
+  // Wo schon ein echtes Bild liegt, ersetzt es den Platzhalter. Der Rest
+  // bleibt, bis die Grafik nachkommt. In einem Einzeldatei-Aufbau stehen die
+  // Bilder als data-URI in `SORLAX_TEXTURES`, sonst liegen sie unter assets/.
+  if (USE_PLACEHOLDERS) {
+    const embedded = (globalThis as { SORLAX_TEXTURES?: Record<number, string> }).SORLAX_TEXTURES;
+    Object.assign(
+      assets.textures,
+      await loadOptionalTextures('assets', collectTextureIds(content.maps), embedded)
+    );
+  }
 
   // Nur im Entwicklungsbetrieb: offene Punkte, eine Scannerladung und ein
   // unidentifizierter Fund, damit sich Charakterbogen, Fertigkeitenbaum und

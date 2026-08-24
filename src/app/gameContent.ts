@@ -29,6 +29,7 @@ import sohle13 from '../../content/maps/sohle_13.json';
 import sohle14 from '../../content/maps/sohle_14.json';
 import sohle15 from '../../content/maps/sohle_15.json';
 import sohle16 from '../../content/maps/sohle_16.json';
+import { textureIdOf } from '../core/tiles';
 import type { ContentDb, MapDef } from '../core/types';
 
 /** Erste Sohle, hier startet ein neues Spiel. */
@@ -59,4 +60,20 @@ export function createGameContent(): ContentDb {
     maps: loadMaps(),
     progression: progression as unknown as ContentDb['progression'],
   };
+}
+
+/**
+ * Alle Textur-Ids, die in den Karten wirklich vorkommen, aufsteigend sortiert.
+ * Der Loader probiert nur diese, statt den ganzen Katalog abzufragen.
+ */
+export function collectTextureIds(maps: Record<string, MapDef>): number[] {
+  const ids = new Set<number>();
+  for (const map of Object.values(maps)) {
+    for (const grid of [map.walls, map.floors, map.ceilings]) {
+      for (const value of grid) {
+        if (value !== 0) ids.add(textureIdOf(value));
+      }
+    }
+  }
+  return [...ids].sort((a, b) => a - b);
 }

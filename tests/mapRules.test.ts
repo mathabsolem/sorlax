@@ -7,7 +7,7 @@ import { contentForValidation } from '../scripts/genMaps';
 import { mapIdFor } from '../scripts/mapPopulate';
 import { DUST_TRACE, KNOWN_TEXTURES, OIL_STAIN } from '../scripts/mapTables';
 import { validateMap } from '../scripts/validateMap';
-import { loadMaps } from '../src/app/gameContent';
+import { collectTextureIds, loadMaps } from '../src/app/gameContent';
 import * as placeholders from '../src/render/placeholders';
 import { textureIdOf } from '../src/core/tiles';
 import type { MapDef } from '../src/core/types';
@@ -249,5 +249,19 @@ describe('Dunkle Raeume', () => {
         lamp.pos.y < dark.y + dark.h
     );
     expect(inside).toEqual([]);
+  });
+});
+
+describe('collectTextureIds', () => {
+  it('sammelt jede Id, die in den Karten wirklich vorkommt', () => {
+    const ids = collectTextureIds(MAPS);
+    expect(ids.length).toBeGreaterThan(0);
+    // Aufsteigend und ohne Doubletten.
+    expect(ids).toEqual([...new Set(ids)].sort((a, b) => a - b));
+    // Die drei Wandbilder der ersten Zone sind dabei.
+    expect(ids).toContain(10);
+    expect(ids).toContain(11);
+    // Und nichts, was der Katalog nicht kennt.
+    expect(ids.filter((id) => !KNOWN_TEXTURES.has(id))).toEqual([]);
   });
 });
