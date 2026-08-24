@@ -1,6 +1,13 @@
-# Scepter of Sorlax — INTERFACES v1.7
+# Scepter of Sorlax — INTERFACES v1.8
 
-Status: eingefroren. Ersetzt v1.6.
+Status: eingefroren. Ersetzt v1.7.
+
+Änderung gegenüber v1.7, aus der Rückmeldung nach Phase 6.5:
+- `RoomDef.dark?: boolean`. Bewusst unbeleuchtete Räume brauchen ein Kennzeichen, sonst
+  ist die Lampenregel des Validators entweder unehrlich oder verbietet dunkle Räume ganz.
+  Dunkle Räume sind gewollt.
+
+Frühere Fassung, unverändert gültig:
 
 Änderung gegenüber v1.6, aus der Rückmeldung nach Phase 6:
 - `MapDef.rooms: RoomDef[]`. Der Validator konnte Räume aus dem Raster nicht mehr
@@ -480,6 +487,7 @@ export type RoomDef = {
   w: number;
   h: number;
   kind: 'start' | 'exit' | 'normal' | 'secret' | 'arena' | 'corridor';
+  dark?: boolean;                     // bewusst ohne Lampe, ab Zone 3
 };
 
 export type MapEntityDef = {
