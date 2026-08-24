@@ -22,7 +22,15 @@ import type {
   RoomDef,
   TileCoord,
 } from '../src/core/types.ts';
-import { buildGrids, buildLamps, drawTrace, freeTiles, tracePath, traceSetFor } from './mapDecor.ts';
+import {
+  buildGrids,
+  buildLamps,
+  darkRooms,
+  drawTrace,
+  freeTiles,
+  tracePath,
+  traceSetFor,
+} from './mapDecor.ts';
 import { buildArena, buildLayout, center } from './mapGeometry.ts';
 import type { Layout } from './mapGeometry.ts';
 import { mapIdFor, placeEnemies, placeItems, planLayout } from './mapPopulate.ts';
@@ -138,7 +146,15 @@ export function buildMap(
 
   const plan = planLayout(rng, layout, depth, zone);
   const grids = buildGrids(rng, layout, zone);
-  const lamps = buildLamps(layout, zone, depth);
+
+  // Erst die Raeume, dann das Licht: welche Raeume dunkel bleiben, haengt an
+  // ihrer Art, und `dark` wird in der Karte vermerkt (INTERFACES v1.8).
+  const rooms = roomsOf(layout, plan, isBoss);
+  const dark = darkRooms(rooms, depth);
+  for (const room of rooms) {
+    if (dark.has(room.id)) room.dark = true;
+  }
+  const lamps = buildLamps(layout, zone, depth, rooms, dark);
 
   // Die Deckenlampe sitzt ueber jeder Lampe, CONTENT_TABLES Abschnitt 6.
   for (const lamp of lamps) {
@@ -182,7 +198,7 @@ export function buildMap(
     ceilings: grids.ceilings,
     light: generateLightMap(size, size, grids.walls, lamps),
     spawn: spawnOf(layout, plan.start),
-    rooms: roomsOf(layout, plan, isBoss),
+    rooms,
     lamps,
     entities,
     triggers: plan.triggers,

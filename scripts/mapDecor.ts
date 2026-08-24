@@ -8,7 +8,7 @@
 import { encodeTile } from '../src/core/tiles.ts';
 import type { Rotation } from '../src/core/tiles.ts';
 import type { Rng } from '../src/core/rng.ts';
-import type { LampDef, TileCoord } from '../src/core/types.ts';
+import type { LampDef, RoomDef, TileCoord } from '../src/core/types.ts';
 import { center, inRoom, roomTiles } from './mapGeometry.ts';
 import type { Layout, Room } from './mapGeometry.ts';
 import { BLOOD_TRACE, DUST_TRACE, PILLAR_INDEX } from './mapTables.ts';
@@ -89,28 +89,68 @@ function nearestRoomWall(
   return fallback;
 }
 
+/** Anteil der Raeume, der ab Zone 3 dunkel bleiben darf, PHASE_7 Block 0. */
+export const DARK_SHARE = 0.25;
+
+/**
+ * Welche Raeume bleiben ohne Licht? Ab Zone 3, hoechstens ein Viertel der
+ * Raeume einer Karte, und nie Start, Ausgang oder Arena: dort waere Dunkelheit
+ * kein Stimmungsmittel, sondern eine Zumutung.
+ */
+export function darkRooms(rooms: readonly RoomDef[], depth: number): Set<number> {
+  if (depth <= 8) return new Set();
+  const eligible = rooms.filter((room) => room.kind === 'normal' || room.kind === 'secret');
+  const limit = Math.min(eligible.length, Math.floor(rooms.length * DARK_SHARE));
+  if (limit <= 0) return new Set();
+
+  // Gleichmaessig ueber die Liste verteilt, damit nicht ein Kartenteil
+  // vollstaendig ausfaellt.
+  const step = eligible.length / limit;
+  const chosen = new Set<number>();
+  for (let index = 0; index < limit; index++) {
+    const room = eligible[Math.floor(index * step)];
+    if (room !== undefined) chosen.add(room.id);
+  }
+  return chosen;
+}
+
 /**
  * Lampen je Raum und Korridor, PHASE_6 Block 5.
  *
  * Der Abstand von sechs Kacheln zaehlt entlang des Korridorverlaufs, nicht in
  * Rasterreihenfolge (CONTENT_TABLES v1.2 Abschnitt 7). Ab Zone 3 bleibt jede
- * fuenfte Lampe dunkel, aber nie die einzige eines Raums: sonst waere
- * Validatorregel 10 nicht mehr zu halten.
+ * fuenfte Korridorlampe dunkel, dazu bleiben die Raeume aus `dark` ganz ohne
+ * Licht.
  */
-export function buildLamps(layout: Layout, zone: Zone, depth: number): LampDef[] {
+export function buildLamps(
+  layout: Layout,
+  zone: Zone,
+  depth: number,
+  rooms: readonly RoomDef[],
+  dark: ReadonlySet<number>
+): LampDef[] {
   const lamp = (pos: TileCoord): LampDef => ({ pos, radius: 5, intensity: zone.intensity });
   const solid = (pos: TileCoord): boolean => layout.solid[pos.y * layout.size + pos.x] === true;
+  const inDark = (pos: TileCoord): boolean =>
+    rooms.some(
+      (room) =>
+        dark.has(room.id) &&
+        pos.x >= room.x &&
+        pos.x < room.x + room.w &&
+        pos.y >= room.y &&
+        pos.y < room.y + room.h
+    );
 
-  // Pflichtlampen: eine je Raum, sie bleiben immer stehen.
+  // Pflichtlampen: eine je Raum, der Licht bekommen soll.
   const required: LampDef[] = [];
   const optional: LampDef[] = [];
   for (const room of layout.rooms) {
     const middle = center(room);
-    if (!solid(middle)) required.push(lamp(middle));
+    if (!solid(middle) && !inDark(middle)) required.push(lamp(middle));
     // Grosse Raeume tragen eine zweite Lampe, damit die Ecken nicht absaufen.
     if (Math.max(room.w, room.h) >= 8) {
       const second = { x: room.x + Math.floor(room.w / 4), y: room.y + Math.floor(room.h / 4) };
-      if (!solid(second)) optional.push(lamp(second));
+      if (!solid(second) && !inDark(second)) optional.push(lamp(second));
     }
   }
 
@@ -121,6 +161,7 @@ export function buildLamps(layout: Layout, zone: Zone, depth: number): LampDef[]
       since += 1;
       if (since < 6) continue;
       since = 0;
+      if (inDark(tile)) continue;
       if (optional.some((other) => other.pos.x === tile.x && other.pos.y === tile.y)) continue;
       optional.push(lamp(tile));
     }

@@ -413,6 +413,7 @@ export type RoomDef = {
   w: number;
   h: number;
   kind: 'start' | 'exit' | 'normal' | 'secret' | 'arena' | 'corridor';
+  dark?: boolean; // bewusst ohne Lampe, ab Zone 3
 };
 
 export type MapEntityDef = {

@@ -7,6 +7,7 @@
 import { AUTOSAVE_SLOT, MANUAL_SLOTS } from '../net/localStore';
 import type { LocalStore } from '../net/localStore';
 import { Overlay, overlayButton } from './overlay';
+import { describePlace } from './saveModel';
 import type { Difficulty, GameState, SaveMeta } from '../core/types';
 
 export type Settings = {
@@ -31,6 +32,10 @@ export type MenuHandlers = {
   onLoad: (slot: number) => void;
   onQuit: () => void;
   onSettingsChanged: (settings: Settings) => void;
+  /** Oeffnet den Kontobereich, PHASE_7 Block 4. */
+  onAccount?: () => void;
+  /** Kopfdaten der Staende auf dem Server, leer ohne Konto. */
+  remoteSaves?: () => readonly SaveMeta[];
 };
 
 /** Menschenlesbare Kopfzeile eines Speicherplatzes. */
@@ -73,6 +78,7 @@ export class Menu {
       overlayButton(doc, 'Speichern', '', () => void this.openSlots(state.difficulty, 'save')),
       overlayButton(doc, 'Laden', '', () => void this.openSlots(state.difficulty, 'load')),
       overlayButton(doc, 'Einstellungen', '', () => this.openSettings()),
+      overlayButton(doc, 'Konto', '', () => this.handlers.onAccount?.(), this.handlers.onAccount === undefined),
       overlayButton(doc, 'Spiel beenden', '', () => this.handlers.onQuit())
     );
   }
@@ -86,17 +92,31 @@ export class Menu {
       if (meta.difficulty === difficulty) bySlot.set(meta.slot, meta);
     }
 
-    const rows = [...MANUAL_SLOTS, AUTOSAVE_SLOT].map((slot) => {
+    // Seit PHASE_7 steht an jedem Platz, ob er lokal, entfernt oder beides ist.
+    const remote = new Map<number, SaveMeta>();
+    for (const meta of this.handlers.remoteSaves?.() ?? []) {
+      if (meta.difficulty === difficulty) remote.set(meta.slot, meta);
+    }
+
+    const rows = [...MANUAL_SLOTS, AUTOSAVE_SLOT].flatMap((slot) => {
       const meta = bySlot.get(slot);
+      const view = describePlace(slot, meta, remote.get(slot));
       const isAutosave = slot === AUTOSAVE_SLOT;
-      const disabled = mode === 'save' ? isAutosave : meta === undefined;
-      return overlayButton(
+      const disabled = mode === 'save' ? isAutosave : meta === undefined && remote.get(slot) === undefined;
+      const button = overlayButton(
         doc,
-        isAutosave ? 'Autosave' : `Platz ${slot + 1}`,
-        describeSlot(meta, slot),
+        view.label,
+        view.detail,
         () => (mode === 'save' ? this.handlers.onSave(slot) : this.handlers.onLoad(slot)),
         disabled
       );
+      if (view.stamps.length === 0) return [button];
+
+      // Bei Abweichung stehen beide Zeitstempel darunter.
+      const note = doc.createElement('p');
+      note.className = 'sx-overlay__note';
+      note.textContent = view.stamps.join(' · ');
+      return [button, note];
     });
 
     this.overlay.show(

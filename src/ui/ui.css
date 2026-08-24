@@ -338,6 +338,40 @@
   font-size: 12px;
 }
 
+.sx-overlay__note {
+  color: var(--sx-dim);
+  font-size: 12px;
+  margin: -2px 0 6px;
+  width: min(560px, 92vw);
+  text-align: left;
+}
+
+/* Eingabefelder der Anmeldung, PHASE_7 Block 4. */
+.sx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(560px, 92vw);
+  color: var(--sx-dim);
+  font-size: 12px;
+  text-align: left;
+}
+
+.sx-field__input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--sx-text);
+  background: var(--sx-panel);
+  border: 1px solid var(--sx-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.sx-field__input:focus {
+  outline: 2px solid var(--sx-magic);
+  outline-offset: 1px;
+}
+
 .sx-overlay__scroll {
   max-height: 60vh;
   overflow-y: auto;

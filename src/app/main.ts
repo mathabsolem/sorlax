@@ -8,11 +8,14 @@
 import '../ui/ui.css';
 import { applyCommand } from '../core/commands';
 import { createNewGame, deserialize, serialize } from '../core/state';
-import type { Command, ContentDb, GameState } from '../core/types';
+import type { Command, ContentDb, GameState, SaveMeta } from '../core/types';
 import { attachKeyboard } from '../input/keyboard';
 import { InputGate } from '../input/gate';
 import { attachTouch } from '../input/touch';
-import { createIndexedBackend } from '../net/indexedBackend';
+import { createIndexedBackend, createQueueStore, createTokenStore } from '../net/indexedBackend';
+import { createApiClient } from '../net/apiClient';
+import { createSync } from '../net/sync';
+import { AccountView } from '../ui/account';
 import { AUTOSAVE_SLOT, SaveTooLargeError, createLocalStore } from '../net/localStore';
 import { IDENTIFY_ITEM_ID, addToInventory, createInstance, takeItemUid } from '../core/items';
 import { createPlaceholderAssets, USE_PLACEHOLDERS } from '../render/placeholders';
@@ -117,6 +120,24 @@ export async function start(host: HTMLElement): Promise<void> {
   let lastAutosaveTurn = 0;
   let openView: ViewId | null = null;
 
+  // Netzteil, PHASE_7. Ohne VITE_API_BASE laeuft alles rein lokal weiter.
+  const apiBase = String(import.meta.env['VITE_API_BASE'] ?? '');
+  const api = apiBase === ''
+    ? null
+    : createApiClient({
+        baseUrl: apiBase,
+        tokens: createTokenStore(),
+        mapNameOf: (mapId) => content.maps[mapId]?.name ?? mapId,
+        onSignedOut: () => {
+          account.email = null;
+          pushMessage('Die Sitzung ist abgelaufen');
+        },
+      });
+  const sync = api === null
+    ? null
+    : createSync({ api, store, queue: createQueueStore() });
+  const account: { email: string | null; remote: SaveMeta[] } = { email: null, remote: [] };
+
   const showView = (view: ViewId): void => {
     openView = view;
     const doc = host.ownerDocument;
@@ -160,12 +181,19 @@ export async function start(host: HTMLElement): Promise<void> {
   const autosave = (): void => {
     if (state.turnCount - lastAutosaveTurn < AUTOSAVE_EVERY_TURNS) return;
     lastAutosaveTurn = state.turnCount;
-    void store.write(state.difficulty, AUTOSAVE_SLOT, state).catch((error: unknown) => {
-      // Ein voller oder zu grosser Stand darf das Spiel nie anhalten.
-      pushMessage(
-        error instanceof SaveTooLargeError ? 'Spielstand zu groß' : 'Autosave fehlgeschlagen'
-      );
-    });
+    void store
+      .write(state.difficulty, AUTOSAVE_SLOT, state)
+      .then(() => {
+        // Erst lokal, dann ins Netz. Ein Fehler dort bleibt in der
+        // Warteschlange und haelt das Spiel nicht auf.
+        void sync?.queueSave(state.difficulty, AUTOSAVE_SLOT);
+      })
+      .catch((error: unknown) => {
+        // Ein voller oder zu grosser Stand darf das Spiel nie anhalten.
+        pushMessage(
+          error instanceof SaveTooLargeError ? 'Spielstand zu groß' : 'Autosave fehlgeschlagen'
+        );
+      });
   };
 
   const run = (cmd: Command): void => {
@@ -218,7 +246,10 @@ export async function start(host: HTMLElement): Promise<void> {
       overlay.close();
     },
     onSave: (slot) => {
-      void store.write(state.difficulty, slot, state).then(() => overlay.close());
+      void store.write(state.difficulty, slot, state).then(() => {
+        void sync?.queueSave(state.difficulty, slot);
+        overlay.close();
+      });
     },
     onLoad: (slot) => {
       void store.read(state.difficulty, slot).then((entry) => {
@@ -234,7 +265,44 @@ export async function start(host: HTMLElement): Promise<void> {
       overlay.show('Beendet');
     },
     onSettingsChanged: () => undefined,
+    ...(api === null
+      ? {}
+      : {
+          onAccount: () => void openAccount(),
+          remoteSaves: () => account.remote,
+        }),
   });
+
+  const accountView =
+    api === null
+      ? null
+      : new AccountView(overlay, api, {
+          onDone: () => menu.open(state),
+          onSignedIn: (email) => {
+            account.email = email;
+            void refreshRemote().then(() => menu.open(state));
+          },
+          onSignedOut: () => {
+            account.email = null;
+            account.remote = [];
+            menu.open(state);
+          },
+        });
+
+  /** Holt die Kopfdaten vom Server. Ohne Netz bleibt die Liste leer. */
+  async function refreshRemote(): Promise<void> {
+    if (api === null) return;
+    account.remote = await api.listSaves().catch(() => []);
+  }
+
+  async function openAccount(): Promise<void> {
+    if (accountView === null || sync === null) return;
+    accountView.openSection({
+      email: account.email,
+      pending: await sync.pending(),
+      configured: true,
+    });
+  }
 
   const toggleMap = (): void => {
     if (overlay.isOpen()) {

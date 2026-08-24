@@ -181,3 +181,73 @@ describe('Schleifspur in Zone 1', () => {
     }
   });
 });
+
+describe('Dunkle Raeume', () => {
+  const DARK_LIMIT = 0.25;
+
+  // Test 11 aus PHASE_7
+  it('laesst hoechstens ein Viertel der Raeume einer Karte dunkel', () => {
+    const problems: string[] = [];
+    for (const depth of DEPTHS) {
+      const map = mapOf(depth);
+      const dark = map.rooms.filter((room) => room.dark === true).length;
+      const limit = Math.floor(map.rooms.length * DARK_LIMIT);
+      if (dark <= limit) continue;
+      problems.push(`Sohle ${depth}: ${dark} von ${map.rooms.length} dunkel, erlaubt ${limit}`);
+    }
+    expect(problems).toEqual([]);
+    // Ab Zone 3 gibt es sie wirklich, davor nie.
+    expect(mapOf(13).rooms.some((room) => room.dark === true)).toBe(true);
+    expect(mapOf(1).rooms.some((room) => room.dark === true)).toBe(false);
+  });
+
+  // Test 12 aus PHASE_7
+  it('laesst Start, Ausgang und Arena nie dunkel', () => {
+    const problems: string[] = [];
+    for (const depth of DEPTHS) {
+      for (const room of mapOf(depth).rooms) {
+        if (room.dark !== true) continue;
+        if (room.kind === 'normal' || room.kind === 'secret') continue;
+        problems.push(`Sohle ${depth}: Raum ${room.id} ist dunkel und ${room.kind}`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  // Test 13 aus PHASE_7
+  it('gibt jedem hellen Raum mindestens eine Lampe', () => {
+    const problems: string[] = [];
+    for (const depth of DEPTHS) {
+      const map = mapOf(depth);
+      for (const room of map.rooms) {
+        if (room.kind === 'corridor' || room.dark === true) continue;
+        const lit = map.lamps.some(
+          (lamp) =>
+            lamp.pos.x >= room.x &&
+            lamp.pos.x < room.x + room.w &&
+            lamp.pos.y >= room.y &&
+            lamp.pos.y < room.y + room.h
+        );
+        if (lit) continue;
+        problems.push(`Sohle ${depth}: Raum ${room.id} ohne Lampe und ohne dark`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('laesst einen dunklen Raum wirklich ohne Licht', () => {
+    const map = mapOf(13);
+    const dark = map.rooms.find((room) => room.dark === true);
+    expect(dark).toBeDefined();
+    if (dark === undefined) return;
+
+    const inside = map.lamps.filter(
+      (lamp) =>
+        lamp.pos.x >= dark.x &&
+        lamp.pos.x < dark.x + dark.w &&
+        lamp.pos.y >= dark.y &&
+        lamp.pos.y < dark.y + dark.h
+    );
+    expect(inside).toEqual([]);
+  });
+});

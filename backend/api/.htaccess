@@ -1,0 +1,21 @@
+# Alle Anfragen auf index.php, der Rest steht dort.
+# Faellt mod_rewrite aus, geht derselbe Aufruf ueber ?path=.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Der Authorization-Header faellt bei manchen FastCGI-Aufbauten weg.
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header unset X-Powered-By
+</IfModule>
+
+Options -Indexes
+ServerSignature Off

@@ -8,6 +8,7 @@
 import { textureIdOf } from '../src/core/tiles.ts';
 import type { ContentDb, MapDef, TileCoord } from '../src/core/types.ts';
 import { BOSS_DEPTHS, KNOWN_TEXTURES } from './mapTables.ts';
+import { DARK_SHARE } from './mapDecor.ts';
 import { simulate } from './validateReach.ts';
 
 export type Finding = { rule: number; text: string };
@@ -179,10 +180,11 @@ export function validateMap(map: MapDef, content: ContentDb, maps: ReadonlySet<s
     found.push({ rule: 9, text: `Ausgang zeigt auf unbekannte Karte ${exit.targetMapId}` });
   }
 
-  // Regel 10: jeder Raum ausser den Korridoren braucht eine Lampe. Seit
-  // INTERFACES v1.7 stehen die Raeume in der Karte, geraten wird nichts mehr.
+  // Regel 10: jeder Raum ausser den Korridoren braucht eine Lampe oder das
+  // Kennzeichen `dark` aus INTERFACES v1.8. Seit v1.7 stehen die Raeume in der
+  // Karte, geraten wird nichts mehr.
   for (const room of map.rooms) {
-    if (room.kind === 'corridor') continue;
+    if (room.kind === 'corridor' || room.dark === true) continue;
     const lit = map.lamps.some(
       (lamp) =>
         lamp.pos.x >= room.x &&
@@ -192,6 +194,17 @@ export function validateMap(map: MapDef, content: ContentDb, maps: ReadonlySet<s
     );
     if (lit) continue;
     found.push({ rule: 10, text: `Raum ${room.id} bei ${at({ x: room.x, y: room.y })} ohne Lampe` });
+  }
+
+  // Die Grenze aus PHASE_7 Block 0: hoechstens ein Viertel dunkel, und Start,
+  // Ausgang und Arena nie.
+  const dark = map.rooms.filter((room) => room.dark === true);
+  if (dark.length > Math.floor(map.rooms.length * DARK_SHARE)) {
+    found.push({ rule: 10, text: `${dark.length} von ${map.rooms.length} Raeumen sind dunkel` });
+  }
+  for (const room of dark) {
+    if (room.kind === 'normal' || room.kind === 'secret') continue;
+    found.push({ rule: 10, text: `Raum ${room.id} ist dunkel, obwohl er ${room.kind} ist` });
   }
   for (const lamp of map.lamps) {
     if (map.walls[lamp.pos.y * map.width + lamp.pos.x] === 0) continue;
