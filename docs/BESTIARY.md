@@ -11,7 +11,17 @@ Alle Zahlen sind gesetzte Startwerte, keine Messwerte.
 
 ---
 
-## 0. Ein Widerspruch, den ich klären muss
+## 0. Erledigt
+
+**Dieser Abschnitt ist abgeschlossen und nur noch als Verlauf hier.**
+Der Widerspruch um `equippedWeaponId` wurde in INTERFACES v1.3 aufgelöst: Der
+Ausrüstungsplatz `weapon` ist die einzige Wahrheit, `equippedWeaponId` entfällt, Waffen
+tragen Affixe wie jedes andere Teil. Die Waffen in Abschnitt 7 sind seitdem sowohl
+`WeaponDef` als auch über `item_w_*` als `ItemDef` mit `slots: ['weapon']` geführt.
+
+Die Ausrüstungs-Ids aus Abschnitt 8 sind seit Phase 3.8 verbindlich umbenannt.
+
+Verlauf, nicht mehr gültig:
 
 `PlayerState` hat drei Dinge, die dieselbe Frage beantworten: `weapons: string[]`,
 `equippedWeaponId: string` und den Ausrüstungsplatz `weapon` mit einer `ItemInstance`.
@@ -111,8 +121,18 @@ Frames.
 **Grabungswächter** Drei Meter, Panzerung aus verschmolzenem Gestein und Stahlträgern.
 
 Frames je Archetyp: `<archetype>_idle_0` bis `_3`, `_attack_0` bis `_2`, `_pain_0`,
-`_death_0` bis `_3`. Varianten nutzen dieselben Dateinamen mit Farbfilter zur Ladezeit,
-es entstehen keine zusätzlichen Dateien.
+`_death_0` bis `_3`. Das sind zwölf Bilder je Einheit.
+
+**Bosse tragen dieselbe Frameliste wie Archetypen.** Es gibt keine Ausnahme, auch nicht für
+`boss_sporemother`, die unbeweglich ist. Ihre `idle`-Frames zeigen die Atembewegung des
+Pilzkörpers, ihre `death`-Frames den Zerfall.
+
+Bei neun Archetypen und vier Bossen sind das 156 Bilder.
+
+Varianten nutzen dieselben Dateinamen mit Farbfilter zur Ladezeit, es entstehen keine
+zusätzlichen Dateien.
+
+Die Kantenlänge folgt `spriteWidth` nach CONTENT_TABLES Abschnitt 6.
 
 ## 5. Gegnerwaffen
 
@@ -266,6 +286,10 @@ Getragene Ausrüstung fällt zusätzlich und zu 100 Prozent, nach RPG.md Abschni
 | 14 | `hauler_void`, `drone_void`, `chainrunner_shock` | `w_charger` |
 | 15 | `warden_void`, `cultist_void`, `spore_void` | letzte reguläre Sohle |
 | 16 | Beschwörungen aus Phase 2 | **Sorlax**, violetter Schlüssel |
+
+Die Beschwörungen in Phase 2 des Endkampfes sind ausschließlich
+`crawler_void`, `cultist_void`, `hauler_void` und `warden_void`. Alle vier existieren
+bereits als Varianten aus dem Sohlenplan, es entstehen keine zusätzlichen Grafiken.
 
 Daraus ergeben sich 28 benötigte Gegner-Definitionen plus 4 Bosse. Sie werden vom Skript
 aus Phase 7 erzeugt, nicht von Hand geschrieben.

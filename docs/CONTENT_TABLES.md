@@ -1,8 +1,21 @@
-# Scepter of Sorlax — CONTENT_TABLES v1.2
+# Scepter of Sorlax — CONTENT_TABLES v1.4
 
-Status: verbindlich. Anhang zu BESTIARY v3. Ersetzt v1.1.
+Status: verbindlich. Anhang zu BESTIARY v3.
 
-Neu in v1.2, alle aus der Rückmeldung nach Phase 6:
+## Änderungsverlauf
+
+### v1.4, aus der Rückmeldung zur Grafikerstellung
+- Id 64 ist eine gerade Ölspur mit Kantenanbindung, Teil des Zone-1-Spursatzes. Der
+  freistehende Ölfleck bekommt die eigene Id 55 und wird nie gedreht oder angeschlossen.
+- Neuer Unterabschnitt in Abschnitt 6: Spritegrößen folgen `spriteWidth`.
+- Der Änderungsverlauf steht jetzt unter einer zweiten Überschriftenebene. Zwei
+  Überschriften der ersten Ebene in einer Datei zerlegen die Gliederung.
+
+### v1.3
+- Abschnitt 7 führt die Grenzen für dunkle Räume, die bisher nur in einer Task-Datei
+  standen und damit nicht dauerhaft galten.
+
+### v1.2, aus der Rückmeldung nach Phase 6:
 - Abschnitt 1 führt die vier Schlüssel. Sie hatten nie eine Tabelle.
 - Abschnitt 6 bekommt zwei Bodenspur-Ids für Zone 1 und einen verbindlichen Id-Bereich.
 - Abschnitt 6 nennt die Lampenstärke aller vier Zonen, nicht nur der äußeren.
@@ -204,9 +217,10 @@ dass ein gerades Stück an ein weiteres oder an eine Kurve anschließt.
 | 61 | Blutspur, Kurve nach rechts |
 | 62 | Blutspur, Anfang, also Schleifbeginn |
 | 63 | Blutspur, Ende an einer Wand |
-| 64 | Ölfleck, gerade |
+| 64 | Ölspur, gerade |
 | 65 | Schleifspur im Staub, gerade |
 | 66 | Schleifspur im Staub, Kurve nach rechts |
+| 55 | Ölfleck, freistehend, ohne Kantenanbindung |
 | 67 | Schleifspur, Anfang |
 | 68 | Schleifspur, Ende an einer Wand |
 
@@ -216,7 +230,7 @@ Kurven nach links entstehen durch Drehung, nicht durch eigene Grafik.
 
 | Zone | Wandsatz | Bodensatz | Deckensatz | Lampe | intensity | ambientLight | Spur |
 |---|---|---|---|---|---|---|---|
-| 1 | 10 bis 13 | 40 bis 42 | 70, 72 | 71 | 220 | 0.55 | 64 bis 68 |
+| 1 | 10 bis 13 | 40 bis 42 | 70, 72 | 71 | 220 | 0.55 | 64 bis 68, dazu 55 |
 | 2 | 14 bis 17 | 43 bis 45 | 73, 75 | 74 | 197 | 0.40 | 60 bis 63 |
 | 3 | 18 bis 21 | 46 bis 48 | 76, 78 | 77 | 173 | 0.45 | 60 bis 63 |
 | 4 | 22 bis 25 | 49 bis 51 | 79, 81 | 80 | 150 | 0.25 | 60 bis 63 |
@@ -225,6 +239,24 @@ Die Zwischenwerte 197 und 173 sind die linear interpolierten aus der Rückmeldun
 werden übernommen.
 
 Der vierte Wandtyp jeder Zone ist der Stützpfeiler und wird nur in Bossarenen benutzt.
+
+### Spritegrößen
+
+Die Kantenlänge eines Gegnersprites folgt `spriteWidth` aus BESTIARY Abschnitt 4 und
+CONTENT_TABLES Abschnitt 3, nicht der Einteilung in Gegner und Boss.
+
+| spriteWidth | Sprite in Pixeln |
+|---|---|
+| bis 1.0 | 64 |
+| über 1.0 bis 1.5 | 96 |
+| über 1.5 | 128 |
+
+Daraus folgt: `hauler`, `warden`, `boss_halvern` und `boss_rime` bekommen 96,
+`boss_sporemother` und `boss_sorlax` bekommen 128, alle übrigen 64.
+
+Eine feste Größe je Kategorie wäre im Ladecode einfacher, aber `warden` und `boss_rime`
+haben denselben `spriteWidth` von 1.4 und dürfen nicht unterschiedlich aufgelöst sein.
+Die Quellbilder sind ohnehin 1024 x 1024, die Mehrarbeit ist reine Rechenzeit.
 
 ### Id-Bereiche, verbindlich
 
@@ -273,6 +305,19 @@ Waffen, die auf dieser Sohle gebraucht werden. Die Ableitung aus der Rückmeldun
 
 Der Abstand von 6 Kacheln zählt entlang des Korridorverlaufs, nicht in Rasterreihenfolge.
 Bei geknickten Gängen entstehen sonst ungleiche Abstände.
+
+### Dunkle Räume
+
+`RoomDef.dark` kennzeichnet Räume, die bewusst ohne Lampe bleiben. Verbindlich:
+
+- nur ab Zone 3, also ab Sohle 9
+- höchstens 25 Prozent der Räume einer Karte
+- niemals Start-, Ausgangs- oder Arenaräume
+- Validatorregel 10 lautet: Jeder Raum mit `kind` ungleich `corridor` hat mindestens eine
+  Lampe oder `dark: true`
+
+Ohne die Obergrenze hat der Generator keinen Grund, sich zurückzuhalten, und Zone 4 mit
+`ambientLight` 0.25 wird unspielbar.
 
 ### Räume
 
