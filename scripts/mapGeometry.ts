@@ -20,6 +20,8 @@ export type Edge = {
   b: number;
   /** Die beiden Kacheln, an denen der Korridor die Raeume verlaesst. */
   doorSpots: [TileCoord, TileCoord];
+  /** Der Verlauf des Korridors, in der Reihenfolge des Grabens. */
+  tiles: TileCoord[];
 };
 
 export type Layout = {
@@ -173,10 +175,15 @@ function carveCorridor(
   return tiles;
 }
 
-/** Erste Korridorkachel ausserhalb des Raums, von seinem Mittelpunkt aus. */
+/**
+ * Erste Korridorkachel ausserhalb des Raums. Laeuft der Korridor ganz im Raum,
+ * gibt es keine Tuerstelle; dann steht (-1,-1) fuer "keine". Der Mittelpunkt
+ * des Raums waere die falsche Antwort, dort steht bei Raum null der Spieler.
+ */
+export const NO_SPOT: TileCoord = { x: -1, y: -1 };
+
 function doorSpot(room: Room, tiles: TileCoord[]): TileCoord {
-  const outside = tiles.find((tile) => !inRoom(room, tile));
-  return outside ?? center(room);
+  return tiles.find((tile) => !inRoom(room, tile)) ?? NO_SPOT;
 }
 
 /** Baut das Raster aus Raeumen und Korridoren. */
@@ -202,6 +209,7 @@ export function buildLayout(rng: Rng, size: number, roomCount: number): Layout {
       a: edge.a,
       b: edge.b,
       doorSpots: [doorSpot(roomA, tiles), doorSpot(roomB, [...tiles].reverse())],
+      tiles,
     });
   }
 
@@ -245,6 +253,10 @@ export function buildArena(size: number): Layout {
         { x: corridorX, y: corridorTop },
         { x: corridorX, y: corridorTop - 1 },
       ],
+      tiles: Array.from({ length: 8 }, (_value, step) => ({
+        x: corridorX,
+        y: corridorTop + step,
+      })).filter((tile) => tile.y < size - 1),
     },
   ];
 

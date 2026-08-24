@@ -9,7 +9,14 @@ import { describe, expect, it } from 'vitest';
 import { DEPTH_PLAN } from '../scripts/canonical';
 import { buildAllMaps, contentForValidation, serializeMap } from '../scripts/genMaps';
 import { mapIdFor } from '../scripts/mapPopulate';
-import { BLOOD_TRACE, BOSS_DEPTHS, DUST_TRACE, WEAPON_FINDS, zoneOf } from '../scripts/mapTables';
+import {
+  BLOOD_TRACE,
+  BOSS_DEPTHS,
+  DUST_TRACE,
+  OIL_STAIN,
+  WEAPON_FINDS,
+  zoneOf,
+} from '../scripts/mapTables';
 import { validateMap } from '../scripts/validateMap';
 import { textureIdOf } from '../src/core/tiles';
 import { loadMaps } from '../src/app/gameContent';
@@ -153,6 +160,8 @@ describe('Inhalt der Sohlen', () => {
         traces.straight,
         traces.curve,
         traces.end,
+        // Der Oelfleck steht nur in Zone 1 und einzeln.
+        ...(depth <= 4 ? [OIL_STAIN] : []),
       ]);
       const map = mapOf(depth);
       for (const grid of [map.walls, map.floors, map.ceilings]) {
@@ -171,6 +180,7 @@ describe('Inhalt der Sohlen', () => {
     for (const depth of DEPTHS) {
       const map = mapOf(depth);
       const set = depth <= 4 ? DUST_TRACE : BLOOD_TRACE;
+      // Der Oelfleck gehoert zu keiner Kette und bleibt hier aussen vor.
       const ids = new Set([set.start, set.straight, set.curve, set.end]);
       const marked = new Set<number>();
       map.floors.forEach((value, index) => {

@@ -12,20 +12,22 @@ import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { generateLightMap } from '../src/core/lighting.ts';
 import { Rng } from '../src/core/rng.ts';
-import { encodeTile } from '../src/core/tiles.ts';
+import { encodeTile, textureIdOf } from '../src/core/tiles.ts';
 import type {
   ContentDb,
   EnemyDef,
   ItemDef,
   MapDef,
   MapEntityDef,
+  RoomDef,
   TileCoord,
 } from '../src/core/types.ts';
 import { buildGrids, buildLamps, drawTrace, freeTiles, tracePath, traceSetFor } from './mapDecor.ts';
 import { buildArena, buildLayout, center } from './mapGeometry.ts';
 import type { Layout } from './mapGeometry.ts';
 import { mapIdFor, placeEnemies, placeItems, planLayout } from './mapPopulate.ts';
-import { BOSS_DEPTHS, seedFor, sizeFor, zoneOf } from './mapTables.ts';
+import type { Plan } from './mapPopulate.ts';
+import { BOSS_DEPTHS, OIL_STAIN, seedFor, sizeFor, zoneOf } from './mapTables.ts';
 import { validateMap } from './validateMap.ts';
 
 const MAPS_DIR = new URL('../content/maps/', import.meta.url);
@@ -63,6 +65,57 @@ function addTraces(rng: Rng, layout: Layout, floors: number[], depth: number, do
     const path = tracePath(layout, from, to);
     if (path.length >= 2) drawTrace(floors, layout.size, path, set);
   }
+
+  // Zone 1 streut zusaetzlich einzelne Oelflecken. Sie sind Dekoration, keine
+  // Kette, CONTENT_TABLES v1.2 Abschnitt 6.
+  if (depth > 4) return;
+  const stains = rng.randInt(3, 6);
+  for (let index = 0; index < stains; index++) {
+    const room = layout.rooms[rng.randInt(0, layout.rooms.length - 1)];
+    if (room === undefined) continue;
+    const tiles = freeTiles(layout, room);
+    const pos = tiles[rng.randInt(0, tiles.length - 1)];
+    if (pos === undefined) continue;
+    const at = pos.y * layout.size + pos.x;
+    // Nie auf eine Spur: der Fleck wuerde sie in zwei Teile zerlegen. Und nie
+    // neben einen zweiten Fleck, er steht einzeln und bildet keine Kette.
+    const covered = [set.start, set.straight, set.curve, set.end].includes(
+      textureIdOf(floors[at] ?? 0)
+    );
+    const beside = [at - 1, at + 1, at - layout.size, at + layout.size].some(
+      (index) => textureIdOf(floors[index] ?? 0) === OIL_STAIN
+    );
+    if (!covered && !beside) floors[at] = encodeTile(OIL_STAIN, 0);
+  }
+}
+
+/**
+ * Die Raeume der Karte, INTERFACES v1.7. Korridore stehen nur dann drin, wenn
+ * sie ein Rechteck sind; die L-foermigen Gaenge der regulaeren Sohlen sind es
+ * nicht und bleiben aussen vor.
+ */
+function roomsOf(layout: Layout, plan: Plan, isBoss: boolean): RoomDef[] {
+  const exitPos = plan.exits[0]?.pos;
+  return layout.rooms.map((room, index) => {
+    const holdsExit =
+      exitPos !== undefined &&
+      exitPos.x >= room.x &&
+      exitPos.x < room.x + room.w &&
+      exitPos.y >= room.y &&
+      exitPos.y < room.y + room.h;
+    const kind: RoomDef['kind'] = isBoss
+      ? index === 0
+        ? 'corridor'
+        : 'arena'
+      : index === plan.start
+        ? 'start'
+        : holdsExit
+          ? 'exit'
+          : index === plan.secretRoom
+            ? 'secret'
+            : 'normal';
+    return { id: index, x: room.x, y: room.y, w: room.w, h: room.h, kind };
+  });
 }
 
 /** Die Startkachel: Mitte des Startraums, Blick nach Norden. */
@@ -129,6 +182,7 @@ export function buildMap(
     ceilings: grids.ceilings,
     light: generateLightMap(size, size, grids.walls, lamps),
     spawn: spawnOf(layout, plan.start),
+    rooms: roomsOf(layout, plan, isBoss),
     lamps,
     entities,
     triggers: plan.triggers,

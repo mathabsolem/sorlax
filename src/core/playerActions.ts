@@ -58,7 +58,10 @@ function stow(state: GameState, def: ItemDef, content: ContentDb): boolean {
     }
     case 'key':
     case 'keyCard':
-      if (!player.keys.includes(def.id)) player.keys.push(def.id);
+      // Mehrfach derselbe Schluessel ist erlaubt: seit CONTENT_TABLES v1.2
+      // wird er beim Oeffnen verbraucht, und eine Sohle traegt ab Sohle 5 zwei
+      // Tueren derselben Farbe. `keys` ist eine Liste, keine Menge.
+      player.keys.push(def.id);
       return true;
     case 'equipment':
       // Ausruestung wird erst in Phase 3.6 zu Instanzen gewuerfelt.
@@ -130,6 +133,14 @@ export function interactAction(state: GameState, content: ContentDb): ActionResu
     const lock = def?.locked;
     if (lock !== undefined && !state.player.keys.includes(lock)) {
       return { ok: true, events: [{ type: 'doorChanged', pos: front, state: 'blocked' }] };
+    }
+    // Der Schluessel wird beim Oeffnen verbraucht, CONTENT_TABLES v1.2
+    // Abschnitt 7. Ohne Verbrauch oeffnet die Farbe einer Zone jede weitere
+    // Tuer derselben Farbe, auch auf den folgenden Sohlen.
+    if (lock !== undefined) {
+      // Genau ein Exemplar wird verbraucht, nicht alle.
+      const used = state.player.keys.indexOf(lock);
+      if (used >= 0) state.player.keys.splice(used, 1);
     }
     door.state = 'open';
     const key = tileKey(front);

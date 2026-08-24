@@ -157,8 +157,94 @@ describe('Sohle 1', () => {
     face(state, door.pos);
     applyCommand(state, { type: 'interact' }, content);
     expect(mapState.entities.find((entity) => entity.kind === 'door')?.state).not.toBe('locked');
+    // Der Schluessel ist verbraucht, CONTENT_TABLES v1.2 Abschnitt 7.
+    expect(state.player.keys).not.toContain(key.defId);
 
     expect(walkTo(state, exit.pos)).toBe(true);
     expect(state.currentMapId).toBe('sohle_02');
+  });
+});
+
+/**
+ * Spielt eine Sohle bis zum Ausgang: erreichbare Schluessel einsammeln,
+ * erreichbare Tueren aufschliessen, wiederholen. Bricht ab, sobald nichts mehr
+ * geht — genau dann waere die Karte eine Sackgasse.
+ */
+function playFloor(state: GameState, mapId: string): boolean {
+  const map = content.maps[mapId];
+  if (map === undefined) return false;
+
+  for (let round = 0; round < 12; round++) {
+    const mapState = state.maps[state.currentMapId];
+    if (mapState === undefined) return false;
+
+    const exit = map.exits[0];
+    if (exit !== undefined && routeTo(state, exit.pos) !== null) {
+      return walkTo(state, exit.pos) && state.currentMapId !== mapId;
+    }
+
+    // Erreichbarer Schluessel, der noch liegt.
+    const key = mapState.entities.find(
+      (entity) =>
+        entity.kind === 'item' &&
+        entity.defId.startsWith('key_') &&
+        routeTo(state, entity.pos) !== null
+    );
+    if (key !== undefined) {
+      if (!walkTo(state, key.pos)) return false;
+      continue;
+    }
+
+    // Erreichbare verriegelte Tuer, fuer die ein Schluessel im Bestand liegt.
+    const door = map.entities.find((entity) => {
+      if (entity.kind !== 'door' || entity.locked === undefined) return false;
+      if (!state.player.keys.includes(entity.locked)) return false;
+      const runtime = mapState.entities.find(
+        (candidate) =>
+          candidate.kind === 'door' &&
+          candidate.pos.x === entity.pos.x &&
+          candidate.pos.y === entity.pos.y
+      );
+      return runtime?.state !== 'open';
+    });
+    if (door === undefined) return false;
+
+    const front = [
+      { x: door.pos.x, y: door.pos.y - 1 },
+      { x: door.pos.x + 1, y: door.pos.y },
+      { x: door.pos.x, y: door.pos.y + 1 },
+      { x: door.pos.x - 1, y: door.pos.y },
+    ].filter((tile) => map.walls[tile.y * map.width + tile.x] === 0);
+    const reached = front.some((tile) => routeTo(state, tile) !== null && walkTo(state, tile));
+    if (!reached) return false;
+
+    face(state, door.pos);
+    applyCommand(state, { type: 'interact' }, content);
+  }
+  return false;
+}
+
+describe('Sohle 5', () => {
+  it('laesst beide Tueren in einer Reihenfolge oeffnen, die nicht feststeckt', () => {
+    const map = content.maps['sohle_05'];
+    if (map === undefined) throw new Error('Sohle 5 fehlt');
+
+    const doors = map.entities.filter(
+      (entity) => entity.kind === 'door' && entity.locked !== undefined
+    );
+    const keys = map.entities.filter(
+      (entity) => entity.kind === 'item' && entity.defId.startsWith('key_')
+    );
+    expect(doors).toHaveLength(2);
+    expect(keys).toHaveLength(2);
+
+    const state = createNewGame(4711, content, 'sohle_05');
+    state.player.level = 20;
+    heal(state);
+
+    expect(playFloor(state, 'sohle_05')).toBe(true);
+    expect(state.currentMapId).toBe('sohle_06');
+    // Beide Schluessel sind verbraucht.
+    expect(state.player.keys).toEqual([]);
   });
 });

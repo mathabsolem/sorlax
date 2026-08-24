@@ -8,6 +8,7 @@
 import { textureIdOf } from '../src/core/tiles.ts';
 import type { ContentDb, MapDef, TileCoord } from '../src/core/types.ts';
 import { BOSS_DEPTHS, KNOWN_TEXTURES } from './mapTables.ts';
+import { simulate } from './validateReach.ts';
 
 export type Finding = { rule: number; text: string };
 
@@ -15,42 +16,6 @@ const ARENA_MIN = 16;
 
 function at(pos: TileCoord): string {
   return `(${pos.x},${pos.y})`;
-}
-
-/** Freie Kacheln, Tueren zaehlen als begehbar. */
-function passable(map: MapDef): boolean[] {
-  const open = map.walls.map((value) => value === 0);
-  for (const entity of map.entities) {
-    if (entity.kind !== 'door') continue;
-    open[entity.pos.y * map.width + entity.pos.x] = true;
-  }
-  return open;
-}
-
-/** Flutfuellung von `from` aus ueber alle Kacheln, fuer die `open` gilt. */
-function flood(map: MapDef, from: TileCoord, open: readonly boolean[]): boolean[] {
-  const seen = new Array<boolean>(map.width * map.height).fill(false);
-  const start = from.y * map.width + from.x;
-  if (open[start] !== true) return seen;
-  seen[start] = true;
-  const queue = [start];
-  for (let head = 0; head < queue.length; head++) {
-    const index = queue[head];
-    if (index === undefined) continue;
-    const x = index % map.width;
-    const y = (index - x) / map.width;
-    for (const next of [
-      x > 0 ? index - 1 : -1,
-      x < map.width - 1 ? index + 1 : -1,
-      y > 0 ? index - map.width : -1,
-      y < map.height - 1 ? index + map.width : -1,
-    ]) {
-      if (next < 0 || seen[next] === true || open[next] !== true) continue;
-      seen[next] = true;
-      queue.push(next);
-    }
-  }
-  return seen;
 }
 
 function checkGrids(map: MapDef, found: Finding[]): void {
@@ -83,30 +48,33 @@ function checkGrids(map: MapDef, found: Finding[]): void {
 }
 
 function checkReach(map: MapDef, found: Finding[]): void {
-  const open = passable(map);
-  const seen = flood(map, map.spawn.pos, open);
+  const { reached, missed } = simulate(map);
 
   for (const exit of map.exits) {
-    if (seen[exit.pos.y * map.width + exit.pos.x] !== true) {
+    if (reached[exit.pos.y * map.width + exit.pos.x] !== true) {
       found.push({ rule: 3, text: `Ausgang ${at(exit.pos)} ist vom Start nicht erreichbar` });
     }
   }
 
-  // Regel 4: jeder Schluessel ohne die Tueren, die er oeffnet.
-  const keys = map.entities.filter((entity) => entity.kind === 'item' && entity.defId.startsWith('key_'));
-  for (const key of keys) {
-    const locked = open.slice();
-    for (const entity of map.entities) {
-      if (entity.kind !== 'door' || entity.locked !== key.defId) continue;
-      locked[entity.pos.y * map.width + entity.pos.x] = false;
-    }
-    const without = flood(map, map.spawn.pos, locked);
-    if (without[key.pos.y * map.width + key.pos.x] !== true) {
-      found.push({
-        rule: 4,
-        text: `Schluessel ${key.defId} bei ${at(key.pos)} liegt hinter seiner eigenen Tuer`,
-      });
-    }
+  for (const key of missed) {
+    found.push({
+      rule: 4,
+      text: `Schluessel ${key.defId} bei ${at(key.pos)} ist in keiner Reihenfolge erreichbar`,
+    });
+  }
+
+  // Ebenso ein Fehler: mehr verriegelte Tueren als Schluessel derselben Farbe.
+  const locks = new Map<string, number>();
+  for (const door of map.entities) {
+    if (door.kind !== 'door' || door.locked === undefined) continue;
+    locks.set(door.locked, (locks.get(door.locked) ?? 0) + 1);
+  }
+  for (const [lock, count] of locks) {
+    const keys = map.entities.filter(
+      (entity) => entity.kind === 'item' && entity.defId === lock
+    ).length;
+    if (keys >= count) continue;
+    found.push({ rule: 4, text: `${count} Tueren mit ${lock}, aber nur ${keys} Schluessel` });
   }
 }
 
@@ -156,40 +124,6 @@ function checkTextures(map: MapDef, found: Finding[]): void {
       });
     }
   }
-}
-
-/**
- * Kacheln des Startraums. Der Raum endet dort, wo eine Kachel wie ein Korridor
- * aussieht, also hoechstens zwei freie Nachbarn hat. MapDef kennt die Raeume
- * nicht, deshalb wird die Form aus dem Raster gelesen.
- */
-function startRoom(map: MapDef): Set<number> {
-  const free = (index: number): boolean => map.walls[index] === 0;
-  const neighbours = (index: number): number[] => {
-    const x = index % map.width;
-    const y = (index - x) / map.width;
-    return [
-      x > 0 ? index - 1 : -1,
-      x < map.width - 1 ? index + 1 : -1,
-      y > 0 ? index - map.width : -1,
-      y < map.height - 1 ? index + map.width : -1,
-    ].filter((next) => next >= 0 && free(next));
-  };
-
-  const start = map.spawn.pos.y * map.width + map.spawn.pos.x;
-  const room = new Set<number>([start]);
-  const queue = [start];
-  for (let head = 0; head < queue.length; head++) {
-    const index = queue[head];
-    if (index === undefined) continue;
-    for (const next of neighbours(index)) {
-      if (room.has(next)) continue;
-      if (neighbours(next).length <= 2) continue;
-      room.add(next);
-      queue.push(next);
-    }
-  }
-  return room;
 }
 
 function checkLamps(map: MapDef, found: Finding[]): void {
@@ -245,22 +179,35 @@ export function validateMap(map: MapDef, content: ContentDb, maps: ReadonlySet<s
     found.push({ rule: 9, text: `Ausgang zeigt auf unbekannte Karte ${exit.targetMapId}` });
   }
 
-  // Regel 10: Licht. Welche Kachel zu welchem Raum gehoert, steht nicht in der
-  // MapDef; pruefbar ist, dass es Lampen gibt und keine unter einer Wand haengt.
-  // Dass jeder Raum eine bekommt, stellt der Generator sicher.
-  if (map.lamps.length === 0) {
-    found.push({ rule: 10, text: 'Karte ohne jede Lampe' });
+  // Regel 10: jeder Raum ausser den Korridoren braucht eine Lampe. Seit
+  // INTERFACES v1.7 stehen die Raeume in der Karte, geraten wird nichts mehr.
+  for (const room of map.rooms) {
+    if (room.kind === 'corridor') continue;
+    const lit = map.lamps.some(
+      (lamp) =>
+        lamp.pos.x >= room.x &&
+        lamp.pos.x < room.x + room.w &&
+        lamp.pos.y >= room.y &&
+        lamp.pos.y < room.y + room.h
+    );
+    if (lit) continue;
+    found.push({ rule: 10, text: `Raum ${room.id} bei ${at({ x: room.x, y: room.y })} ohne Lampe` });
   }
   for (const lamp of map.lamps) {
     if (map.walls[lamp.pos.y * map.width + lamp.pos.x] === 0) continue;
     found.push({ rule: 10, text: `Lampe bei ${at(lamp.pos)} haengt ueber einer Wand` });
   }
 
-  // Regel 12: der Startraum bleibt gegnerfrei.
-  const home = startRoom(map);
+  // Regel 12: der Startraum bleibt gegnerfrei, geprueft ueber sein Rechteck.
+  const home = map.rooms.find((room) => room.kind === 'start');
   for (const entity of map.entities) {
-    if (entity.kind !== 'enemy') continue;
-    if (!home.has(entity.pos.y * map.width + entity.pos.x)) continue;
+    if (entity.kind !== 'enemy' || home === undefined) continue;
+    const inside =
+      entity.pos.x >= home.x &&
+      entity.pos.x < home.x + home.w &&
+      entity.pos.y >= home.y &&
+      entity.pos.y < home.y + home.h;
+    if (!inside) continue;
     found.push({ rule: 12, text: `Gegner ${entity.defId} steht im Startraum ${at(entity.pos)}` });
   }
 

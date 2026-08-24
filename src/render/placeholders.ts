@@ -266,12 +266,13 @@ function catalogTextures(): Record<number, PixelSurface> {
     );
   }
 
-  // Bodenspuren. Blut ab Zone 2, Oel und Staub in Zone 1.
+  // Bodenspuren. Blut ab Zone 2, Staub und Oel in Zone 1, CONTENT_TABLES
+  // Abschnitt 6: 60 bis 63 Blut, 64 Oelfleck, 65 bis 68 Schleifspur.
   const blood: [number, number, number] = [92, 26, 24];
   const dust: [number, number, number] = [126, 118, 104];
   for (const id of [60, 61, 62, 63]) textures[id] = floorTexture(blood, tinted(blood, 1.6));
   textures[64] = floorTexture([32, 30, 28], [64, 60, 54]);
-  for (const id of [65, 66]) textures[id] = floorTexture(dust, tinted(dust, 1.3));
+  for (const id of [65, 66, 67, 68]) textures[id] = floorTexture(dust, tinted(dust, 1.3));
 
   // Decken. Die Lampe der Zone ist heller als der Rest.
   const lamps = new Set([71, 74, 77, 80]);

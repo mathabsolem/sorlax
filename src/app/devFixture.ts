@@ -98,6 +98,12 @@ export function createDevMap(): MapDef {
   ];
 
   return {
+    // Die drei Bereiche des Grundrisses als Raeume, seit INTERFACES v1.7.
+    rooms: [
+      { id: 0, x: 1, y: 1, w: 4, h: 6, kind: 'start' as const },
+      { id: 1, x: 6, y: 1, w: 9, h: 6, kind: 'normal' as const },
+      { id: 2, x: 1, y: 8, w: 14, h: 7, kind: 'exit' as const },
+    ],
     id: DEV_MAP_ID,
     name: 'Vortrieb 1',
     depth: 1,

@@ -89,41 +89,45 @@ function nearestRoomWall(
   return fallback;
 }
 
-/** Lampen je Raum und Korridor, PHASE_6 Block 5. */
+/**
+ * Lampen je Raum und Korridor, PHASE_6 Block 5.
+ *
+ * Der Abstand von sechs Kacheln zaehlt entlang des Korridorverlaufs, nicht in
+ * Rasterreihenfolge (CONTENT_TABLES v1.2 Abschnitt 7). Ab Zone 3 bleibt jede
+ * fuenfte Lampe dunkel, aber nie die einzige eines Raums: sonst waere
+ * Validatorregel 10 nicht mehr zu halten.
+ */
 export function buildLamps(layout: Layout, zone: Zone, depth: number): LampDef[] {
-  const lamps: LampDef[] = [];
+  const lamp = (pos: TileCoord): LampDef => ({ pos, radius: 5, intensity: zone.intensity });
+  const solid = (pos: TileCoord): boolean => layout.solid[pos.y * layout.size + pos.x] === true;
+
+  // Pflichtlampen: eine je Raum, sie bleiben immer stehen.
+  const required: LampDef[] = [];
+  const optional: LampDef[] = [];
   for (const room of layout.rooms) {
     const middle = center(room);
-    lamps.push({ pos: middle, radius: 5, intensity: zone.intensity });
+    if (!solid(middle)) required.push(lamp(middle));
     // Grosse Raeume tragen eine zweite Lampe, damit die Ecken nicht absaufen.
     if (Math.max(room.w, room.h) >= 8) {
-      lamps.push({
-        pos: { x: room.x + Math.floor(room.w / 4), y: room.y + Math.floor(room.h / 4) },
-        radius: 5,
-        intensity: zone.intensity,
-      });
+      const second = { x: room.x + Math.floor(room.w / 4), y: room.y + Math.floor(room.h / 4) };
+      if (!solid(second)) optional.push(lamp(second));
     }
   }
 
-  let sinceLast = 0;
-  for (let index = 0; index < layout.corridor.length; index++) {
-    if (layout.corridor[index] !== true) continue;
-    sinceLast += 1;
-    if (sinceLast < 6) continue;
-    sinceLast = 0;
-    lamps.push({
-      pos: { x: index % layout.size, y: Math.floor(index / layout.size) },
-      radius: 5,
-      intensity: zone.intensity,
-    });
+  for (const edge of layout.edges) {
+    let since = 0;
+    for (const tile of edge.tiles) {
+      if (solid(tile)) continue;
+      since += 1;
+      if (since < 6) continue;
+      since = 0;
+      if (optional.some((other) => other.pos.x === tile.x && other.pos.y === tile.y)) continue;
+      optional.push(lamp(tile));
+    }
   }
 
-  // Eine Lampe unter einer Wand leuchtet nicht, etwa auf einem Stuetzpfeiler.
-  const lit = lamps.filter((lamp) => layout.solid[lamp.pos.y * layout.size + lamp.pos.x] !== true);
-
-  // Ab Zone 3 bleibt jede fuenfte Lampe dunkel, gleichmaessig verteilt.
-  if (depth <= 8) return lit;
-  return lit.filter((_lamp, index) => index % 5 !== 4);
+  if (depth <= 8) return [...required, ...optional];
+  return [...required, ...optional.filter((_lamp, index) => index % 5 !== 4)];
 }
 
 /**

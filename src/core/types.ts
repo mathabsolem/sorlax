@@ -392,6 +392,7 @@ export type MapDef = {
   ceilings: number[];
   light: number[];
   spawn: { pos: TileCoord; facing: Facing };
+  rooms: RoomDef[];
   lamps: LampDef[];
   entities: MapEntityDef[];
   triggers: TriggerDef[];
@@ -400,6 +401,19 @@ export type MapDef = {
 };
 
 export type LampDef = { pos: TileCoord; radius: number; intensity: number };
+
+/**
+ * Ein Raum der Karte, INTERFACES v1.7. Der Validator braucht ihn: aus dem
+ * Raster allein laesst sich nicht mehr sagen, wo ein Raum aufhoert.
+ */
+export type RoomDef = {
+  id: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  kind: 'start' | 'exit' | 'normal' | 'secret' | 'arena' | 'corridor';
+};
 
 export type MapEntityDef = {
   kind: 'enemy' | 'door' | 'item' | 'decoration';

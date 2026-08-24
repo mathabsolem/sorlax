@@ -21,6 +21,7 @@ import type {
   GameState,
   LampDef,
   MapDef,
+  RoomDef,
   MapEntityDef,
   TileCoord,
   TriggerDef,
@@ -81,6 +82,7 @@ export function openWalls(size: number): number[] {
 export type MapOptions = {
   id?: string;
   depth?: number;
+  rooms?: RoomDef[];
   /** Kantenlaenge eines offenen Raums. Ohne Angabe die 8 x 8 Standardkarte. */
   size?: number;
   lamps?: LampDef[];
@@ -96,6 +98,11 @@ export function makeMap(options: MapOptions = {}): MapDef {
   const size = options.size ?? 8;
   const walls = options.size === undefined ? [...WALLS] : openWalls(size);
   return {
+    // Ohne Angabe gilt die ganze Karte ohne Rand als ein Raum. Der Validator
+    // ist in den Tests selten das Thema, die Angabe muss aber stimmen.
+    rooms: options.rooms ?? [
+      { id: 0, x: 1, y: 1, w: size - 2, h: size - 2, kind: 'start' },
+    ],
     id: options.id ?? 'test',
     name: 'Test Map',
     depth: options.depth ?? 1,

@@ -72,14 +72,15 @@ export const PILLAR_INDEX = 3;
 export type TraceSet = { start: number; straight: number; curve: number; end: number };
 
 /**
- * Bodenspuren, CONTENT_TABLES Abschnitt 6.
- *
- * Ab Zone 2 die Blutspur mit ihren vier Teilen. Zone 1 hat keine eigenen
- * Anfangs- und Endstuecke; dort steht der Oelfleck 64 an beiden Enden der
- * Staubspur. Das ist als Luecke gemeldet.
+ * Bodenspuren, CONTENT_TABLES v1.2 Abschnitt 6. Beide Saetze sind vierteilig:
+ * Anfang, Gerade, Kurve, Ende. Ab Zone 2 die Blutspur, in Zone 1 die
+ * Schleifspur im Staub.
  */
 export const BLOOD_TRACE: TraceSet = { start: 62, straight: 60, curve: 61, end: 63 };
-export const DUST_TRACE: TraceSet = { start: 64, straight: 65, curve: 66, end: 64 };
+export const DUST_TRACE: TraceSet = { start: 67, straight: 65, curve: 66, end: 68 };
+
+/** Der Oelfleck steht einzeln, er ist keine Kette. CONTENT_TABLES Abschnitt 6. */
+export const OIL_STAIN = 64;
 
 /** Alle Textur-Ids aus Abschnitt 6, fuer die Pruefung des Validators. */
 export const KNOWN_TEXTURES: ReadonlySet<number> = new Set([
@@ -91,6 +92,8 @@ export const KNOWN_TEXTURES: ReadonlySet<number> = new Set([
   DUST_TRACE.start,
   DUST_TRACE.straight,
   DUST_TRACE.curve,
+  DUST_TRACE.end,
+  OIL_STAIN,
 ]);
 
 /** Zone einer Sohle: vier Sohlen je Zone. */

@@ -23,6 +23,25 @@ export type Plan = {
   secretRoom: number;
 };
 
+/** Kanten an Sackgassen zuerst: dort ist die Geheimtuer am unauffaelligsten. */
+function rankOf(layout: Layout, degree: Map<number, number>, index: number): number {
+  const edge = layout.edges[index];
+  if (edge === undefined) return 9;
+  return Math.min(degree.get(edge.a) ?? 9, degree.get(edge.b) ?? 9);
+}
+
+/**
+ * Schneidet eine Tuer an dieser Stelle mehr ab als den Raum `only`?
+ * Geprueft auf Kachelebene, denn Korridore kreuzen fremde Raeume.
+ */
+function cutsOffMoreThan(layout: Layout, spawn: TileCoord, pos: TileCoord, only: number): boolean {
+  const reach = reachableTiles(layout, spawn, [pos]);
+  return layout.rooms.some((room, index) => {
+    if (index === only) return false;
+    return !freeTiles(layout, room).some((tile) => reach.has(tile.y * layout.size + tile.x));
+  });
+}
+
 /** Zahl der Tueren auf dem kritischen Pfad, PHASE_6 Block 3. */
 function doorCount(depth: number): number {
   return depth >= 5 ? 2 : 1;
@@ -44,6 +63,15 @@ export function planLayout(rng: Rng, layout: Layout, depth: number, zone: Zone):
   const path = pathEdges(graph, start, exit);
   const entities: MapEntityDef[] = [];
   const triggers: TriggerDef[] = [];
+  const spawn = center(layout.rooms[start] ?? { x: 1, y: 1, w: 1, h: 1 });
+
+  /** Taugt die Kachel als Tuerstelle? Nicht im Nichts und nicht auf dem Start. */
+  const usable = (pos: TileCoord): boolean =>
+    pos.x >= 0 &&
+    pos.y >= 0 &&
+    layout.solid[pos.y * layout.size + pos.x] !== true &&
+    !(pos.x === spawn.x && pos.y === spawn.y) &&
+    !tileTaken(entities, pos);
 
   // Tueren sitzen in der zweiten Haelfte des Weges, damit vor der ersten Tuer
   // genug Raum fuer den Schluessel bleibt.
@@ -59,8 +87,8 @@ export function planLayout(rng: Rng, layout: Layout, depth: number, zone: Zone):
   for (const edgeIndex of lockedEdges) {
     const edge = layout.edges[edgeIndex];
     if (edge === undefined) continue;
-    const pos = doorTile(edge, edge.a);
-    if (tileTaken(entities, pos)) continue;
+    const pos = [doorTile(edge, edge.a), doorTile(edge, edge.b)].find(usable);
+    if (pos === undefined) continue;
     entities.push({ kind: 'door', defId: 'door', pos, locked: zone.keyId });
   }
 
@@ -69,14 +97,29 @@ export function planLayout(rng: Rng, layout: Layout, depth: number, zone: Zone):
   // Probiert werden alle in Frage kommenden Kanten und beide Enden, sonst
   // bliebe eine Karte ohne Geheimtuer, sobald der erste Platz belegt ist.
   let secretRoom = -1;
-  for (let index = 0; index < layout.edges.length && secretRoom < 0; index++) {
-    if (path.includes(index)) continue;
+  // Zuerst die Kanten, die an einem Raum mit nur einem Zugang haengen: dort
+  // sperrt die Tuer sicher nur diesen einen Raum ab.
+  const degree = new Map<number, number>();
+  for (const edge of layout.edges) {
+    degree.set(edge.a, (degree.get(edge.a) ?? 0) + 1);
+    degree.set(edge.b, (degree.get(edge.b) ?? 0) + 1);
+  }
+  const candidates = layout.edges
+    .map((_edge, index) => index)
+    .filter((index) => !path.includes(index))
+    .sort((one, other) => rankOf(layout, degree, one) - rankOf(layout, degree, other));
+
+  for (const index of candidates) {
+    if (secretRoom >= 0) break;
     const edge = layout.edges[index];
     if (edge === undefined) continue;
     for (const room of [edge.b, edge.a]) {
       const pos = doorTile(edge, room);
-      if (tileTaken(entities, pos)) continue;
-      if (layout.solid[pos.y * layout.size + pos.x] === true) continue;
+      if (!usable(pos)) continue;
+      // Hinter der Geheimtuer darf nur der eine Raum liegen. Sitzt sie auf
+      // einem Korridor, den auch andere Raeume brauchen, sperrt sie die halbe
+      // Karte, und Schluessel wie Ausgang rutschen in den Startraum.
+      if (cutsOffMoreThan(layout, spawn, pos, room)) continue;
       entities.push({ kind: 'door', defId: 'door', pos, secret: true });
       secretRoom = room;
 
@@ -99,20 +142,28 @@ export function planLayout(rng: Rng, layout: Layout, depth: number, zone: Zone):
     }
   }
 
-  // Der Schluessel liegt dort, wo der Spieler ohne jede Tuer hinkommt: weder
-  // hinter einer verriegelten noch hinter der Geheimtuer. Gerechnet wird auf
-  // Kachelebene, denn Korridore kreuzen fremde Raeume, und eine Tuer sperrt
-  // damit mehr als ihre eigene Kante.
-  const spawn = center(layout.rooms[start] ?? { x: 1, y: 1, w: 1, h: 1 });
-  const doorTiles = entities.filter((entity) => entity.kind === 'door').map((entity) => entity.pos);
-  const openReach = reachableTiles(layout, spawn, doorTiles);
+  // Je verriegelter Tuer ein Schluessel, CONTENT_TABLES v1.2 Abschnitt 7.
+  // Schluessel `i` liegt dort, wo der Spieler steht, wenn er die Tueren davor
+  // schon geoeffnet hat und die uebrigen noch verschlossen sind. Damit gibt es
+  // immer eine Reihenfolge, die aufgeht.
+  //
+  // Gerechnet wird auf Kachelebene, denn Korridore kreuzen fremde Raeume, und
+  // eine Tuer sperrt damit mehr als ihre eigene Kante im Raumgraphen.
+  const lockedTiles = entities
+    .filter((entity) => entity.kind === 'door' && entity.locked !== undefined)
+    .map((entity) => entity.pos);
+  const secretTiles = entities
+    .filter((entity) => entity.kind === 'door' && entity.secret === true)
+    .map((entity) => entity.pos);
 
-  if (lockedEdges.length > 0) {
+  for (let index = 0; index < lockedTiles.length; index++) {
+    const shut = [...secretTiles, ...lockedTiles.slice(index)];
+    const reach = reachableTiles(layout, spawn, shut);
     const candidates = layout.rooms
-      .flatMap((room, index) => (index === start ? [] : freeTiles(layout, room)))
-      .filter((tile) => openReach.has(tile.y * layout.size + tile.x) && !tileTaken(entities, tile));
+      .flatMap((room, roomIndex) => (roomIndex === start ? [] : freeTiles(layout, room)))
+      .filter((tile) => reach.has(tile.y * layout.size + tile.x) && !tileTaken(entities, tile));
     const fallback = freeTiles(layout, layout.rooms[start] ?? { x: 1, y: 1, w: 1, h: 1 }).filter(
-      (tile) => !tileTaken(entities, tile)
+      (tile) => reach.has(tile.y * layout.size + tile.x) && !tileTaken(entities, tile)
     );
     const pool = candidates.length > 0 ? candidates : fallback;
     const pos = pool[rng.randInt(0, pool.length - 1)];
@@ -122,15 +173,15 @@ export function planLayout(rng: Rng, layout: Layout, depth: number, zone: Zone):
   // Der Ausgang: die am weitesten entfernte Raumkachel, die mit Schluessel
   // erreichbar ist. Die Geheimtuer zaehlt dabei als Wand, hinter ihr liegt nur
   // Zusatzbeute.
-  const secretTiles = entities
-    .filter((entity) => entity.kind === 'door' && entity.secret === true)
-    .map((entity) => entity.pos);
   const withKey = reachableTiles(layout, spawn, secretTiles);
   const exits: MapDef['exits'] = [];
   if (depth < 16) {
     let bestPos: TileCoord | null = null;
     let bestScore = -1;
     layout.rooms.forEach((room, index) => {
+      // Der Ausgang gehoert nicht in den Startraum, sonst endet die Sohle im
+      // ersten Schritt.
+      if (index === start) return;
       for (const tile of freeTiles(layout, room)) {
         if (tileTaken(entities, tile)) continue;
         const d = withKey.get(tile.y * layout.size + tile.x);
