@@ -20,6 +20,7 @@ import { AUTOSAVE_SLOT, SaveTooLargeError, createLocalStore } from '../net/local
 import { IDENTIFY_ITEM_ID, addToInventory, createInstance, takeItemUid } from '../core/items';
 import { createPlaceholderAssets, USE_PLACEHOLDERS } from '../render/placeholders';
 import { loadAssets, loadOptionalTextures } from '../render/assetLoader';
+import { mountCanvas } from '../render/mount';
 import { SoftwareRenderer } from '../render/renderer';
 import { Automap } from '../ui/automap';
 import { CharacterView } from '../ui/character';
@@ -69,23 +70,6 @@ function grantDevKit(state: GameState, content: ContentDb): void {
   addToInventory(state, found);
 }
 
-function mountCanvas(host: HTMLElement): HTMLCanvasElement {
-  host.style.position = 'relative';
-  host.style.height = '100%';
-  const canvas = host.ownerDocument.createElement('canvas');
-  canvas.style.display = 'block';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.background = '#000';
-  canvas.style.touchAction = 'none';
-  host.appendChild(canvas);
-  return canvas;
-}
-
-/**
- * Startet das Spiel in `host`. `world` ist einspeisbar, damit ein Aufbau mit
- * nur einer Sohle dieselbe Schleife benutzen kann wie das ganze Spiel.
- */
 export async function start(host: HTMLElement, world?: ContentDb): Promise<void> {
   const content = world ?? createGameContent();
   const firstMap = content.maps[FIRST_MAP_ID] === undefined

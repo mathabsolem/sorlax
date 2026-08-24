@@ -55,6 +55,11 @@ function main(): void {
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <style>
+${css}
+
+  /* Die Regeln der Seite stehen hinter denen des Spiels. Die Hoehenangabe fuer
+     #app aus ui.css wuerde die feste Geometrie sonst ueberschreiben. */
+
   /* Bewusst nur ein Erscheinungsbild: das Spiel ist ein dunkler Stollen, ein
      helles Thema waere hier kein Zugewinn, sondern ein Bruch. */
   :root {
@@ -70,17 +75,22 @@ function main(): void {
 
   body {
     margin: 0;
-    height: 100vh;
+    min-height: 100vh;
     background: var(--ground);
     color: var(--text);
     font-family: "Archivo Narrow", "Arial Narrow", system-ui, sans-serif;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
   }
 
+  /* Leiste und Spielflaeche haengen nicht am Elternteil: die Seite wird beim
+     Veroeffentlichen in einen fremden Rahmen gesetzt, und ohne feste Hoehe
+     waechst der Canvas dort ins Uferlose. */
   .rail {
-    flex: 0 0 auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -147,9 +157,12 @@ function main(): void {
   }
 
   #app {
-    flex: 1 1 auto;
-    min-height: 0;
-    position: relative;
+    position: fixed;
+    top: var(--rail-h, 64px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
   }
 
   @media (max-width: 720px) {
@@ -159,7 +172,6 @@ function main(): void {
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
-${css}
 </style>
 
 <div class="rail">
@@ -179,6 +191,20 @@ ${css}
 </div>
 
 <div id="app"></div>
+
+<script>
+  // Die Leiste bricht je nach Breite um. Ihre Hoehe wird gemessen, damit die
+  // Spielflaeche darunter genau passt.
+  (function () {
+    var rail = document.querySelector('.rail');
+    var fit = function () {
+      document.documentElement.style.setProperty('--rail-h', rail.offsetHeight + 'px');
+    };
+    fit();
+    if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(rail);
+    window.addEventListener('resize', fit);
+  })();
+</script>
 
 <script>${textures.code}</script>
 <script type="module">${js}</script>
