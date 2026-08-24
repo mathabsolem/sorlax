@@ -1,6 +1,12 @@
-# Scepter of Sorlax — CONTENT_TABLES v1.1
+# Scepter of Sorlax — CONTENT_TABLES v1.2
 
-Status: verbindlich. Anhang zu BESTIARY v3. Ersetzt v1.0.
+Status: verbindlich. Anhang zu BESTIARY v3. Ersetzt v1.1.
+
+Neu in v1.2, alle aus der Rückmeldung nach Phase 6:
+- Abschnitt 1 führt die vier Schlüssel. Sie hatten nie eine Tabelle.
+- Abschnitt 6 bekommt zwei Bodenspur-Ids für Zone 1 und einen verbindlichen Id-Bereich.
+- Abschnitt 6 nennt die Lampenstärke aller vier Zonen, nicht nur der äußeren.
+- Neuer Abschnitt 7 mit den Kartenregeln, die in PHASE_6 unvollständig waren.
 
 Korrekturen gegenüber v1.0, alle aus der Rückmeldung nach Phase 5:
 - Abschnitt 1 nannte zwei positive Effekte, definierte aber nur einen. Es ist einer.
@@ -34,6 +40,20 @@ Bedeutung von `ItemDef.amount`, verbindlich:
 | `ammo_coolant` | Kühlmittelzelle | ammo | 4 | `coolant` | — |
 | `ammo_cell` | Induktionszelle | ammo | 6 | `cell` | — |
 | `ammo_essence` | Essenzsplitter | ammo | 3 | `essence` | — |
+
+### Schlüssel
+
+| id | Name | type | amount | Zone | Sohlen |
+|---|---|---|---|---|---|
+| `key_red` | Roter Schlüssel | key | 1 | 1 | 1 bis 4 |
+| `key_green` | Grüner Schlüssel | key | 1 | 2 | 5 bis 8 |
+| `key_blue` | Blauer Schlüssel | key | 1 | 3 | 9 bis 12 |
+| `key_violet` | Violetter Schlüssel | key | 1 | 4 | 13 bis 16 |
+
+`reqLevel`, `reqStrength` und `reqAgility` sind 0. Schlüssel werden nicht angelegt,
+sie liegen in `PlayerState.keys`.
+
+**Ein Schlüssel wird beim Öffnen verbraucht.** Siehe Abschnitt 7.
 
 `antitoxin` kombiniert Heilung und Effektentfernung. Der Eintrag trägt zusätzlich
 `effect: { id: 'cure_toxin', turns: 0, magnitude: 0 }`.
@@ -187,17 +207,75 @@ dass ein gerades Stück an ein weiteres oder an eine Kurve anschließt.
 | 64 | Ölfleck, gerade |
 | 65 | Schleifspur im Staub, gerade |
 | 66 | Schleifspur im Staub, Kurve nach rechts |
+| 67 | Schleifspur, Anfang |
+| 68 | Schleifspur, Ende an einer Wand |
 
 Kurven nach links entstehen durch Drehung, nicht durch eigene Grafik.
 
 ### Zuordnung je Zone
 
-| Zone | Wandsatz | Bodensatz | Deckensatz | Lampe | ambientLight |
-|---|---|---|---|---|---|
-| 1 | 10 bis 13 | 40 bis 42 | 70, 72 | 71 | 0.55 |
-| 2 | 14 bis 17 | 43 bis 45 | 73, 75 | 74 | 0.40 |
-| 3 | 18 bis 21 | 46 bis 48 | 76, 78 | 77 | 0.45 |
-| 4 | 22 bis 25 | 49 bis 51 | 79, 81 | 80 | 0.25 |
+| Zone | Wandsatz | Bodensatz | Deckensatz | Lampe | intensity | ambientLight | Spur |
+|---|---|---|---|---|---|---|---|
+| 1 | 10 bis 13 | 40 bis 42 | 70, 72 | 71 | 220 | 0.55 | 64 bis 68 |
+| 2 | 14 bis 17 | 43 bis 45 | 73, 75 | 74 | 197 | 0.40 | 60 bis 63 |
+| 3 | 18 bis 21 | 46 bis 48 | 76, 78 | 77 | 173 | 0.45 | 60 bis 63 |
+| 4 | 22 bis 25 | 49 bis 51 | 79, 81 | 80 | 150 | 0.25 | 60 bis 63 |
+
+Die Zwischenwerte 197 und 173 sind die linear interpolierten aus der Rückmeldung und
+werden übernommen.
+
+Der vierte Wandtyp jeder Zone ist der Stützpfeiler und wird nur in Bossarenen benutzt.
+
+### Id-Bereiche, verbindlich
+
+- 0 bis 199 gehören dem Katalog in diesem Abschnitt
+- 200 aufwärts gehören der Entwicklung, also prozeduralen Platzhaltern
+
+Ein Platzhalter darf nie eine Katalog-Id belegen. Beide teilen sich zur Laufzeit dieselbe
+Tabelle, und eine Kollision erzeugt ein schwarzes Bild, das kein Test bemerkt.
 
 `ambientLight` fällt mit der Tiefe. Zone 4 ist fast dunkel, dort trägt fast nur noch
 `playerLight` und die Sichtweite aus der Ausrüstung.
+
+
+## 7. Kartenregeln
+
+Ergänzt und korrigiert PHASE_6. Diese Regeln sind verbindlich.
+
+### Schlüssel und Türen
+
+Ein Schlüssel wird beim Öffnen der zugehörigen Tür verbraucht und aus `PlayerState.keys`
+entfernt. Der Generator legt je verriegelter Tür genau einen Schlüssel aus, also ab
+Sohle 5 zwei.
+
+Grund: Die Farbe ist an die Zone gebunden, `keys` gilt aber für den ganzen Spielstand.
+Ohne Verbrauch öffnet der rote Schlüssel von Sohle 1 auch die Türen der Sohlen 2 bis 4, und
+von zwölf regulären Sohlen hätten nur vier eine echte Suche. Das war ein Entwurfsfehler.
+
+Verbrauch ist der Weg mit den wenigsten Nebenwirkungen. Eine Schlüssel-Id je Sohle würde
+zwölf zusätzliche Einträge und zwölf zusätzliche Symbole bedeuten, und das Leeren beim
+Sohlenwechsel wäre für den Spieler nicht nachvollziehbar.
+
+### Bosskarten
+
+Bosskarten tragen keine Geheimtür und keinen Schalter. Sie bestehen aus Zugangskorridor
+und Arena. Der Zonenschlüssel für die Arenatür liegt im Zugangskorridor.
+Das ist eine Ausnahme von der Regel, dass jede Karte eine Geheimtür trägt.
+
+### Stapelgüter je Sohle
+
+Genommen wird, was die Gegner dieser Sohle nach BESTIARY Abschnitt 9 fallen lassen, dazu
+immer `heal_small`. Damit stammt jede Id aus einer Tabelle, und der Nachschub passt zu den
+Waffen, die auf dieser Sohle gebraucht werden. Die Ableitung aus der Rückmeldung wird
+übernommen.
+
+### Lampen im Korridor
+
+Der Abstand von 6 Kacheln zählt entlang des Korridorverlaufs, nicht in Rasterreihenfolge.
+Bei geknickten Gängen entstehen sonst ungleiche Abstände.
+
+### Räume
+
+`MapDef.rooms` aus INTERFACES v1.7 hält die Räume, die der Generator gesetzt hat.
+Der Validator prüft Lampen und Startraum darüber, statt die Raumform aus dem Raster zu
+raten.
